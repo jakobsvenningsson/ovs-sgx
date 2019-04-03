@@ -55,7 +55,6 @@ Enclave_C_Files := trusted/enclave.c \
 										 trusted/lib/meta-flow.c \
 										 trusted/lib/sgx_htons.c \
 										 trusted/lib/heap.c \
-										 trusted/call-table.c \
 
 
 Enclave_Include_Paths := -IInclude \
