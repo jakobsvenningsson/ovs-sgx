@@ -67,13 +67,7 @@ void printf(const char *fmt, ...) {
     va_start(ap, fmt);
     vsnprintf(buf, BUFSIZ, fmt, ap);
     va_end(ap);
-    ocall_myenclave_sample(buf);
-}
-
-int
-ecall_myenclave_sample() {
-  printf("IN MYENCLAVE\n");
-  return 0;
+    ocall_print(buf);
 }
 
 

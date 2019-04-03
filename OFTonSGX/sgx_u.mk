@@ -42,7 +42,10 @@ else
 	Urts_Library_Name := sgx_urts
 endif
 
-App_C_Files := $(UNTRUSTED_DIR)/app.c $(UNTRUSTED_DIR)/sgx_utils.c
+App_C_Files := $(UNTRUSTED_DIR)/app.c  \
+							 $(UNTRUSTED_DIR)/sgx-utils.c \
+							 $(UNTRUSTED_DIR)/ocall.c
+
 App_Include_Paths := -IInclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
@@ -119,10 +122,11 @@ $(UNTRUSTED_DIR)/%.o: $(UNTRUSTED_DIR)/%.c
 
 #Compile with pthread
 link : $(UNTRUSTED_DIR)/enclave_u.o $(App_C_Objects)
-	@ar rcsv libsample.a \
+	@ar rcsv libOFTonSGX.a \
 						$(UNTRUSTED_DIR)/enclave_u.o \
 						$(UNTRUSTED_DIR)/app.o \
-						$(UNTRUSTED_DIR)/sgx_utils.o \
+						$(UNTRUSTED_DIR)/sgx-utils.o \
+						$(UNTRUSTED_DIR)/ocall.o \
 						/opt/intel/sgxsdk/lib64/libsgx_urts.so \
 						/opt/intel/sgxsdk/lib64/libsgx_uae_service.so
 
@@ -130,4 +134,4 @@ link : $(UNTRUSTED_DIR)/enclave_u.o $(App_C_Objects)
 .PHONY: clean
 
 clean:
-	@rm -f link  $(App_C_Objects) $(UNTRUSTED_DIR)/enclave_u.* libsample.a
+	@rm -f link  $(App_C_Objects) $(UNTRUSTED_DIR)/enclave_u.* libOFTonSGX.a

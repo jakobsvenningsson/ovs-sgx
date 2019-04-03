@@ -10,12 +10,11 @@ cd ..
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OvS"
 cd ovs
-./ovs/boot.sh
-./ovs/configure CFLAGS="-D SGX -I${ROOT_FOLDER}/OFTonSGX/untrusted" \
-
-            LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
-                     -L$ROOT_FOLDER/OFTonSGX" \
-            LIBS="-lsample"
+./boot.sh
+./configure CFLAGS="-D SGX -I${ROOT_FOLDER}/OFTonSGX/untrusted" \
+            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
+                     	 -L$ROOT_FOLDER/OFTonSGX" \
+            	LIBS="-lOFTonSGX"
 make clean
 make
 make install

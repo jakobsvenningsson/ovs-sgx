@@ -1,86 +1,54 @@
 #include <string.h>
 #include <assert.h>
 #include <libgen.h>
-#include "sgx_utils.h"
+#include "sgx-utils.h"
 #include "enclave_u.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include "app.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid = 0;
-static int enclave_status=10;
-
-/////////////////////////////////////////////////////////////////////////////
-/* OCall functions */
-void ocall_myenclave_sample(const char *str)
-{
-    /* Prox/Bridge will check the length and null-terminate
-     * the input string to prevent buffer overflow.
-     */
-    printf("%s", str);
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-//API to trusted ecalls
-
-//1. Creation and Initialization of tables
+static bool enclave_is_initialized = false;
 static int bridge_counter = 0;
-int sgx_ofproto_init_tables(int n_tables)
-{
+//1. Creation and Initialization of tables
+int
+sgx_ofproto_init_tables(int n_tables) {
 	printf("INSIDE SGX START......\n");
-
 	int ecall_return;
-	//ecall_myenclave_sample(global_eid, &ecall_return);
-	if (enclave_status==10){
+	if (!enclave_is_initialized){
 	    if(initialize_enclave(&global_eid) < 0){
-
 	      return -1;
 	    }
-	    //Set the variable enclave_status to zero to avoid reinitialization of the enclave
-	    enclave_status=0;
-	    //initialize the tables
+	    enclave_is_initialized = true;
 	}
-	else {
-		//printf("No need to initialize the container,.....\n");
-	}
-  puts("init tables");
   int this_bridge_id = bridge_counter++;
   ecall_ofproto_init_tables(global_eid, this_bridge_id, n_tables);
-  puts("finishing");
-
-
-
-
-    //We perform another test:
-     //ecall_myenclave_sample(global_eid, &ecall_return);
-
-
-     return this_bridge_id;
+  return this_bridge_id;
 }
 
-//2 set the table to read_only "Hidden Table 254"
-void SGX_readonly_set(int bridge_id, int table_id){
+void
+SGX_readonly_set(int bridge_id, int table_id) {
   //printf("SGX_readonly_set\n");
 	ecall_readonly_set(global_eid, bridge_id, table_id);
   //printf("end\n");
 
 }
-//2. This function will check if the table to which we want to add a flow is read_only
-int SGX_istable_readonly(int bridge_id, uint8_t table_id){
+
+int
+SGX_istable_readonly(int bridge_id, uint8_t table_id){
   //printf("SGX_istable_readonly\n");
 	int ecall_return;
 	ecall_istable_readonly(global_eid,&ecall_return, bridge_id, table_id);
   //printf("end\n");
-
 	return ecall_return;
 }
 
-//3.
-void SGX_cls_rule_init(int bridge_id, struct cls_rule * o_cls_rule,
+void
+SGX_cls_rule_init(int bridge_id, struct cls_rule * o_cls_rule,
 		const struct match * match , unsigned int priority){
   //printf("SGX_cls_rule_init\n");
 	ecall_cls_rule_init(global_eid, bridge_id, o_cls_rule,match,priority);
@@ -89,7 +57,8 @@ void SGX_cls_rule_init(int bridge_id, struct cls_rule * o_cls_rule,
 }
 
 //4. SGX Classifier_rule_overlap
-int SGX_cr_rule_overlaps(int bridge_id, int table_id,struct cls_rule * o_cls_rule){
+int
+SGX_cr_rule_overlaps(int bridge_id, int table_id,struct cls_rule * o_cls_rule){
   //printf("SGX_cr_rule_overlaps\n");
 
 	int ecall_return;
