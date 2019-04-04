@@ -17,7 +17,7 @@ static int bridge_counter = 0;
 //1. Creation and Initialization of tables
 int
 sgx_ofproto_init_tables(int n_tables) {
-	printf("INSIDE SGX START......\n");
+	printf("Inside FLOW TABLE ENCLAVE.\n");
 	int ecall_return;
 	if (!enclave_is_initialized){
 	    if(initialize_enclave(&global_eid) < 0){
