@@ -8,6 +8,8 @@
         * Adding simple flows i.e. flows which does not require multiple lookups in flow tables.
         * Adding complex flows i.e. flows which does need to consult multiple flows tables.
     * Deleting flow
+        * strict match
+        * loose match
     * Modifying flow
 2. Flow eviction
     * Change the flow eviction policy on a pre-populated flow table. This will require the eviction policy of all flows to be recalculated and this might also causes flows to be eviction.
