@@ -1,12 +1,13 @@
 #!/bin/bash
 
 ROOT_FOLDER=$PWD
+FLAGS=$1
 source /opt/intel/sgxsdk/environment
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OFTonSGX"
 cd OFTonSGX
 make clean
-make SGX_MODE=HW SGX_PRERELEASE=1 SGX_DEBUG=0 LFLAGS="-D HOTCALL -D TIMEOUT"
+make SGX_MODE=HW SGX_PRERELEASE=1 SGX_DEBUG=0 LFLAGS="$FLAGS"
 cp enclave.signed.so ../ovs
 cd ..
 
@@ -21,10 +22,10 @@ cd ..
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OvS"
 cd ovs
 ./boot.sh
-./configure	CFLAGS="-D SGX -D SGX_TLS -I${ROOT_FOLDER}/TLSonSGX/untrusted \
+./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted \
 		        -I${ROOT_FOLDER}/OFTonSGX/untrusted \
 		        -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
-            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
+            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \:wq
                      	 -L$ROOT_FOLDER/OFTonSGX \
                          -L${ROOT_FOLDER}/TLSonSGX/mbedtls/library \
                      	 -L$ROOT_FOLDER/TLSonSGX" \

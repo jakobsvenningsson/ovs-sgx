@@ -17,4 +17,4 @@ cd ../../
 
 cp ./OFTonSGX/ovs_modified/ovs_sgx/*.c ./ovs/ofproto
 cp ./OFTonSGX/ovs_modified/ovs_sgx/*.h ./ovs/ofproto
-cp ./TLSonSGX/ovs_modified/ovs_sgx/*.c ./ovs/ofproto
+cp ./TLSonSGX/ovs_modified/ovs_sgx/stream-ssl.c ./ovs/lib

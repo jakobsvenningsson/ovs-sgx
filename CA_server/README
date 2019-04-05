@@ -1,4 +1,4 @@
-1. Create CA private key (password chosen will be needed every time the CA server is started)
+1. Create CA private key (password chosen will be needed every time the CA server is started). If you choose another password than `pw123`, make sure to change the default password inside of openssl.cnf.
 	openssl genrsa -des3 -out rootca-key.pem 1024
 
 2. Create CA certificate (sign public key using private key)
