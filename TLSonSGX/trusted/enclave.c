@@ -42,7 +42,7 @@
 
 //CA Server
 #define SERVER_PORT "4433"
-#define SERVER_NAME "84.217.197.182"
+#define SERVER_NAME "127.0.0.1"
 
 
 int sprintf(char* buf, const char *fmt, ...)
