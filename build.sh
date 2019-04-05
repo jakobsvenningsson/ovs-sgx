@@ -21,7 +21,7 @@ cd ..
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OvS"
 cd ovs
 ./boot.sh
-./configure	CFLAGS="-D SGX -I${ROOT_FOLDER}/TLSonSGX/untrusted \
+./configure	CFLAGS="-D SGX -D SGX_TLS -I${ROOT_FOLDER}/TLSonSGX/untrusted \
 		        -I${ROOT_FOLDER}/OFTonSGX/untrusted \
 		        -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
             	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
