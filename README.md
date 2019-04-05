@@ -9,10 +9,11 @@ This repository contains a SGX enabled version of Open vSwitch with confidential
 2. Run the setup script: `./setup.sh`. The setup script will download Open vSwitch and mbedtls, checkout the correct commits and replace the original source files in the OVS project with the modified source files for the SGX enabled OVS contained in `OFTonSGX/modified_sgx/ovs_sgx` and  `TLSonSGX/modified_sgx/ovs_sgx`.
 
 ### Compile
-Compile TLSonSGX, OFTonSGX and OVS by running the build script. The build script optionally takes a string of compilation flags as argument.
-The following flags are availible:
-1. SGX - enables SGX protection of the OpenFlow flow tables.
-2. SGX_TLS - enables SGX pretection of SSL.
+    1. Change the ENCLAVE_FILENAME constant in `TLSonSGX/untrusted/utils.h` and `OFTonSGX/untrusted/sgx-utils.c` to your OVS_PATH.
+    2. Compile TLSonSGX, OFTonSGX and OVS by running the build script. The build script optionally takes a string of compilation flags as argument.
+        The following flags are availible:
+        * SGX - enables SGX protection of the OpenFlow flow tables.
+        * SGX_TLS - enables SGX pretection of SSL.
 
 For example, to compile the project with SGX enabled for both SSL and flow tables run `./build.sh "-D SGX -D SGX_TLS"`
 
