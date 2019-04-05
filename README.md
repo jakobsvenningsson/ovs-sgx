@@ -20,4 +20,4 @@ For example, to compile the project with SGX enabled for both SSL and flow table
 ### Run
 Start OvS by executing the startup script: `./startup.sh`.
 
-**If the project has been compiled with the `SGX_TLS flag, the ca-server (under ./CA_server) has to be running beforehand. Instructions on how to run and generate keys can be found in the README inside of the CA_server folder.**
+**If the project has been compiled with the `SGX_TLS flag, the ca-server (under ./CA_server) has to be running before running the startup script. Instructions on how to run and generate keys can be found in the README inside of the CA_server folder.**
