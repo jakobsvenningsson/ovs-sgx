@@ -11,8 +11,8 @@ This repository contains a SGX enabled version of Open vSwitch with confidential
 ### Compile
 Compile TLSonSGX, OFTonSGX and OVS by running the build script. The build script optionally takes a string of compilation flags as argument.
 The following flags are availible:
-1. SGX - enaables SGX protection of the OpenFlow flow tables.
-2. SGX_TLS - enables SGX pretection for SSL.
+1. SGX - enables SGX protection of the OpenFlow flow tables.
+2. SGX_TLS - enables SGX pretection of SSL.
 
 For example, to compile the project with SGX enabled for both SSL and flow tables run `./build.sh "-D SGX -D SGX_TLS"`
 

@@ -25,7 +25,7 @@ cd ovs
 ./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted \
 		        -I${ROOT_FOLDER}/OFTonSGX/untrusted \
 		        -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
-            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \:wq
+            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
                      	 -L$ROOT_FOLDER/OFTonSGX \
                          -L${ROOT_FOLDER}/TLSonSGX/mbedtls/library \
                      	 -L$ROOT_FOLDER/TLSonSGX" \
