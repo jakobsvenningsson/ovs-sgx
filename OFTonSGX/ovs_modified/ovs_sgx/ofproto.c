@@ -3010,7 +3010,6 @@ collect_rules_strict(struct ofproto *ofproto, uint8_t table_id,
             }
         }
     }
-
 exit:
     cls_rule_destroy(&cr);
     return 0;
@@ -3962,7 +3961,7 @@ handle_flow_mod__(struct ofproto *ofproto, struct ofconn *ofconn,
         return add_flow(ofproto, ofconn, fm, oh);
         #endif
     case OFPFC_MODIFY:
-        #ifdef BENCHMARK_MODIFY_FLOW_LOOSE
+        #ifdef BENCHMARK_MOD_FLOW_LOOSE
         {
             enum ofperr res;
             BENCHMARK(modify_flows_loose, res, ofproto, ofconn, fm, oh);
@@ -3972,7 +3971,7 @@ handle_flow_mod__(struct ofproto *ofproto, struct ofconn *ofconn,
         return modify_flows_loose(ofproto, ofconn, fm, oh);
         #endif
     case OFPFC_MODIFY_STRICT:
-        #ifdef BENCHMARK_MODIFY_FLOW_STRICT
+        #ifdef BENCHMARK_MOD_FLOW_STRICT
         {
             enum ofperr res;
             BENCHMARK(modify_flow_strict, res, ofproto, ofconn, fm, oh);

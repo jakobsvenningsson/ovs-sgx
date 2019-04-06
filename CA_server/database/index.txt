@@ -157,3 +157,5 @@ V	200403162544Z		9C	unknown	/CN=openvswitch
 V	200403162546Z		9D	unknown	/CN=openvswitch
 V	200403190605Z		9E	unknown	/CN=openvswitch
 V	200404072820Z		9F	unknown	/CN=openvswitch
+V	200404081435Z		A0	unknown	/CN=openvswitch
+V	200404104259Z		A1	unknown	/CN=openvswitch
