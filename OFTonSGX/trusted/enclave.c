@@ -6,6 +6,15 @@
 #include "classifier.h"
 #include "ofproto-provider.h"
 
+#include "call-table.h"
+#include "hotcall.h"
+#include <sgx_spinlock.h>
+
+#ifdef TIMEOUT
+#define INIT_TIMER_VALUE 9999999;
+static unsigned int timeout_counter = INIT_TIMER_VALUE;
+#endif
+
 
 // Global data structures
 struct oftable * SGX_oftables[100];
@@ -56,23 +65,6 @@ node_delete(int bridge_id, struct cls_rule * out){
     free(rule);
 }
 
-// *******************************************************************************
-
-/*
- * printf:
- *   Invokes OCALL to display the enclave buffer to the terminal.
- */
-void
-printf(const char * fmt, ...){
-    char buf[BUFSIZ] = { '\0' };
-    va_list ap;
-
-    va_start(ap, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, ap);
-    va_end(ap);
-    ocall_print(buf);
-}
-
 /* Open vSwitch Trusted function definitions */
 static void
 oftable_init(struct oftable * table){
@@ -105,6 +97,12 @@ ecall_istable_readonly(int bridge_id, uint8_t table_id){
 
 void
 ecall_cls_rule_init(int bridge_id, struct cls_rule * o_cls_rule, const struct match * match, unsigned int priority){
+    printf("INSIDE\n");
+    printf("%d\n", bridge_id);
+    printf("%u\n", priority);
+    printf("%p\n", o_cls_rule);
+    printf("%p\n", match);
+
     struct sgx_cls_rule * sgx_cls_rule = node_insert(bridge_id, hash_pointer(o_cls_rule, 0));
 
     sgx_cls_rule->o_cls_rule = o_cls_rule;
@@ -163,6 +161,7 @@ ecall_cls_rule_equal(int bridge_id, const struct cls_rule * out_a, const struct 
 // 9. classifier_replace
 void
 ecall_classifier_replace(int bridge_id, int table_id, struct cls_rule * o_cls_rule, struct cls_rule ** cls_rule_rtrn){
+    printf("%d %d %p %p\n", bridge_id, table_id, o_cls_rule, cls_rule_rtrn);
     struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
     struct cls_rule * cls_rule         = classifier_replace(&SGX_oftables[bridge_id][table_id].cls,
       &sgx_cls_rule->cls_rule);

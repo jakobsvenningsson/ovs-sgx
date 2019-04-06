@@ -52,12 +52,15 @@ Enclave_C_Files := trusted/enclave.c \
 										 trusted/lib/flow.c \
 										 trusted/lib/hash.c \
 										 trusted/lib/match.c \
+										 trusted/hotcall.c \
+										 trusted/enclave-utils.c \
+										 trusted/call-table.c \
 										 trusted/lib/meta-flow.c \
 										 trusted/lib/sgx_htons.c \
 										 trusted/lib/heap.c \
 
 
-Enclave_Include_Paths := -IInclude \
+Enclave_Include_Paths := -Iinclude \
 														-Itrusted \
 														-I$(SGX_SDK)/include \
 														-I$(SGX_SDK)/include/tlibc \
@@ -67,13 +70,13 @@ Enclave_Include_Paths := -IInclude \
 
 Flags_Just_For_C := -Wno-implicit-function-declaration -std=c11
 Common_C_Cpp_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(Enclave_Include_Paths) -fno-builtin-printf -I.
-Enclave_C_Flags := $(Flags_Just_For_C) $(Common_C_Cpp_Flags)
+Enclave_C_Flags := $(Flags_Just_For_C) $(Common_C_Cpp_Flags) $(LFLAGS)
 
 Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
 	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
-	-Wl,-pie,-enclave_entry -Wl,--export-dynamic  \
+	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
 	-Wl,--version-script=trusted/enclave.lds
 
