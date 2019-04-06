@@ -59,6 +59,9 @@
 #include "app.h"
 #endif
 
+#include "ovs-benchmark.h"
+
+
 VLOG_DEFINE_THIS_MODULE(ofproto);
 
 COVERAGE_DEFINE(ofproto_error);
@@ -508,6 +511,7 @@ ofproto_init_tables(struct ofproto *ofproto, int n_tables)
     ofproto->n_tables = n_tables;
 
 #ifndef SGX
+    VLOG_INFO("SGX DISABLED.");
     struct oftable *table;
     ofproto->tables = xmalloc(n_tables * sizeof *ofproto->tables);
     OFPROTO_FOR_EACH_TABLE (table, ofproto) {
@@ -515,12 +519,11 @@ ofproto_init_tables(struct ofproto *ofproto, int n_tables)
     }
 
 #else
-
+    VLOG_INFO("SGX ENABLED.");
     int bridge_id = sgx_ofproto_init_tables(n_tables);
     if(bridge_id == -1) {
       VLOG_ERR("Error init enclave.");
     }
-
     ofproto->bridge_id = bridge_id;
     //Initialization of special table_dpif
     SGX_table_dpif_init(bridge_id, n_tables);
@@ -3007,7 +3010,6 @@ collect_rules_strict(struct ofproto *ofproto, uint8_t table_id,
             }
         }
     }
-
 exit:
     cls_rule_destroy(&cr);
     return 0;
@@ -3949,20 +3951,55 @@ handle_flow_mod__(struct ofproto *ofproto, struct ofconn *ofconn,
 
     switch (fm->command) {
     case OFPFC_ADD:
+        #ifdef BENCHMARK_ADD_FLOW
+        {
+            enum ofperr res;
+            BENCHMARK(add_flow, res, ofproto, ofconn, fm, oh);
+            return res;
+        }
+        #else
         return add_flow(ofproto, ofconn, fm, oh);
-
+        #endif
     case OFPFC_MODIFY:
+        #ifdef BENCHMARK_MOD_FLOW_LOOSE
+        {
+            enum ofperr res;
+            BENCHMARK(modify_flows_loose, res, ofproto, ofconn, fm, oh);
+            return res;
+        }
+        #else
         return modify_flows_loose(ofproto, ofconn, fm, oh);
-
+        #endif
     case OFPFC_MODIFY_STRICT:
+        #ifdef BENCHMARK_MOD_FLOW_STRICT
+        {
+            enum ofperr res;
+            BENCHMARK(modify_flow_strict, res, ofproto, ofconn, fm, oh);
+            return res;
+        }
+        #else
         return modify_flow_strict(ofproto, ofconn, fm, oh);
-
+        #endif
     case OFPFC_DELETE:
+        #ifdef BENCHMARK_DEL_FLOW_LOOSE
+        {
+            enum ofperr res;
+            BENCHMARK(delete_flows_loose, res, ofproto, ofconn, fm, oh);
+            return res;
+        }
+        #else
         return delete_flows_loose(ofproto, ofconn, fm, oh);
-
+        #endif
     case OFPFC_DELETE_STRICT:
+        #ifdef BENCHMARK_DEL_FLOW_STRICT
+        {
+            enum ofperr res;
+            BENCHMARK(delete_flow_strict, res, ofproto, ofconn, fm, oh);
+            return res;
+        }
+        #else
         return delete_flow_strict(ofproto, ofconn, fm, oh);
-
+        #endif
     default:
         if (fm->command > 0xff) {
             VLOG_WARN_RL(&rl, "%s: flow_mod has explicit table_id but "

@@ -7,8 +7,8 @@
 #include "sgx_urts.h"
 #include "sgx_uae_service.h"
 
-#define TOKEN_FILENAME   "/home/jakob/test_ovs/ovs/enclave.token"
-#define ENCLAVE_FILENAME "/home/jakob/test_ovs/ovs/enclave.signed.so"
+#define TOKEN_FILENAME   "/home/jakob/ovs-sgx/ovs/enclave.token"
+#define ENCLAVE_FILENAME "/home/jakob/ovs-sgx/ovs/enclave.signed.so"
 // "/home/jakob/test_ovs/ovs/enclave.signed.so"
 #define MAX_PATH         FILENAME_MAX
 

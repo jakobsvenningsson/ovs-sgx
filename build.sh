@@ -24,6 +24,7 @@ cd ovs
 ./boot.sh
 ./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted \
 		        -I${ROOT_FOLDER}/OFTonSGX/untrusted \
+				-I${ROOT_FOLDER}/benchmark/include \
 		        -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
             	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
                      	 -L$ROOT_FOLDER/OFTonSGX \
