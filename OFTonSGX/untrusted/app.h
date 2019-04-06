@@ -1,6 +1,7 @@
 #ifndef _APP_H_
 #define _APP_H_
 #include <stdint.h>
+
 /* API untrusted functions to trusted inside the enclave */
 struct match;
 struct cls_rule;
@@ -14,6 +15,8 @@ struct flow_wildcards;
 //for testing
 struct rul *out;
 ///
+
+void reg_log_func(void (*fun_p)(char *));
 
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);
@@ -31,7 +34,7 @@ int SGX_cls_count(int bridge_id, int table_id);
 int SGX_eviction_fields_enable(int bridge_id, int table_id);
 void SGX_table_mflows_set(int bridge_id, int table_id,unsigned int value);
 size_t SGX_evg_add_rule(int bridge_id, int table_id, struct cls_rule *o_cls_rule,uint32_t priority,
-		uint32_t rule_evict_prioriy,struct heap_node rule_evg_node);
+		uint32_t rule_evict_prioriy,struct heap_node *rule_evg_node);
 void SGX_evg_group_resize(int bridge_id, int table_id,struct cls_rule *o_cls_rule,size_t priority, struct eviction_group *evg);
 int SGX_evg_remove_rule(int bridge_id, int table_id,struct cls_rule *o_cls_rule);
 void SGX_cls_remove(int bridge_id, int table_id,struct cls_rule *o_cls_rule);
@@ -97,6 +100,23 @@ uint16_t SGX_miniflow_get_vid(int bridge_id, struct cls_rule *o_cls_rule);
 int SGX_ofproto_get_vlan_usage_c(int bridge_id);
 void SGX_ofproto_get_vlan_usage__r(int bridge_id, uint16_t *buf,int elem);
 
+#define MAKE_ECALL_ARGS(FUNC, ecall_ret, args...) \
+  do { \
+    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret, args); \
+    if( sgx_ret != SGX_SUCCESS) { \
+      print_error_message(sgx_ret); \
+      printf("ecall failed in ecall_%s\n", #FUNC); \
+    } \
+  } while(0)
+
+#define MAKE_ECALL(FUNC, ecall_ret) \
+  do { \
+    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret); \
+    if( sgx_ret != SGX_SUCCESS) { \
+      print_error_message(sgx_ret); \
+      printf("ecall failed in ecall_%s\n", #FUNC); \
+    } \
+  } while(0)
 
 
 

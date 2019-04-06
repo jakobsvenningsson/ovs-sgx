@@ -30,7 +30,7 @@ cd ovs
                      	 -L$ROOT_FOLDER/OFTonSGX \
                          -L${ROOT_FOLDER}/TLSonSGX/mbedtls/library \
                      	 -L$ROOT_FOLDER/TLSonSGX" \
-            	LIBS="-lOFTonSGX -lTLSonSGX -lmbedtls -lmbedx509 -lmbedcrypto -lstdc++"
+            	LIBS="-lOFTonSGX -lTLSonSGX -lmbedtls -lmbedx509 -lmbedcrypto -lpthread -lstdc++"
 
 make clean
 make
