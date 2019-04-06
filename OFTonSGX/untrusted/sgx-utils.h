@@ -16,6 +16,27 @@ typedef struct _sgx_errlist_t {
     const char *sug; /* Suggestion */
 } sgx_errlist_t;
 
+
+#define MAKE_ECALL_ARGS(FUNC, ecall_ret, global_eid, args...) \
+  do { \
+    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret, args); \
+    if( sgx_ret != SGX_SUCCESS) { \
+      print_error_message(sgx_ret); \
+      printf("ecall failed in ecall_%s\n", #FUNC); \
+    } \
+  } while(0)
+
+#define MAKE_ECALL(FUNC, ecall_ret, global_eid) \
+  do { \
+    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret); \
+    if( sgx_ret != SGX_SUCCESS) { \
+      print_error_message(sgx_ret); \
+      printf("ecall failed in ecall_%s\n", #FUNC); \
+    } \
+  } while(0)
+
+
+
 /* Error code returned by sgx_create_enclave */
 static sgx_errlist_t sgx_errlist[] = {
     {

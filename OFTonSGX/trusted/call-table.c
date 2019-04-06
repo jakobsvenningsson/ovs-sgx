@@ -193,7 +193,7 @@ execute_function(int function, argument_list * args, void *ret){
           (struct flow_wildcards *) args->args[4]);
             break;
         case hotcall_ecall_sgx_table_dpif:
-            ecall_SGX_table_dpif(*((int *) args->args[0]), *((int *) args->args[1]));
+            ecall_sgx_table_dpif(*((int *) args->args[0]), *((int *) args->args[1]));
             break;
         case hotcall_ecall_evg_remove_rule:
             *((int *) ret) = ecall_evg_remove_rule(*((int *) args->args[0]), *((int *) args->args[1]),

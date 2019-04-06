@@ -100,23 +100,7 @@ uint16_t SGX_miniflow_get_vid(int bridge_id, struct cls_rule *o_cls_rule);
 int SGX_ofproto_get_vlan_usage_c(int bridge_id);
 void SGX_ofproto_get_vlan_usage__r(int bridge_id, uint16_t *buf,int elem);
 
-#define MAKE_ECALL_ARGS(FUNC, ecall_ret, args...) \
-  do { \
-    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret, args); \
-    if( sgx_ret != SGX_SUCCESS) { \
-      print_error_message(sgx_ret); \
-      printf("ecall failed in ecall_%s\n", #FUNC); \
-    } \
-  } while(0)
 
-#define MAKE_ECALL(FUNC, ecall_ret) \
-  do { \
-    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret); \
-    if( sgx_ret != SGX_SUCCESS) { \
-      print_error_message(sgx_ret); \
-      printf("ecall failed in ecall_%s\n", #FUNC); \
-    } \
-  } while(0)
 
 
 

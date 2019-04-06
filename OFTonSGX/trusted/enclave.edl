@@ -16,6 +16,7 @@ enclave {
 		include "call-table.h"
 		include "hotcall.h"
 
+
 		// Hot-call e-calls
 		public int ecall_start_poller([user_check] async_ecall *data);
 
