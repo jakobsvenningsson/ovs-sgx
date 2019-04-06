@@ -97,14 +97,7 @@ ecall_istable_readonly(int bridge_id, uint8_t table_id){
 
 void
 ecall_cls_rule_init(int bridge_id, struct cls_rule * o_cls_rule, const struct match * match, unsigned int priority){
-    printf("INSIDE\n");
-    printf("%d\n", bridge_id);
-    printf("%u\n", priority);
-    printf("%p\n", o_cls_rule);
-    printf("%p\n", match);
-
     struct sgx_cls_rule * sgx_cls_rule = node_insert(bridge_id, hash_pointer(o_cls_rule, 0));
-
     sgx_cls_rule->o_cls_rule = o_cls_rule;
     cls_rule_init(&sgx_cls_rule->cls_rule, match, priority);
     sgx_cls_rule->evictable = true;
@@ -161,7 +154,6 @@ ecall_cls_rule_equal(int bridge_id, const struct cls_rule * out_a, const struct 
 // 9. classifier_replace
 void
 ecall_classifier_replace(int bridge_id, int table_id, struct cls_rule * o_cls_rule, struct cls_rule ** cls_rule_rtrn){
-    printf("%d %d %p %p\n", bridge_id, table_id, o_cls_rule, cls_rule_rtrn);
     struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
     struct cls_rule * cls_rule         = classifier_replace(&SGX_oftables[bridge_id][table_id].cls,
       &sgx_cls_rule->cls_rule);
@@ -243,14 +235,14 @@ eviction_group_hash_rule(int bridge_id, int table_id, struct cls_rule * cls_rule
 size_t
 ecall_evg_add_rule(int bridge_id, int table_id, struct cls_rule * o_cls_rule, uint32_t priority,
   uint32_t rule_evict_prioriy,
-  struct heap_node rule_evg_node){
+  struct heap_node *rule_evg_node){
     struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
     struct eviction_group * evg;
 
     evg = ecall_evg_find(bridge_id, table_id, eviction_group_hash_rule(bridge_id, table_id,
           &sgx_cls_rule->cls_rule), priority);
     sgx_cls_rule->evict_group   = evg;
-    sgx_cls_rule->rule_evg_node = rule_evg_node;
+    sgx_cls_rule->rule_evg_node = *rule_evg_node;
     heap_insert_ovs(&evg->rules, &sgx_cls_rule->rule_evg_node, rule_evict_prioriy);
     size_t n_rules      = (size_t) heap_count_ovs(&evg->rules);
     size_t new_priority = (MIN(UINT16_MAX, n_rules) << 16) | random_uint16();
@@ -711,7 +703,7 @@ ecall_oftable_disable_eviction(int bridge_id, int table_id){
         hmap_destroy(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id);
         heap_destroy_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
 
-        printf("heap_destroy_ovs size %d\n", heap_count_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size));
+        //printf("heap_destroy_ovs size %d\n", heap_count_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size));
 
 
         free(SGX_oftables[bridge_id][table_id].eviction_fields);
@@ -733,7 +725,7 @@ ecall_oftable_enable_eviction(int bridge_id, int table_id, const struct mf_subfi
               n_fields * sizeof *fields)))
     {
         *no_change = true;
-        printf("NOOOOO CHANGE ENCLAVE!!------------------------------------------------!!!");
+        //printf("NOOOOO CHANGE ENCLAVE!!------------------------------------------------!!!");
         return;
     }
 
@@ -748,7 +740,7 @@ ecall_oftable_enable_eviction(int bridge_id, int table_id, const struct mf_subfi
     hmap_init(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id);
     heap_init_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
 
-    printf("enable eviction size %d\n", heap_count_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size));
+    //printf("enable eviction size %d\n", heap_count_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size));
 
     /*
      * table->eviction_group_id_basis = random_uint32();
@@ -826,7 +818,6 @@ void
 ecall_cls_lookup(int bridge_id, struct cls_rule ** o_cls_rule, int table_id, const struct flow * flow,
   struct flow_wildcards * wc){
     struct cls_rule * cls_rule;
-
     cls_rule = classifier_lookup(&SGX_oftables[bridge_id][table_id].cls, flow, wc);
     if (cls_rule) {
         // Need to retrieve the sgx_cls_rule and return the pointer
@@ -929,7 +920,7 @@ ecall_miniflow_expand(int bridge_id, struct cls_rule * o_cls_rule, struct flow *
 
 // 1. Creation and Initialization
 void
-ecall_SGX_table_dpif(int bridge_id, int n_tables){
+ecall_sgx_table_dpif(int bridge_id, int n_tables){
     // I need to create the struct SGX_table_dpif in memory
     int i;
 

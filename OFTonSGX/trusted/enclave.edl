@@ -32,7 +32,7 @@ enclave {
 		public int ecall_cls_count(int bridge_id, int table_id);
 		public int ecall_eviction_fields_enable(int bridge_id, int table_id);
 		public void ecall_evg_group_resize(int bridge_id, int table_id,[user_check]struct cls_rule *o_cls_rule,size_t priority, [user_check] struct eviction_group *evg);
-		public size_t ecall_evg_add_rule(int bridge_id, int table_id,[user_check]struct cls_rule *o_cls_rule,uint32_t priority,uint32_t rule_evict_prioriy,struct heap_node rule_evg_node);
+		public size_t ecall_evg_add_rule(int bridge_id, int table_id,[user_check]struct cls_rule *o_cls_rule,uint32_t priority,uint32_t rule_evict_prioriy, [user_check] struct heap_node *rule_evg_node);
 		public int ecall_evg_remove_rule(int bridge_id, int table_id,[user_check]struct cls_rule *o_cls_rule);
 		public void ecall_cls_remove(int bridge_id, int table_id,[user_check]struct cls_rule *o_cls_rule);
 		public void ecall_choose_rule_to_evict(int bridge_id, int table_id,[user_check]struct cls_rule **o_cls_rule);
@@ -67,7 +67,7 @@ enclave {
 		public unsigned int ecall_cls_rule_format(int bridge_id, [user_check]const struct cls_rule *o_cls_rule,[user_check]struct match *megamatch);
 		public void ecall_miniflow_expand(int bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]struct flow *flow);
 		public uint32_t ecall_rule_calculate_tag(int bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]const struct flow *flow,int table_id);
-		public void ecall_SGX_table_dpif(int bridge_id, int n_tables);
+		public void ecall_sgx_table_dpif(int bridge_id, int n_tables);
 		public int ecall_table_update_taggable(int bridge_id, uint8_t table_id);
 		public int ecall_is_sgx_other_table(int bridge_id, int id);
 		public uint32_t ecall_rule_calculate_tag_s(int bridge_id, int id, [user_check]const struct flow *flow);

@@ -1,7 +1,9 @@
-/usr/bin/ld: warning: cannot find entry symbol nclave_entry; defaulting to 0000000000000a80
-tcs_num 10, tcs_max_num 10, tcs_min_pool 3
-The required memory is 19763200B.
-Succeed.
+trusted/call-table.o: In function `execute_function':
+call-table.c:(.text+0x110): undefined reference to `ecall_SGX_table_dpif'
+collect2: error: ld returned 1 exit status
+make[1]: *** [enclave.so] Error 1
+make: *** [all] Error 2
+cp: cannot stat 'enclave.signed.so': No such file or directory
 untrusted/mbedtls_client.cpp: In function ‘int main(int, char**)’:
 untrusted/mbedtls_client.cpp:184:22: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
          char * msg = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
@@ -4448,16 +4450,20 @@ ofproto/ofproto.c: In function ‘ofproto_create’:
 ofproto/ofproto.c:406:9: warning: unused variable ‘i’ [-Wunused-variable]
      int i;
          ^
+ofproto/ofproto.c: At top level:
+ofproto/ofproto.c:504:8: warning: no previous prototype for ‘ppp’ [-Wmissing-prototypes]
+   void ppp(char *str) {
+        ^
 ofproto/ofproto.c: In function ‘ofproto_init_tables’:
-ofproto/ofproto.c:523:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:529:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      int bridge_id = sgx_ofproto_init_tables(n_tables);
      ^
 ofproto/ofproto.c: In function ‘ofproto_flush__’:
-ofproto/ofproto.c:1111:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:1122:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      int buf_size;
      ^
 ofproto/ofproto.c: In function ‘ofproto_destroy__’:
-ofproto/ofproto.c:1136:21: warning: unused variable ‘table’ [-Wunused-variable]
+ofproto/ofproto.c:1147:21: warning: unused variable ‘table’ [-Wunused-variable]
      struct oftable *table;
                      ^
 In file included from ./lib/hmap.h:22:0,
@@ -4471,7 +4477,7 @@ ofproto/ofproto.c: In function ‘ofproto_destroy’:
 ./lib/hmap.h:146:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:1182:5: note: in expansion of macro ‘HMAP_FOR_EACH_SAFE’
+ofproto/ofproto.c:1193:5: note: in expansion of macro ‘HMAP_FOR_EACH_SAFE’
      HMAP_FOR_EACH_SAFE (ofport, next_ofport, hmap_node, &p->ports) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_run’:
@@ -4481,7 +4487,7 @@ ofproto/ofproto.c: In function ‘ofproto_run’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:1292:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:1303:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4490,7 +4496,7 @@ ofproto/ofproto.c:1292:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:1292:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:1303:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_wait’:
@@ -4500,7 +4506,7 @@ ofproto/ofproto.c: In function ‘ofproto_wait’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:1407:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:1418:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4509,11 +4515,11 @@ ofproto/ofproto.c:1407:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:1407:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:1418:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_add_flow’:
-ofproto/ofproto.c:1681:29: warning: unused variable ‘temp’ [-Wunused-variable]
+ofproto/ofproto.c:1692:29: warning: unused variable ‘temp’ [-Wunused-variable]
      const struct cls_rule * temp;
                              ^
 In file included from ./lib/hmap.h:22:0,
@@ -4527,7 +4533,7 @@ ofproto/ofproto.c: In function ‘reinit_ports’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:1798:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:1809:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4536,7 +4542,7 @@ ofproto/ofproto.c:1798:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:1798:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:1809:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_get_port’:
@@ -4546,7 +4552,7 @@ ofproto/ofproto.c: In function ‘ofproto_get_port’:
 ./lib/hmap.h:122:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first_in_bucket(HMAP, HASH), MEMBER); \
           ^
-ofproto/ofproto.c:2062:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET’
+ofproto/ofproto.c:2073:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET’
      HMAP_FOR_EACH_IN_BUCKET (port, hmap_node,
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4555,7 +4561,7 @@ ofproto/ofproto.c:2062:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET
 ./lib/hmap.h:124:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next_in_bucket(&(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:2062:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET’
+ofproto/ofproto.c:2073:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET’
      HMAP_FOR_EACH_IN_BUCKET (port, hmap_node,
      ^
 ofproto/ofproto.c: In function ‘init_ports’:
@@ -4568,7 +4574,7 @@ ofproto/ofproto.c: In function ‘init_ports’:
 ./lib/shash.h:42:5: note: in expansion of macro ‘HMAP_FOR_EACH_SAFE’
      HMAP_FOR_EACH_SAFE (SHASH_NODE, NEXT, node, &(SHASH)->map)
      ^
-ofproto/ofproto.c:2171:5: note: in expansion of macro ‘SHASH_FOR_EACH_SAFE’
+ofproto/ofproto.c:2182:5: note: in expansion of macro ‘SHASH_FOR_EACH_SAFE’
      SHASH_FOR_EACH_SAFE(node, next, &init_ofp_ports) {
      ^
 ofproto/ofproto.c: In function ‘find_min_mtu’:
@@ -4578,7 +4584,7 @@ ofproto/ofproto.c: In function ‘find_min_mtu’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:2193:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2204:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4587,7 +4593,7 @@ ofproto/ofproto.c:2193:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:2193:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2204:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ofproto/ofproto.c: In function ‘update_mtu’:
@@ -4597,7 +4603,7 @@ ofproto/ofproto.c: In function ‘update_mtu’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:2245:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2256:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4606,7 +4612,7 @@ ofproto/ofproto.c:2245:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:2245:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2256:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
 ofproto/ofproto.c: In function ‘handle_features_request’:
@@ -4616,7 +4622,7 @@ ofproto/ofproto.c: In function ‘handle_features_request’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:2420:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2431:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (port, hmap_node, &ofproto->ports) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4625,11 +4631,11 @@ ofproto/ofproto.c:2420:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:2420:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2431:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (port, hmap_node, &ofproto->ports) {
      ^
 ofproto/ofproto.c: In function ‘handle_table_stats_request’:
-ofproto/ofproto.c:2708:9: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:2719:9: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
          char buf[100]="";
          ^
 In file included from ./lib/hmap.h:22:0,
@@ -4643,7 +4649,7 @@ ofproto/ofproto.c: In function ‘handle_port_stats_request’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:2763:9: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2774:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (port, hmap_node, &p->ports) {
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4652,7 +4658,7 @@ ofproto/ofproto.c:2763:9: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:2763:9: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2774:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (port, hmap_node, &p->ports) {
          ^
 ofproto/ofproto.c: In function ‘handle_port_desc_stats_request’:
@@ -4662,7 +4668,7 @@ ofproto/ofproto.c: In function ‘handle_port_desc_stats_request’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:2784:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2795:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (port, hmap_node, &p->ports) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4671,18 +4677,18 @@ ofproto/ofproto.c:2784:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:2784:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:2795:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (port, hmap_node, &p->ports) {
      ^
 ofproto/ofproto.c: In function ‘collect_rules_loose’:
-ofproto/ofproto.c:2924:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:2936:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      int buf_size=SGX_femt_ccfe_c(ofproto->bridge_id, ofproto->n_tables,table_id,match);
      ^
 ofproto/ofproto.c: In function ‘collect_rules_strict’:
-ofproto/ofproto.c:3019:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:3031:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      int buf_size;
      ^
-ofproto/ofproto.c:3026:9: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:3038:9: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
          int lp;
          ^
 In file included from ./lib/hmap.h:22:0,
@@ -4696,7 +4702,7 @@ ofproto/ofproto.c: In function ‘handle_flow_stats_request’:
 ./lib/list.h:60:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
           ^
-ofproto/ofproto.c:3085:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:3097:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, &rules) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4705,11 +4711,11 @@ ofproto/ofproto.c:3085:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:62:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(ITER, (ITER)->MEMBER.next, MEMBER))
           ^
-ofproto/ofproto.c:3085:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:3097:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, &rules) {
      ^
 ofproto/ofproto.c: In function ‘flow_stats_ds’:
-ofproto/ofproto.c:3148:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:3160:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      struct match megamatch;
      ^
 In file included from ./lib/hmap.h:22:0,
@@ -4723,7 +4729,7 @@ ofproto/ofproto.c: In function ‘handle_aggregate_stats_request’:
 ./lib/list.h:60:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
           ^
-ofproto/ofproto.c:3247:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:3259:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, &rules) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4732,7 +4738,7 @@ ofproto/ofproto.c:3247:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:62:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(ITER, (ITER)->MEMBER.next, MEMBER))
           ^
-ofproto/ofproto.c:3247:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:3259:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, &rules) {
      ^
 ofproto/ofproto.c: In function ‘handle_queue_stats_request’:
@@ -4742,7 +4748,7 @@ ofproto/ofproto.c: In function ‘handle_queue_stats_request’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:3350:9: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:3362:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (port, hmap_node, &ofproto->ports) {
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4751,7 +4757,7 @@ ofproto/ofproto.c:3350:9: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:3350:9: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:3362:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (port, hmap_node, &ofproto->ports) {
          ^
 ofproto/ofproto.c: In function ‘is_flow_deletion_pending’:
@@ -4761,7 +4767,7 @@ ofproto/ofproto.c: In function ‘is_flow_deletion_pending’:
 ./lib/hmap.h:117:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first_with_hash(HMAP, HASH), MEMBER); \
           ^
-ofproto/ofproto.c:3384:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto.c:3396:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
          HMAP_FOR_EACH_WITH_HASH (op, hmap_node,
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4770,11 +4776,11 @@ ofproto/ofproto.c:3384:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH
 ./lib/hmap.h:119:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next_with_hash(&(NODE)->MEMBER),   \
           ^
-ofproto/ofproto.c:3384:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto.c:3396:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
          HMAP_FOR_EACH_WITH_HASH (op, hmap_node,
          ^
 ofproto/ofproto.c: In function ‘add_flow’:
-ofproto/ofproto.c:3424:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:3436:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   struct ofopgroup *group;
   ^
 In file included from ./lib/hmap.h:22:0,
@@ -4788,7 +4794,7 @@ ofproto/ofproto.c: In function ‘modify_flows__’:
 ./lib/list.h:60:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
           ^
-ofproto/ofproto.c:3625:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:3637:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, rules) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4797,11 +4803,11 @@ ofproto/ofproto.c:3625:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:62:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(ITER, (ITER)->MEMBER.next, MEMBER))
           ^
-ofproto/ofproto.c:3625:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:3637:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, rules) {
      ^
 ofproto/ofproto.c: In function ‘delete_flows__’:
-ofproto/ofproto.c:3754:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:3766:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   struct rule *rule, *next;
   ^
 In file included from ./lib/hmap.h:22:0,
@@ -4814,7 +4820,7 @@ In file included from ./lib/hmap.h:22:0,
 ./lib/list.h:76:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);          \
           ^
-ofproto/ofproto.c:3758:5: note: in expansion of macro ‘LIST_FOR_EACH_SAFE’
+ofproto/ofproto.c:3770:5: note: in expansion of macro ‘LIST_FOR_EACH_SAFE’
      LIST_FOR_EACH_SAFE (rule, next, ofproto_node, rules) {
      ^
 In file included from ofproto/ofproto.c:62:0:
@@ -4822,15 +4828,15 @@ ofproto/ofproto.c: In function ‘handle_flow_mod__’:
 /home/jakob/ovs-sgx/benchmark/include/ovs-benchmark.h:14:13: warning: implicit declaration of function ‘write’ [-Wimplicit-function-declaration]
              write(5, buf, n); \
              ^
-ofproto/ofproto.c:3977:13: note: in expansion of macro ‘BENCHMARK’
-             BENCHMARK(modify_flow_strict, res, ofproto, ofconn, fm, oh);
+ofproto/ofproto.c:3969:13: note: in expansion of macro ‘BENCHMARK’
+             BENCHMARK(add_flow, res, ofproto, ofconn, fm, oh);
              ^
 ofproto/ofproto.c: In function ‘ofproto_compose_flow_refresh_update’:
-ofproto/ofproto.c:4190:52: warning: passing argument 2 of ‘SGX_minimatch_expand’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+ofproto/ofproto.c:4202:52: warning: passing argument 2 of ‘SGX_minimatch_expand’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      SGX_minimatch_expand(rule->ofproto->bridge_id, &rule->cr,&match);
                                                     ^
 In file included from ofproto/ofproto.c:59:0:
-/home/jakob/ovs-sgx/OFTonSGX/untrusted/app.h:42:6: note: expected ‘struct cls_rule *’ but argument is of type ‘const struct cls_rule *’
+/home/jakob/ovs-sgx/OFTonSGX/untrusted/app.h:45:6: note: expected ‘struct cls_rule *’ but argument is of type ‘const struct cls_rule *’
  void SGX_minimatch_expand(int bridge_id, struct cls_rule *o_cls_rule,struct match *dst);
       ^
 In file included from ./lib/hmap.h:22:0,
@@ -4844,7 +4850,7 @@ ofproto/ofproto.c: In function ‘ofmonitor_compose_refresh_updates’:
 ./lib/list.h:60:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
           ^
-ofproto/ofproto.c:4242:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:4254:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, rules) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4853,11 +4859,11 @@ ofproto/ofproto.c:4242:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:62:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(ITER, (ITER)->MEMBER.next, MEMBER))
           ^
-ofproto/ofproto.c:4242:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:4254:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, rules) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_collect_ofmonitor_refresh_rules’:
-ofproto/ofproto.c:4321:6: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:4333:6: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
       int lp;
       ^
 In file included from ./lib/hmap.h:22:0,
@@ -4870,7 +4876,7 @@ In file included from ./lib/hmap.h:22:0,
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:4333:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:4345:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (op, hmap_node, &ofproto->deletions) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4879,7 +4885,7 @@ ofproto/ofproto.c:4333:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:4333:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:4345:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (op, hmap_node, &ofproto->deletions) {
      ^
 ofproto/ofproto.c: In function ‘ofopgroup_complete’:
@@ -4889,7 +4895,7 @@ ofproto/ofproto.c: In function ‘ofopgroup_complete’:
 ./lib/list.h:60:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
           ^
-ofproto/ofproto.c:4691:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:4703:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (op, group_node, &group->ops) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4898,7 +4904,7 @@ ofproto/ofproto.c:4691:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:62:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(ITER, (ITER)->MEMBER.next, MEMBER))
           ^
-ofproto/ofproto.c:4691:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:4703:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (op, group_node, &group->ops) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4907,7 +4913,7 @@ ofproto/ofproto.c:4691:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:60:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
           ^
-ofproto/ofproto.c:4698:9: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:4710:9: note: in expansion of macro ‘LIST_FOR_EACH’
          LIST_FOR_EACH (op, group_node, &group->ops) {
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4916,7 +4922,7 @@ ofproto/ofproto.c:4698:9: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:62:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(ITER, (ITER)->MEMBER.next, MEMBER))
           ^
-ofproto/ofproto.c:4698:9: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto.c:4710:9: note: in expansion of macro ‘LIST_FOR_EACH’
          LIST_FOR_EACH (op, group_node, &group->ops) {
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4925,41 +4931,41 @@ ofproto/ofproto.c:4698:9: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:76:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);          \
           ^
-ofproto/ofproto.c:4722:5: note: in expansion of macro ‘LIST_FOR_EACH_SAFE’
+ofproto/ofproto.c:4734:5: note: in expansion of macro ‘LIST_FOR_EACH_SAFE’
      LIST_FOR_EACH_SAFE (op, next_op, group_node, &group->ops) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_evict’:
-ofproto/ofproto.c:5039:6: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:5051:6: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
       int i;
       ^
-ofproto/ofproto.c:5046:15: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:5058:15: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
                struct rule *rule =rule_from_cls_rule(cls_rule_t);
                ^
 ofproto/ofproto.c: In function ‘eviction_group_add_rule’:
-ofproto/ofproto.c:5253:13: warning: unused variable ‘result’ [-Wunused-variable]
+ofproto/ofproto.c:5265:13: warning: unused variable ‘result’ [-Wunused-variable]
       size_t result=SGX_evg_add_rule(rule->ofproto->bridge_id, rule->table_id, &rule->cr, eviction_group_priority(0),
              ^
-ofproto/ofproto.c:5237:21: warning: unused variable ‘ofproto’ [-Wunused-variable]
+ofproto/ofproto.c:5249:21: warning: unused variable ‘ofproto’ [-Wunused-variable]
      struct ofproto *ofproto = rule->ofproto;
                      ^
 ofproto/ofproto.c: At top level:
-ofproto/ofproto.c:5346:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+ofproto/ofproto.c:5358:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
  oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fields, size_t n_fields)
  ^
-ofproto/ofproto.c:5346:1: warning: conflicting types for ‘oftable_enable_eviction’
+ofproto/ofproto.c:5358:1: warning: conflicting types for ‘oftable_enable_eviction’
 ofproto/ofproto.c:173:13: note: previous declaration of ‘oftable_enable_eviction’ was here
  static void oftable_enable_eviction(int bridge_id, int table_id,
              ^
 ofproto/ofproto.c: In function ‘oftable_enable_eviction’:
-ofproto/ofproto.c:5383:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:5395:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      int buf_size;
      ^
 ofproto/ofproto.c: In function ‘oftable_remove_rule’:
-ofproto/ofproto.c:5402:21: warning: unused variable ‘ofproto’ [-Wunused-variable]
+ofproto/ofproto.c:5414:21: warning: unused variable ‘ofproto’ [-Wunused-variable]
      struct ofproto *ofproto = rule->ofproto;
                      ^
 ofproto/ofproto.c: In function ‘oftable_replace_rule’:
-ofproto/ofproto.c:5434:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:5446:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      struct cls_rule * sgx_cls_rule; //An auxiliary cls_rule....
      ^
 In file included from ./lib/hmap.h:22:0,
@@ -4973,7 +4979,7 @@ ofproto/ofproto.c: In function ‘ofproto_lookup’:
 ./lib/hmap.h:117:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first_with_hash(HMAP, HASH), MEMBER); \
           ^
-ofproto/ofproto.c:5472:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto.c:5484:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
      HMAP_FOR_EACH_WITH_HASH (ofproto, hmap_node, hash_string(name, 0),
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4982,7 +4988,7 @@ ofproto/ofproto.c:5472:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH
 ./lib/hmap.h:119:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next_with_hash(&(NODE)->MEMBER),   \
           ^
-ofproto/ofproto.c:5472:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto.c:5484:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
      HMAP_FOR_EACH_WITH_HASH (ofproto, hmap_node, hash_string(name, 0),
      ^
 ofproto/ofproto.c: In function ‘ofproto_unixctl_list’:
@@ -4992,7 +4998,7 @@ ofproto/ofproto.c: In function ‘ofproto_unixctl_list’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto.c:5489:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:5501:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, hmap_node, &all_ofprotos) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -5001,18 +5007,18 @@ ofproto/ofproto.c:5489:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto.c:5489:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto.c:5501:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, hmap_node, &all_ofprotos) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_get_vlan_usage’:
-ofproto/ofproto.c:5546:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+ofproto/ofproto.c:5558:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      int buf_size=SGX_ofproto_get_vlan_usage_c(ofproto->bridge_id);
      ^
 ofproto/ofproto.c: At top level:
-ofproto/ofproto.c:2829:1: warning: ‘first_matching_table’ defined but not used [-Wunused-function]
+ofproto/ofproto.c:2840:1: warning: ‘first_matching_table’ defined but not used [-Wunused-function]
  first_matching_table(const struct ofproto *ofproto, uint8_t table_id)
  ^
-ofproto/ofproto.c:2841:1: warning: ‘next_matching_table’ defined but not used [-Wunused-function]
+ofproto/ofproto.c:2852:1: warning: ‘next_matching_table’ defined but not used [-Wunused-function]
  next_matching_table(const struct ofproto *ofproto,
  ^
 In file included from ./lib/hmap.h:22:0,

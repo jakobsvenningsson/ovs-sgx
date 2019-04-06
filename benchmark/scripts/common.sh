@@ -5,7 +5,7 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 function get_targets() {
   local TARGETS=()
   if [ "$1" = "ALL" ]; then
-    TARGETS=("BASELINE" "SGX")
+    TARGETS=("BASELINE" "SGX" "HOTCALL")
   else
     TARGETS=$*
   fi
@@ -32,6 +32,9 @@ function compile() {
   local C_FLAGS=$@
   for flag in $C_FLAGS; do
     FLAGS+="-D $flag "
+    if [ $flag = "HOTCALL" ]; then
+      FLAGS+="-D SGX"
+    fi
   done
 
   echo "Compiling OVS with flags $FLAGS"
