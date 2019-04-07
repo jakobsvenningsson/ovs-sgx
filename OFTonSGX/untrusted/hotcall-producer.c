@@ -11,11 +11,12 @@ static async_ecall ctx;
 
 void
 make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret){
+
     ctx->function = function;
     ctx->args     = args;
     ctx->ret      = ret;
-    ctx->run      = true;
     ctx->is_done  = false;
+    ctx->run      = true;
 
     while (1) {
         #ifdef TIMEOUT
