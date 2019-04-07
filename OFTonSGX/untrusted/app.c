@@ -20,16 +20,15 @@
 sgx_enclave_id_t global_eid        = 0;
 static bool enclave_is_initialized = false;
 static int bridge_counter = 0;
-
-//    printf("%s\n", #f); \
-//     printf("done %s\n", #f)
+//    printf("done %s\n", #f)
+//    printf("%s\n", #f);
 #ifdef HOTCALL
 # define ECALL(f, has_return, n_args, args ...) \
     argument_list arg_list; \
     void * return_val; \
     compile_arg_list(&return_val, &arg_list, has_return, n_args, args); \
     make_hotcall(&ctx, hotcall_ ## f, &arg_list, return_val)
-# define CAST(X) &X
+    # define CAST(X) &X
 #else
 # define ECALL(f, has_return, n_args, args ...) \
     f(global_eid, args);
@@ -113,7 +112,7 @@ SGX_cls_rule_destroy(int bridge_id, struct cls_rule * o_cls_rule){
 // 6. cls_rule_hash
 uint32_t
 SGX_cls_rule_hash(int bridge_id, const struct cls_rule * o_cls_rule, uint32_t basis){
-    int ecall_return;
+    uint32_t ecall_return;
     ECALL(ecall_cls_rule_hash, true, 3, &ecall_return, CAST(bridge_id), o_cls_rule, CAST(basis));
     return ecall_return;
 }
@@ -227,7 +226,6 @@ unsigned int
 SGX_cr_priority(int bridge_id, const struct cls_rule * o_cls_rule){
     unsigned ecall_return;
     ECALL(ecall_cr_priority, true, 2, &ecall_return, CAST(bridge_id), o_cls_rule);
-    printf("RET %d\n", ecall_return);
     return ecall_return;
 }
 
@@ -246,7 +244,6 @@ int
 SGX_femt_ccfe_c(int bridge_id, int ofproto_n_tables, uint8_t table_id, const struct match * match){
     int ecall_return;
     ECALL(ecall_femt_ccfe_c, true, 4, &ecall_return, CAST(bridge_id), CAST(ofproto_n_tables), CAST(table_id), match);
-    printf("c: %d\n", ecall_return);
     return ecall_return;
 }
 
