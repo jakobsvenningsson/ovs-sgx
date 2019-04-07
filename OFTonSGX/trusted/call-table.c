@@ -127,7 +127,7 @@ execute_function(int function, argument_list * args, void *ret){
           (struct cls_rule *) args->args[2],
           *((uint32_t *) args->args[3]),
           *((uint32_t *) args->args[4]),
-          (struct heap_node *) args->args[5]);
+          *((struct heap_node *) args->args[5]));
             break;
         case hotcall_ecall_oftable_enable_eviction:
             ecall_oftable_enable_eviction(*((int *) args->args[0]), *((int *) args->args[1]),

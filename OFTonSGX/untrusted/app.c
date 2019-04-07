@@ -159,10 +159,10 @@ SGX_eviction_fields_enable(int bridge_id, int table_id){
 // 12.Add a rule to a eviction group
 size_t
 SGX_evg_add_rule(int bridge_id, int table_id, struct cls_rule * o_cls_rule, uint32_t priority,
-  uint32_t rule_evict_prioriy, struct heap_node * rule_evg_node){
+  uint32_t rule_evict_prioriy, struct heap_node rule_evg_node){
     size_t ecall_return;
     ECALL(ecall_evg_add_rule, true, 6, &ecall_return, CAST(bridge_id), CAST(table_id), o_cls_rule, CAST(priority),
-      CAST(rule_evict_prioriy), rule_evg_node);
+      CAST(rule_evict_prioriy), CAST(rule_evg_node));
     return ecall_return;
 }
 

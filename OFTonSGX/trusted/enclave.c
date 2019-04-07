@@ -235,14 +235,14 @@ eviction_group_hash_rule(int bridge_id, int table_id, struct cls_rule * cls_rule
 size_t
 ecall_evg_add_rule(int bridge_id, int table_id, struct cls_rule * o_cls_rule, uint32_t priority,
   uint32_t rule_evict_prioriy,
-  struct heap_node *rule_evg_node){
+  struct heap_node rule_evg_node){
     struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
     struct eviction_group * evg;
 
     evg = ecall_evg_find(bridge_id, table_id, eviction_group_hash_rule(bridge_id, table_id,
           &sgx_cls_rule->cls_rule), priority);
     sgx_cls_rule->evict_group   = evg;
-    sgx_cls_rule->rule_evg_node = *rule_evg_node;
+    sgx_cls_rule->rule_evg_node = rule_evg_node;
     heap_insert_ovs(&evg->rules, &sgx_cls_rule->rule_evg_node, rule_evict_prioriy);
     size_t n_rules      = (size_t) heap_count_ovs(&evg->rules);
     size_t new_priority = (MIN(UINT16_MAX, n_rules) << 16) | random_uint16();

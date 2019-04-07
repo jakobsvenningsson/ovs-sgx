@@ -34,7 +34,7 @@ int SGX_cls_count(int bridge_id, int table_id);
 int SGX_eviction_fields_enable(int bridge_id, int table_id);
 void SGX_table_mflows_set(int bridge_id, int table_id,unsigned int value);
 size_t SGX_evg_add_rule(int bridge_id, int table_id, struct cls_rule *o_cls_rule,uint32_t priority,
-		uint32_t rule_evict_prioriy,struct heap_node *rule_evg_node);
+		uint32_t rule_evict_prioriy,struct heap_node rule_evg_node);
 void SGX_evg_group_resize(int bridge_id, int table_id,struct cls_rule *o_cls_rule,size_t priority, struct eviction_group *evg);
 int SGX_evg_remove_rule(int bridge_id, int table_id,struct cls_rule *o_cls_rule);
 void SGX_cls_remove(int bridge_id, int table_id,struct cls_rule *o_cls_rule);
