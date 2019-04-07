@@ -8,6 +8,7 @@ enclave {
 
 	untrusted {
 		include "ocall.h"
+		include "hotcall-producer.h"
 		void ocall_print([in, string] const char *str);
 		void ocall_sleep();
 	};

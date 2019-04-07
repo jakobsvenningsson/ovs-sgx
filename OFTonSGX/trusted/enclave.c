@@ -441,6 +441,7 @@ ecall_femt_ccfe_c(int bridge_id, int ofproto_n_tables, uint8_t table_id, const s
         }
     }
     cls_rule_destroy(&cr);
+    printf("COUNT %d\n", count);
     return count;
 }
 
