@@ -33,7 +33,7 @@ int ENCLAVE_LOG(char* buf, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   ret = vsnprintf(buf, BUFSIZ, fmt, ap);
-	printf("ENCLAVE LOG: %s", buf);
+  printf("ENCLAVE LOG: %s", buf);
   va_end(ap);
   #endif
   return ret;

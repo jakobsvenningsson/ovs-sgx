@@ -1,5 +1,7 @@
 #include "call-table.h"
 #include "ofproto-provider.h"
+#include "enclave_t.h"
+
 
 void
 execute_function(int function, argument_list * args, void *ret){
@@ -18,7 +20,7 @@ execute_function(int function, argument_list * args, void *ret){
             *((int *) ret) = ecall_cr_rule_overlaps(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule *) args->args[2]);
             break;
         case hotcall_ecall_readonly_set:
-            ecall_readonly_set(*((int *) args->args[0]), *((uint8_t *) args->args[1]));
+            ecall_readonly_set(*((int *) args->args[0]), *((int *) args->args[1]));
             break;
         case hotcall_ecall_oftable_set_name:
             ecall_oftable_set_name(*((int *) args->args[0]), *((int *) args->args[1]), (char *) args->args[2]);
@@ -61,10 +63,10 @@ execute_function(int function, argument_list * args, void *ret){
             *((enum oftable_flags *) ret) = ecall_rule_get_flags(*((int *) args->args[0]), *((int *) args->args[1]));
             break;
         case hotcall_ecall_table_name:
-            ecall_table_name(*((int *) args->args[0]), *((int *) args->args[1]), (char *) args->args[2], *((size_t *) args->args[1]));
+            ecall_table_name(*((int *) args->args[0]), *((int *) args->args[1]), (char *) args->args[2], *((size_t *) args->args[3]));
             break;
         case hotcall_ecall_femt_ccfe_c:
-            ecall_femt_ccfe_c(*((int *) args->args[0]), *((int *) args->args[1]), *((uint8_t *) args->args[2]), (const struct match *) args->args[3]);
+            *((int *) ret) = ecall_femt_ccfe_c( *((int *) args->args[0]), *((int *) args->args[1]), *((uint8_t *) args->args[2]), (const struct match *) args->args[3]);
             break;
         case hotcall_ecall_femt_ccfe_r:
             ecall_femt_ccfe_r(*((int *) args->args[0]), *((int *) args->args[1]),
@@ -87,21 +89,20 @@ execute_function(int function, argument_list * args, void *ret){
             ecall_fet_ccfe_r(*((int *) args->args[0]), (struct cls_rule **) args->args[1], *((int *) args->args[2]));
             break;
         case hotcall_ecall_cls_rule_hash:
-            ecall_cls_rule_hash(*((int *) args->args[0]), (const struct cls_rule *) args->args[1], *((uint32_t *) args->args[2]));
+            *((uint32_t *) ret) = ecall_cls_rule_hash(*((int *) args->args[0]), (const struct cls_rule *) args->args[1], *((uint32_t *) args->args[2]));
             break;
         case hotcall_ecall_cls_rule_equal:
             *((int *) ret) = ecall_cls_rule_equal(*((int *) args->args[0]), (const struct cls_rule *) args->args[1],
           (const struct cls_rule *) args->args[2]);
             break;
         case hotcall_ecall_choose_rule_to_evict:
-            ecall_choose_rule_to_evict(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule *) args->args[2]);
+            ecall_choose_rule_to_evict(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule **) args->args[2]);
             break;
         case hotcall_ecall_choose_rule_to_evict_p:
-            ecall_choose_rule_to_evict_p(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule *) args->args[2]);
+            *((struct cls_rule **) ret) = ecall_choose_rule_to_evict_p(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule **) args->args[2], (struct cls_rule *) args->args[3]);
             break;
         case hotcall_ecall_collect_ofmonitor_util_c:
-            *((int *) ret) =
-          ecall_collect_ofmonitor_util_c(*((int *) args->args[0]), *((int *) args->args[1]), *((int *) args->args[2]),
+             *((int *) ret) = ecall_collect_ofmonitor_util_c(*((int *) args->args[0]), *((int *) args->args[1]), *((int *) args->args[2]),
           (const struct minimatch *) args->args[3]);
             break;
         case hotcall_ecall_collect_ofmonitor_util_r:
@@ -110,8 +111,7 @@ execute_function(int function, argument_list * args, void *ret){
           (const struct minimatch *) args->args[5]);
             break;
         case hotcall_ecall_cls_rule_is_loose_match:
-            *((int *) ret) =
-          ecall_cls_rule_is_loose_match(*((int *) args->args[0]), (struct cls_rule *) args->args[1], (const struct minimatch *) args->args[2]);
+            *((int *) ret) = ecall_cls_rule_is_loose_match(*((int *) args->args[0]), (struct cls_rule *) args->args[1], (const struct minimatch *) args->args[2]);
             break;
         case hotcall_ecall_minimask_get_vid_mask:
             *((uint16_t *) ret) = ecall_minimask_get_vid_mask(*((int *) args->args[0]), (struct cls_rule *) args->args[1]);
@@ -120,7 +120,7 @@ execute_function(int function, argument_list * args, void *ret){
             *((uint16_t *) ret) = ecall_miniflow_get_vid(*((int *) args->args[0]), (struct cls_rule *) args->args[1]);
             break;
         case hotcall_ecall_evg_group_resize:
-            ecall_evg_group_resize(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule *) args->args[2], *((size_t *) args->args[3]));
+            ecall_evg_group_resize(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule *) args->args[2], *((size_t *) args->args[3]), (struct eviction_group *) args->args[4]);
             break;
         case hotcall_ecall_evg_add_rule:
             *((size_t *) ret) = ecall_evg_add_rule(*((int *) args->args[0]), *((int *) args->args[1]),
@@ -133,7 +133,7 @@ execute_function(int function, argument_list * args, void *ret){
             ecall_oftable_enable_eviction(*((int *) args->args[0]), *((int *) args->args[1]),
           (const struct mf_subfield *) args->args[2],
           *((size_t *) args->args[3]),
-          *((uint32_t *) args->args[4]));
+          *((uint32_t *) args->args[4]), (bool *) args->args[5]);
             break;
         case hotcall_ecall_ccfe_c:
             *((int *) ret) = ecall_ccfe_c(*((int *) args->args[0]), *((int *) args->args[1]));
@@ -159,9 +159,9 @@ execute_function(int function, argument_list * args, void *ret){
           *((int *) args->args[2]));
             break;
         case hotcall_ecall_femt_c:
-            *((int *) ret) = ecall_femt_ccfe_c(*((int *) args->args[0]), *((int *) args->args[1]),
+            *((int *) ret) = ecall_femt_c(*((int *) args->args[0]), *((int *) args->args[1]),
           *((uint8_t *) args->args[2]),
-          (const struct match *) args->args[3]);
+          (const struct match *) args->args[3], *((unsigned int *) args->args[4]));
             break;
         case hotcall_ecall_femt_r:
             ecall_femt_r(*((int *) args->args[0]), *((int *) args->args[1]),
@@ -178,9 +178,11 @@ execute_function(int function, argument_list * args, void *ret){
             ecall_miniflow_expand(*((int *) args->args[0]), (struct cls_rule *) args->args[1], (struct flow *) args->args[2]);
             break;
         case hotcall_ecall_rule_calculate_tag:
-            *((uint32_t *) ret) =
-          ecall_rule_calculate_tag(*((int *) args->args[0]), (struct cls_rule *) args->args[1], (const struct flow *) args->args[2],
+            *((uint32_t *) ret) = ecall_rule_calculate_tag(*((int *) args->args[0]), (struct cls_rule *) args->args[1], (const struct flow *) args->args[2],
           *((int *) args->args[3]));
+            break;
+        case hotcall_ecall_rule_calculate_tag_s:
+            *((uint32_t *) ret) = ecall_rule_calculate_tag_s(*((int *) args->args[0]), *((int *) args->args[1]), (const struct flow *) args->args[2]);
             break;
         case hotcall_ecall_table_update_taggable:
             *((int *) ret) = ecall_table_update_taggable(*((int *) args->args[0]), *((uint8_t *) args->args[1]));
@@ -200,7 +202,16 @@ execute_function(int function, argument_list * args, void *ret){
           (struct cls_rule *) args->args[2]);
             break;
         case hotcall_ecall_cls_rule_priority:
-            *((unsigned int *) ret) = ecall_cls_rule_priority(*((int *) args->args[0]), (struct cls_rule *) args->args[1]);
+            *((unsigned *) ret) = ecall_cls_rule_priority(*((int *) args->args[0]), (struct cls_rule *) args->args[1]);
+            break;
+        case hotcall_ecall_desfet_ccfes_c:
+            *((int *) ret) = ecall_desfet_ccfes_c(*((int *) args->args[0]));
+            break;
+        case hotcall_ecall_desfet_ccfes_r:
+            ecall_desfet_ccfes_r(*((int *) args->args[0]), (struct cls_rule **) args->args[1], *((int *) args->args[2]));
+            break;
+        case hotcall_ecall_table_dpif_init:
+            ecall_table_dpif_init(*((int *) args->args[0]));
             break;
         /*case ecall_destroy_rule_if_overlaps:
             ecall_destroy_rule_if_overlaps(*((int *) args->args[1]), (struct cls_rule *) args->args[2]);

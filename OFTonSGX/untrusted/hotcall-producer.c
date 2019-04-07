@@ -11,11 +11,12 @@ static async_ecall ctx;
 
 void
 make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret){
+
     ctx->function = function;
     ctx->args     = args;
     ctx->ret      = ret;
-    ctx->run      = true;
     ctx->is_done  = false;
+    ctx->run      = true;
 
     while (1) {
         #ifdef TIMEOUT
@@ -42,77 +43,66 @@ make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret){
     }
 }
 
-argument_list * compile_arg_list(char *fmt, void **ret, int n_args, ...) {
-    argument_list *arg_list = malloc(sizeof(argument_list));
+void compile_arg_list(void **return_val, argument_list *arg_list, bool has_return, int n_args, ...) {
     arg_list->n_args = n_args;
     va_list args;
     va_start(args, n_args);
-    int i = 0;
-    while(*fmt) {
-        switch((*fmt)) {
-            case 'r':
-            {
-                void  *r = va_arg(args, void *);
-                *ret = r;
-                fmt++;
-                continue;
-            }
+
+    if(has_return) {
+        *return_val = va_arg(args, void *);
+    }
+    for(int i = 0; i < n_args; ++i) {
+        arg_list->args[i] = va_arg(args, void *);
+    }
+    va_end(args);
+}
+
+
+/* void cleanup_hotcall(char *fmt, argument_list * arg_list) {
+    int n_args = arg_list->n_args;
+    if(*fmt == 'r') {
+        fmt++;
+        n_args--;
+    }
+    for(int i = 0; i < n_args; ++i) {
+        switch(fmt[i]) {
             case 'p':
-            {
-                void  *p = va_arg(args, void *);
-                arg_list->args[i] = p;
-                break;
-            }
+                 break;
             case 'd':
             {
-                int *d = malloc(sizeof(int));
-                *d = va_arg(args, int);
-                arg_list->args[i] = (void *) d;
+                free((int *) arg_list->args[i]);
                 break;
             }
             case 'u':
             {
-                unsigned int *u = malloc(sizeof(unsigned int));
-                *u = va_arg(args, unsigned int);
-                arg_list->args[i] = (void *) u;
+                free((unsigned int *) arg_list->args[i]);
                 break;
             }
             case 't':
             {
-                size_t *t = malloc(sizeof(size_t));
-                arg_list->args[i] = (void *) t;
+                free((size_t *) arg_list->args[i]);
                 break;
             }
             case 'o':
             {
-                uint32_t *o = malloc(sizeof(uint32_t));
-                *o = va_arg(args, uint32_t);
-                arg_list->args[i] = (void *) o;
+                free((uint32_t *) arg_list->args[i]);
                 break;
             }
             case 'b':
             {
-                bool *b = malloc(sizeof(bool));
-                *b = va_arg(args, bool);
-                arg_list->args[i] = (void *) b;
+                free((bool *) arg_list->args[i]);
                 break;
             }
             case 'q':
             {
-                int *q = malloc(sizeof(int));
-                *q = va_arg(args, int);
-                arg_list->args[i] = (void *) q;
+                free((int *) arg_list->args[i]);
                 break;
             }
             default:
-                printf("unknown character in format string %c.\n", *fmt);
-                return NULL;
+                printf("Cleanup: unknown character in format string %c.\n", fmt[i]);
         }
-        i++;
-        fmt++;
     }
-    return arg_list;
-}
+} */
 
 
 void

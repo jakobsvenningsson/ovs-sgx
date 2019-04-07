@@ -74,7 +74,8 @@
 #define hotcall_ecall_classifier_replace_if_modifiable 63
 #define hotcall_ecall_ofproto_configure_table 64
 
-#define hotcall_ecall_SGX_table_dpif 65
+#define hotcall_ecall_table_dpif_init 65
+
 
 /*typedef struct {
   int n_args;
