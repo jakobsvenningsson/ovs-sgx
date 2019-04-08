@@ -1095,24 +1095,19 @@ ecall_ofproto_get_vlan_r(int bridge_id, uint16_t * buf, int elem){
 size_t
 ecall_get_cls_rules(int bridge_id, int table_id, size_t start_index, size_t end_index, struct cls_rule ** buf, size_t buf_size, size_t *n_rules) {
 
-    size_t n = 0;
-    size_t i = 0;
+    size_t n = 0, i = 0;
     struct cls_cursor cursor;
     struct sgx_cls_rule * rule;
     cls_cursor_init(&cursor, &SGX_oftables[bridge_id][table_id].cls, NULL);
     CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
+        bool buffer_is_full = n >= buf_size;
         // We only want to fetch the rules between [start, end)
-        if(i < start_index || (end_index != -1 && i >= end_index)) {
-            i++;
-            continue;
-        }
-        // Check if the provided buffer has space for the next rule
-        if(n >= buf_size) {
-            i++;
+        bool is_outside_range = i < start_index || (end_index != -1 && i >= end_index);
+        i++;
+        if(is_outside_range || buffer_is_full) {
             continue;
         }
         buf[n++] = rule->o_cls_rule;
-        i++;
     }
     *n_rules = i;
     return n;
@@ -1170,4 +1165,37 @@ void ecall_eviction_group_add_rules(int bridge_id,
                            rule_priorities[i],
                            evg_nodes[i]);
     }
+}
+
+
+
+size_t
+ecall_ofproto_get_vlan_usage(int bridge_id,
+                           size_t buf_size,
+                           uint16_t *vlan_buffer,
+                           size_t start_index,
+                           size_t end_index,
+                           size_t *n_vlan)
+{
+    struct oftable * oftable;
+    size_t i = 0, n = 0;
+    for (size_t i = 0; i < SGX_n_tables[bridge_id]; i++) {
+        const struct cls_table * table;
+        HMAP_FOR_EACH(table, hmap_node, &oftable->cls.tables){
+            if (minimask_get_vid_mask(&table->mask) == VLAN_VID_MASK) {
+                const struct cls_rule * rule;
+                HMAP_FOR_EACH(rule, hmap_node, &table->rules){
+                    bool buffer_is_full = n >= buf_size;
+                    bool is_outside_range = i < start_index || (end_index != -1 && i >= end_index);
+                    i++;
+                    if(is_outside_range || buffer_is_full) {
+                        continue;
+                    }
+                    vlan_buffer[n++] = miniflow_get_vid(&rule->match.flow);
+                }
+            }
+        }
+    }
+    *n_vlan = i;
+    return n;
 }

@@ -69,6 +69,7 @@
 #define hotcall_ecall_get_cls_rules 59
 #define hotcall_ecall_get_cls_rules_and_enable_eviction 60
 #define hotcall_ecall_eviction_group_add_rules 61
+#define hotcall_ecall_ofproto_get_vlan_usage 62
 //#define hotcall_ecall_destroy_rule_if_overlaps 59
 //#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
 //#define hotcall_ecall_miniflow_expand_and_tag 61

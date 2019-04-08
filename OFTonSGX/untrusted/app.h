@@ -48,6 +48,14 @@ void SGX_eviction_group_add_rules(int bridge_id,
 								  uint32_t *rule_priorities,
 								  uint32_t group_priority);
 
+size_t
+SGX_ofproto_get_vlan_usage(int bridge_id,
+                         size_t default_buffer_size,
+                         uint16_t *vlan_buffer,
+                         size_t start_index,
+                         size_t end_index,
+                         size_t *n_vlan);
+
 
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);

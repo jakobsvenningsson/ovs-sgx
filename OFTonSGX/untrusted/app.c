@@ -566,3 +566,25 @@ SGX_eviction_group_add_rules(int bridge_id,
           CAST(group_priority));
 
 }
+
+size_t
+SGX_ofproto_get_vlan_usage(int bridge_id,
+                           size_t default_buffer_size,
+                           uint16_t *vlan_buffer,
+                           size_t start_index,
+                           size_t end_index,
+                           size_t *n_vlan)
+{
+    size_t n;
+    ECALL(ecall_ofproto_get_vlan_usage,
+          true,
+          6,
+          &n,
+          CAST(bridge_id),
+          CAST(default_buffer_size),
+          vlan_buffer,
+          CAST(start_index),
+          CAST(end_index),
+          n_vlan);
+    return n;
+}

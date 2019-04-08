@@ -236,6 +236,15 @@ execute_function(int function, argument_list * args, void *ret){
                                            (uint32_t *) args->args[5],
                                            *((uint32_t *) args->args[6]));
             break;
+        case hotcall_ecall_ofproto_get_vlan_usage:
+            *((size_t *) ret) = ecall_ofproto_get_vlan_usage(*((int *) args->args[0]),
+                                                             *((size_t *) args->args[1]),
+                                                             (uint16_t *) args->args[2],
+                                                             *((size_t *) args->args[3]),
+                                                             *((size_t *) args->args[4]),
+                                                             (size_t *) args->args[5]);
+            break;
+
 
 
         /*case ecall_destroy_rule_if_overlaps:
