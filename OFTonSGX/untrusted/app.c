@@ -588,3 +588,18 @@ SGX_ofproto_get_vlan_usage(int bridge_id,
           n_vlan);
     return n;
 }
+
+size_t
+SGX_ofproto_flush(int bridge_id, struct cls_rule **cls_rules, uint32_t *hashes, size_t default_buffer_size, size_t start_index , size_t end_index, size_t *n_rules) {
+    size_t n;
+    ECALL(ecall_ofproto_flush,
+          7, true, &n,
+          CAST(bridge_id),
+          cls_rules,
+          hashes,
+          CAST(default_buffer_size),
+          start_index,
+          end_index,
+          n_rules);
+    return n;
+}

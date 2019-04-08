@@ -59,6 +59,15 @@ enclave {
 						                           size_t end_index,
 						                           [user_check] size_t *n_vlan);
 
+		public size_t ecall_ofproto_flush(int bridge_id,
+										  [user_check] struct cls_rule **cls_rules,
+										  [user_check] uint32_t *hashes,
+										  size_t default_buffer_size,
+										  size_t start_index,
+										  size_t end_index, 
+										  [user_check] size_t *n_rules);
+
+
 
 		public void ecall_ofproto_init_tables(int bridge_id, int n_tables);
 		public void ecall_readonly_set(int bridge_id, int table_id);

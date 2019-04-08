@@ -56,6 +56,15 @@ SGX_ofproto_get_vlan_usage(int bridge_id,
                          size_t end_index,
                          size_t *n_vlan);
 
+size_t
+SGX_ofproto_flush(int bridge_id,
+				  struct cls_rule **cls_rules,
+				  uint32_t *hashes,
+				  size_t default_buffer_size,
+				  size_t start_index,
+				  size_t end_index, 
+				  size_t *n_rules);
+
 
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);

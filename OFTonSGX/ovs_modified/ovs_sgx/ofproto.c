@@ -142,10 +142,11 @@ struct ofoperation {
     enum ofperr error;          /* 0 if no error. */
 };
 
+
 static struct ofoperation *ofoperation_create(struct ofopgroup *,
                                               struct rule *,
                                               enum ofoperation_type,
-                                              enum ofp_flow_removed_reason);
+                                              enum ofp_flow_removed_reason, uint32_t *hashes);
 static void ofoperation_destroy(struct ofoperation *);
 
 /* oftable. */
@@ -1101,13 +1102,46 @@ ofproto_flush__(struct ofproto *ofproto)
         CLS_CURSOR_FOR_EACH_SAFE (rule, next_rule, cr, &cursor) {
             if (!rule->pending) {
                 ofoperation_create(group, rule, OFOPERATION_DELETE,
-                                   OFPRR_DELETE);
+                                   OFPRR_DELETE, NULL);
                 oftable_remove_rule(rule);
                 ofproto->ofproto_class->rule_destruct(rule);
             }
         }
     }
+#elif OPTIMIZED
+    size_t default_buffer_size = 2, n_rules;
+    struct cls_rule *buf[default_buffer_size];
+    uint32_t hashes[default_buffer_size];
+
+    size_t n = SGX_ofproto_flush(ofproto->bridge_id, buf, hashes, default_buffer_size, 0, -1, &n_rules);
+
+    struct cls_rule **cls_rules = buf;
+    uint32_t *cls_hashes = hashes;
+    size_t leftover_rules = n_rules - n;
+
+    struct cls_rule *extended_buf[n_rules];
+    uint32_t extended_hashes[n_rules];
+
+    if(leftover_rules > 0) {
+        memcpy(extended_buf, buf, sizeof(buf));
+        memcpy(extended_hashes, hashes, sizeof(hashes));
+        n = SGX_ofproto_flush(ofproto->bridge_id, extended_buf + n, extended_hashes + n, leftover_rules, n, -1, &n_rules);
+        cls_rules = extended_buf;
+        cls_hashes = extended_hashes;
+        printf("%d\n", n);
+    }
+
+    for(size_t i = 0; i < n_rules; ++i){
+        struct rule *rule = rule_from_cls_rule(cls_rules[i]);
+        ofoperation_create(group, rule, OFOPERATION_DELETE,
+                           OFPRR_DELETE, hashes);
+       if (!list_is_empty(&rule->expirable)) {
+           list_remove(&rule->expirable);
+       }
+       ofproto->ofproto_class->rule_destruct(rule);
+   }
 #else
+    // Merge c and read together and return hash of each rule, and remo
     int buf_size;
     buf_size=SGX_fet_ccfes_c(ofproto->bridge_id);
 
@@ -1118,7 +1152,7 @@ ofproto_flush__(struct ofproto *ofproto)
     	for(lp=0;lp<buf_size;lp++){
     		struct rule *rule=rule_from_cls_rule(buf[lp]);
             ofoperation_create(group, rule, OFOPERATION_DELETE,
-                               OFPRR_DELETE);
+                               OFPRR_DELETE, NULL);
             oftable_remove_rule(rule);
             ofproto->ofproto_class->rule_destruct(rule);
 
@@ -1317,9 +1351,7 @@ ofproto_run(struct ofproto *p)
 
     case S_FLUSH:
         connmgr_run(p->connmgr, NULL);
-
         ofproto_flush__(p);
-
         if (list_is_empty(&p->pending) && hmap_is_empty(&p->deletions)) {
 
         	connmgr_flushed(p->connmgr);
@@ -1764,7 +1796,7 @@ ofproto_delete_flow(struct ofproto *ofproto,
     } else {
         /* Initiate deletion -> success. */
         struct ofopgroup *group = ofopgroup_create_unattached(ofproto);
-        ofoperation_create(group, rule, OFOPERATION_DELETE, OFPRR_DELETE);
+        ofoperation_create(group, rule, OFOPERATION_DELETE, OFPRR_DELETE, NULL);
         oftable_remove_rule(rule);
         ofproto->ofproto_class->rule_destruct(rule);
         ofopgroup_submit(group);
@@ -3568,7 +3600,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
 
 
         group = ofopgroup_create(ofproto, ofconn, request, fm->buffer_id);
-        op = ofoperation_create(group, rule, OFOPERATION_ADD, 0);
+        op = ofoperation_create(group, rule, OFOPERATION_ADD, 0, NULL);
         op->victim = victim;
 
         clock_gettime(CLOCK_REALTIME,&st);
@@ -3642,7 +3674,7 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
                       ? fm->new_cookie
                       : rule->flow_cookie);
 
-        op = ofoperation_create(group, rule, OFOPERATION_MODIFY, 0);
+        op = ofoperation_create(group, rule, OFOPERATION_MODIFY, 0, NULL);
         rule->flow_cookie = new_cookie;
         if (actions_changed) {
             op->ofpacts = rule->ofpacts;
@@ -3732,7 +3764,7 @@ delete_flow__(struct rule *rule, struct ofopgroup *group)
 
     ofproto_rule_send_removed(rule, OFPRR_DELETE);
 
-    ofoperation_create(group, rule, OFOPERATION_DELETE, OFPRR_DELETE);
+    ofoperation_create(group, rule, OFOPERATION_DELETE, OFPRR_DELETE, NULL);
 
     oftable_remove_rule(rule);
 
@@ -3872,7 +3904,7 @@ ofproto_rule_expire(struct rule *rule, uint8_t reason)
     ofproto_rule_send_removed(rule, reason);
 
     group = ofopgroup_create_unattached(ofproto);
-    ofoperation_create(group, rule, OFOPERATION_DELETE, reason);
+    ofoperation_create(group, rule, OFOPERATION_DELETE, reason, NULL);
     oftable_remove_rule(rule);
     ofproto->ofproto_class->rule_destruct(rule);
     ofopgroup_submit(group);
@@ -4847,7 +4879,7 @@ ofopgroup_complete(struct ofopgroup *group)
 static struct ofoperation *
 ofoperation_create(struct ofopgroup *group, struct rule *rule,
                    enum ofoperation_type type,
-                   enum ofp_flow_removed_reason reason)
+                   enum ofp_flow_removed_reason reason, uint32_t *hashes)
 {
     struct ofproto *ofproto = group->ofproto;
     struct ofoperation *op;
@@ -4867,10 +4899,9 @@ ofoperation_create(struct ofopgroup *group, struct rule *rule,
     if (type == OFOPERATION_DELETE) {
         hmap_insert(&ofproto->deletions, &op->hmap_node,
 #ifndef SGX
-                    cls_rule_hash(&rule->cr, rule->table_id));
-
+        cls_rule_hash(&rule->cr, rule->table_id));
 #else
-        			SGX_cls_rule_hash(rule->ofproto->bridge_id, &rule->cr, rule->table_id));
+        (hashes != NULL ? hashes : SGX_cls_rule_hash(rule->ofproto->bridge_id, &rule->cr, rule->table_id)));
 #endif
 
     }
@@ -5053,7 +5084,7 @@ ofproto_evict(struct ofproto *ofproto)
 
 
               ofoperation_create(group, rule,
-                                 OFOPERATION_DELETE, OFPRR_EVICTION);
+                                 OFOPERATION_DELETE, OFPRR_EVICTION, NULL);
 
               oftable_remove_rule(rule);
 
@@ -5374,11 +5405,9 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
         eviction_group_add_rule(rule);
     }
 #elif OPTIMIZED
-    bool no_change = false;
-    bool is_eviction_fields_enabled = false;
-    size_t default_buffer_size = 2;
+    bool no_change = false, is_eviction_fields_enabled = false;
+    size_t default_buffer_size = 2, n_rules;
     struct cls_rule *buf[default_buffer_size];
-    size_t n_rules;
     size_t n = SGX_get_cls_rules_and_enable_eviction(bridge_id,
                                                      table_id,
                                                      0,
@@ -5410,7 +5439,7 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
     uint32_t rule_priorities[n_rules];
 
     size_t m = 0;
-    for(int i = 0; i < n_rules; ++i) {
+    for(size_t i = 0; i < n_rules; ++i) {
         struct rule *rule = rule_from_cls_rule(cls_rules[i]);
         if(!(rule->hard_timeout || rule->idle_timeout)) {
             continue;
@@ -5586,6 +5615,23 @@ ofproto_get_vlan_usage(struct ofproto *ofproto, unsigned long int *vlan_bitmap)
                 }
             }
         }
+    }
+#elif OPTIMIZED
+    size_t default_buffer_size = 2, n_vlan;
+    uint16_t vlan_buffer[default_buffer_size];
+    size_t n = SGX_ofproto_get_vlan_usage(ofproto->bridge_id, vlan_buffer, 0, -1, default_buffer_size, &n_vlan);
+
+    uint16_t *buffer = vlan_buffer;
+    size_t leftover_vlan = n_vlan - n;
+    uint16_t extended_buffer[n_vlan];
+    if(leftover_vlan > 0) {
+        memcpy(extended_buffer, vlan_buffer, sizeof(vlan_buffer));
+        SGX_ofproto_get_vlan_usage(ofproto->bridge_id, extended_buffer + n, n, -1, leftover_vlan, &n_vlan);
+        buffer = extended_buffer;
+    }
+    for(size_t i = 0; i < n_vlan; ++i) {
+        bitmap_set1(vlan_bitmap, buffer[i]);
+        bitmap_set1(ofproto->vlan_bitmap, buffer[i]);
     }
 #else
    //1. first we determine the size of the buffer

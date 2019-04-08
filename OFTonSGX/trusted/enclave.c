@@ -441,7 +441,6 @@ ecall_femt_ccfe_c(int bridge_id, int ofproto_n_tables, uint8_t table_id, const s
         }
     }
     cls_rule_destroy(&cr);
-    printf("COUNT %d\n", count);
     return count;
 }
 
@@ -1197,5 +1196,34 @@ ecall_ofproto_get_vlan_usage(int bridge_id,
         }
     }
     *n_vlan = i;
+    return n;
+}
+
+
+
+size_t
+ecall_ofproto_flush(int bridge_id, struct cls_rule **cls_rules, uint32_t *hashes, size_t buf_size, size_t start_index, size_t end_index, size_t *n_rules) {
+
+    int count = 0, n = 0;
+    for (size_t i = 0; i < SGX_n_tables[bridge_id]; i++) {
+        struct sgx_cls_rule * rule, * next_rule;
+        struct cls_cursor cursor;
+        if (SGX_oftables[bridge_id][i].flags & OFTABLE_HIDDEN) {
+            continue;
+        }
+        cls_cursor_init(&cursor, &SGX_oftables[bridge_id][i].cls, NULL);
+        CLS_CURSOR_FOR_EACH_SAFE(rule, next_rule, cls_rule, &cursor){
+            bool buffer_is_full = n >= buf_size;
+            count++;
+            if(buffer_is_full) {
+                continue;
+            }
+            cls_rules[n] = rule->o_cls_rule;
+            hashes[n++] = ecall_cls_rule_hash(bridge_id, rule->o_cls_rule, i);
+            ecall_cls_remove(bridge_id, i, rule->o_cls_rule);
+            ecall_evg_remove_rule(bridge_id, i, rule->o_cls_rule);
+        }
+    }
+    *n_rules = count;
     return n;
 }

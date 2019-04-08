@@ -244,6 +244,15 @@ execute_function(int function, argument_list * args, void *ret){
                                                              *((size_t *) args->args[4]),
                                                              (size_t *) args->args[5]);
             break;
+        case hotcall_ecall_ofproto_flush:
+            *((size_t *) ret) = ecall_ofproto_flush(*((int *) args->args[0]),
+                                                        (struct cls_rule **) args->args[1],
+                                                        (uint32_t *) args->args[2],
+                                                        *((size_t *) args->args[3]),
+                                                        *((size_t *) args->args[4]),
+                                                        *((size_t *) args->args[5]),
+                                                        (size_t *) args->args[6]);
+            break;
 
 
 
