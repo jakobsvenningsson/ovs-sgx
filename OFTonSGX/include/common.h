@@ -66,13 +66,15 @@
 #define hotcall_ecall_ofproto_get_vlan_c 57
 #define hotcall_ecall_ofproto_get_vlan_r 58
 
-
-#define hotcall_ecall_destroy_rule_if_overlaps 59
-#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
-#define hotcall_ecall_miniflow_expand_and_tag 61
-#define hotcall_ecall_allocate_cls_rule_if_not_read_only 62
-#define hotcall_ecall_classifier_replace_if_modifiable 63
-#define hotcall_ecall_ofproto_configure_table 64
+#define hotcall_ecall_get_cls_rules 59
+#define hotcall_ecall_get_cls_rules_and_enable_eviction 60
+#define hotcall_ecall_eviction_group_add_rules 61
+//#define hotcall_ecall_destroy_rule_if_overlaps 59
+//#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
+//#define hotcall_ecall_miniflow_expand_and_tag 61
+//#define hotcall_ecall_allocate_cls_rule_if_not_read_only 62
+//#define hotcall_ecall_classifier_replace_if_modifiable 63
+//#define hotcall_ecall_ofproto_configure_table 64
 
 #define hotcall_ecall_table_dpif_init 65
 
@@ -95,7 +97,7 @@
 
 typedef struct {
     int n_args;
-    void *args[10];
+    void *args[12];
 } argument_list;
 
 

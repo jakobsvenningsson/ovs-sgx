@@ -5373,25 +5373,71 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
     CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
         eviction_group_add_rule(rule);
     }
+#elif OPTIMIZED
+    bool no_change = false;
+    bool is_eviction_fields_enabled = false;
+    size_t default_buffer_size = 2;
+    struct cls_rule *buf[default_buffer_size];
+    size_t n_rules;
+    size_t n = SGX_get_cls_rules_and_enable_eviction(bridge_id,
+                                                     table_id,
+                                                     0,
+                                                     -1,
+                                                     buf,
+                                                     default_buffer_size,
+                                                     &n_rules,
+                                                     fields,
+                                                     n_fields,
+                                                     random_uint32(),
+                                                     &no_change,
+                                                     &is_eviction_fields_enabled);
+    if(no_change || !is_eviction_fields_enabled) {
+        return;
+    }
+
+
+    struct cls_rule **cls_rules = buf;
+    size_t leftover_rules = n_rules - n;
+    struct cls_rule *extended_buf[n_rules];
+    if(leftover_rules > 0) {
+        memcpy(extended_buf, buf, sizeof(buf));
+        SGX_get_cls_rules(bridge_id, table_id, n, -1, extended_buf + n, leftover_rules, &n_rules);
+        cls_rules = extended_buf;
+    }
+
+    struct cls_rule *eviction_cls_rules[n_rules];
+    struct heap_node evg_nodes[n_rules];
+    uint32_t rule_priorities[n_rules];
+
+    size_t m = 0;
+    for(int i = 0; i < n_rules; ++i) {
+        struct rule *rule = rule_from_cls_rule(cls_rules[i]);
+        if(!(rule->hard_timeout || rule->idle_timeout)) {
+            continue;
+        }
+        eviction_cls_rules[m] = &rule->cr;
+        evg_nodes[m] = rule->evg_node;
+        rule_priorities[m] = rule_eviction_priority(rule);
+        ++m;
+    }
+    SGX_eviction_group_add_rules(bridge_id, table_id, m, eviction_cls_rules, evg_nodes, rule_priorities, eviction_group_priority(0));
 #else
     bool no_change = false;
     SGX_oftable_enable_eviction(bridge_id, table_id, fields, n_fields, random_uint32(), &no_change);
     if(no_change) {
       return;
     }
-
     int buf_size;
     buf_size=SGX_ccfe_c(bridge_id, table_id);
     if(buf_size){
         int lp;
-    	struct cls_rule *buf[buf_size];
-    	SGX_ccfe_r(bridge_id, buf,buf_size,table_id);
-    	for(lp=0;lp<buf_size;lp++){
-    		struct rule *rule = rule_from_cls_rule(buf[lp]);
-    		eviction_group_add_rule(rule);
-    	}
+        struct cls_rule *buf[buf_size];
+        SGX_ccfe_r(bridge_id, buf,buf_size,table_id);
+        for(lp=0;lp<buf_size;lp++){
+            struct rule *rule = rule_from_cls_rule(buf[lp]);
+            eviction_group_add_rule(rule);
+        }
     }
-
 #endif
 }
 

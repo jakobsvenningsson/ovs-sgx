@@ -500,3 +500,69 @@ void
 SGX_ofproto_get_vlan_usage__r(int bridge_id, uint16_t * buf, int elem){
     ECALL(ecall_ofproto_get_vlan_r, false, 3, CAST(bridge_id), buf, CAST(elem));
 }
+
+// Optimized calls
+
+size_t
+SGX_get_cls_rules(int bridge_id, int table_id, size_t start_index, size_t end_index, struct cls_rule ** buf, size_t buf_size, size_t *n_rules) {
+    size_t n;
+    ECALL(ecall_get_cls_rules, true, 6, &n, CAST(bridge_id), CAST(table_id), CAST(start_index), CAST(end_index), buf, CAST(buf_size), n_rules);
+    return n;
+}
+
+
+size_t
+SGX_get_cls_rules_and_enable_eviction(int bridge_id,
+											 int table_id,
+											 size_t start_index,
+											 size_t end_index,
+											 struct cls_rule ** buf,
+											 size_t buf_size,
+											 size_t *n_rules,
+										 	 const struct mf_subfield *fields,
+										 	 size_t n_fields,
+									 	 	 uint32_t random_v,
+								 		 	 bool *no_change,
+                                             bool *is_eviction_fields_enabled)
+{
+    size_t n;
+    ECALL(ecall_get_cls_rules_and_enable_eviction,
+          true,
+          12,
+          &n,
+          CAST(bridge_id),
+          CAST(table_id),
+          CAST(start_index),
+          CAST(end_index),
+          buf,
+          CAST(buf_size),
+          n_rules,
+          fields,
+          CAST(n_fields),
+          CAST(random_v),
+          no_change,
+          is_eviction_fields_enabled);
+    return n;
+}
+
+void
+SGX_eviction_group_add_rules(int bridge_id,
+                             int table_id,
+                             size_t n,
+                             struct cls_rule **cls_rules,
+                             struct heap_node *evg_nodes,
+                             uint32_t *rule_priorities,
+                             uint32_t group_priority)
+{
+    ECALL(ecall_eviction_group_add_rules,
+          false,
+          7,
+          CAST(bridge_id),
+          CAST(table_id),
+          CAST(n),
+          cls_rules,
+          evg_nodes,
+          rule_priorities,
+          CAST(group_priority));
+
+}

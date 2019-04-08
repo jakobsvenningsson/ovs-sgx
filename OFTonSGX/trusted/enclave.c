@@ -1090,3 +1090,84 @@ ecall_ofproto_get_vlan_r(int bridge_id, uint16_t * buf, int elem){
         }
     }
 }
+
+
+size_t
+ecall_get_cls_rules(int bridge_id, int table_id, size_t start_index, size_t end_index, struct cls_rule ** buf, size_t buf_size, size_t *n_rules) {
+
+    size_t n = 0;
+    size_t i = 0;
+    struct cls_cursor cursor;
+    struct sgx_cls_rule * rule;
+    cls_cursor_init(&cursor, &SGX_oftables[bridge_id][table_id].cls, NULL);
+    CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
+        // We only want to fetch the rules between [start, end)
+        if(i < start_index || (end_index != -1 && i >= end_index)) {
+            i++;
+            continue;
+        }
+        // Check if the provided buffer has space for the next rule
+        if(n >= buf_size) {
+            i++;
+            continue;
+        }
+        buf[n++] = rule->o_cls_rule;
+        i++;
+    }
+    *n_rules = i;
+    return n;
+}
+
+size_t ecall_get_cls_rules_and_enable_eviction(int bridge_id,
+											 int table_id,
+											 size_t start_index,
+											 size_t end_index,
+											 struct cls_rule ** buf,
+											 size_t buf_size,
+											 size_t *n_rules,
+										 	 const struct mf_subfield *fields,
+										 	 size_t n_fields,
+									 	 	 uint32_t random_v,
+								 		 	 bool *no_change,
+                                             bool *is_eviction_fields_enabled)
+{
+    ecall_oftable_enable_eviction(bridge_id, table_id, fields, n_fields, random_v, no_change);
+    *is_eviction_fields_enabled = ecall_eviction_fields_enable(bridge_id, table_id);
+    if(*no_change || !(*is_eviction_fields_enabled)) {
+      return 0;
+    }
+
+    return ecall_get_cls_rules(bridge_id, table_id, 0, -1, buf, buf_size, n_rules);
+}
+
+
+/*void ecall_eviction_group_add_rules(struct rule **rules, size_t n) {
+    for(int i = 0; i < n; ++i) {
+        struct rule *rule = rules[i];
+        if(ecall_eviction_fields_enable(rule->ofproto->bridge_id, rule->table_id)) {
+            ecall_evg_add_rule(rule->ofproto->bridge_id,
+                               rule->table_id, &rule->cr,
+                               eviction_group_priority(0),
+                               rule_eviction_priority(rule),
+                               rule->evg_node);
+        }
+    }
+}*/
+
+void ecall_eviction_group_add_rules(int bridge_id,
+                                           int table_id,
+                                           size_t n,
+                                           struct cls_rule **cls_rules,
+                                           struct heap_node *evg_nodes,
+                                           uint32_t *rule_priorities,
+                                           uint32_t group_priority)
+{
+    for(size_t i = 0; i < n; ++i) {
+        ecall_evg_add_rule(bridge_id,
+                           table_id,
+                           cls_rules[i],
+                           group_priority,
+                           rule_priorities[i],
+                           evg_nodes[i]);
+    }
+}

@@ -16,7 +16,38 @@ struct flow_wildcards;
 struct rul *out;
 ///
 
-void reg_log_func(void (*fun_p)(char *));
+// Optimized calls
+
+size_t SGX_get_cls_rules(int bridge_id,
+						 int table_id,
+						 size_t start_index,
+						 size_t end_index,
+						 struct cls_rule ** buf,
+						 size_t buf_size,
+						 size_t *n_rules);
+
+
+size_t SGX_get_cls_rules_and_enable_eviction(int bridge_id,
+											 int table_id,
+											 size_t start_index,
+											 size_t end_index,
+											 struct cls_rule ** buf,
+											 size_t buf_size,
+											 size_t *n_rules,
+										 	 const struct mf_subfield *fields,
+										 	 size_t n_fields,
+									 	 	 uint32_t random_v,
+								 		 	 bool *no_change,
+										 	 bool *is_eviction_fields_enabled);
+
+void SGX_eviction_group_add_rules(int bridge_id,
+								  int table_id,
+								  size_t n,
+								  struct cls_rule **cls_rules,
+								  struct heap_node *evg_nodes,
+								  uint32_t *rule_priorities,
+								  uint32_t group_priority);
+
 
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);
