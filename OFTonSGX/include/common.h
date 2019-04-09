@@ -55,7 +55,7 @@
 #define hotcall_ecall_cls_rule_format 46
 #define hotcall_ecall_miniflow_expand 47
 #define hotcall_ecall_rule_calculate_tag 48
-#define hotcall_ecall_sgx_table_dpif 49
+//#define hotcall_ecall_sgx_table_dpif 49
 #define hotcall_ecall_table_update_taggable 50
 #define hotcall_ecall_is_sgx_other_table 51
 #define hotcall_ecall_rule_calculate_tag_s 52
@@ -78,7 +78,7 @@
 //#define hotcall_ecall_classifier_replace_if_modifiable 63
 //#define hotcall_ecall_ofproto_configure_table 64
 
-#define hotcall_ecall_table_dpif_init 65
+//#define hotcall_ecall_table_dpif_init 65
 
 
 /*typedef struct {

@@ -64,7 +64,7 @@ enclave {
 										  [user_check] uint32_t *hashes,
 										  size_t default_buffer_size,
 										  size_t start_index,
-										  size_t end_index, 
+										  size_t end_index,
 										  [user_check] size_t *n_rules);
 
 
@@ -117,7 +117,6 @@ enclave {
 		public unsigned int ecall_cls_rule_format(int bridge_id, [user_check]const struct cls_rule *o_cls_rule,[user_check]struct match *megamatch);
 		public void ecall_miniflow_expand(int bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]struct flow *flow);
 		public uint32_t ecall_rule_calculate_tag(int bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]const struct flow *flow,int table_id);
-		public void ecall_sgx_table_dpif(int bridge_id, int n_tables);
 		public int ecall_table_update_taggable(int bridge_id, uint8_t table_id);
 		public int ecall_is_sgx_other_table(int bridge_id, int id);
 		public uint32_t ecall_rule_calculate_tag_s(int bridge_id, int id, [user_check]const struct flow *flow);

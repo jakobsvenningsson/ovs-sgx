@@ -194,9 +194,6 @@ execute_function(int function, argument_list * args, void *ret){
             ecall_cls_lookup(*((int *) args->args[0]), (struct cls_rule **) args->args[1], *((int *) args->args[2]), (const struct flow *) args->args[3],
           (struct flow_wildcards *) args->args[4]);
             break;
-        case hotcall_ecall_sgx_table_dpif:
-            ecall_sgx_table_dpif(*((int *) args->args[0]), *((int *) args->args[1]));
-            break;
         case hotcall_ecall_evg_remove_rule:
             *((int *) ret) = ecall_evg_remove_rule(*((int *) args->args[0]), *((int *) args->args[1]),
           (struct cls_rule *) args->args[2]);
@@ -210,22 +207,31 @@ execute_function(int function, argument_list * args, void *ret){
         case hotcall_ecall_desfet_ccfes_r:
             ecall_desfet_ccfes_r(*((int *) args->args[0]), (struct cls_rule **) args->args[1], *((int *) args->args[2]));
             break;
-        case hotcall_ecall_table_dpif_init:
+        /*case hotcall_ecall_table_dpif_init:
             ecall_table_dpif_init(*((int *) args->args[0]));
-            break;
+            break;*/
         case hotcall_ecall_get_cls_rules:
-            *((size_t *) ret) = ecall_get_cls_rules(*((int *) args->args[0]), *((int *) args->args[1]),
-                                                    *((size_t *) args->args[2]), *((size_t *) args->args[3]),
-                                                    (struct cls_rule **) args->args[4], *((size_t *) args->args[5]),
+            *((size_t *) ret) = ecall_get_cls_rules(*((int *) args->args[0]),
+                                                    *((int *) args->args[1]),
+                                                    *((size_t *) args->args[2]),
+                                                    *((size_t *) args->args[3]),
+                                                    (struct cls_rule **) args->args[4],
+                                                    *((size_t *) args->args[5]),
                                                     (size_t *) args->args[6]);
             break;
         case hotcall_ecall_get_cls_rules_and_enable_eviction:
-            *((size_t *) ret) = ecall_get_cls_rules_and_enable_eviction(*((int *) args->args[0]), *((int *) args->args[1]),
-                                                                        *((size_t *) args->args[2]), *((size_t *) args->args[3]),
-                                                                        (struct cls_rule **) args->args[4], *((size_t *) args->args[5]),
-                                                                        (size_t *) args->args[6], (const struct mf_subfield *) args->args[7],
-                                                                        *((size_t *) args->args[8]), *((uint32_t *) args->args[9]),
-                                                                        (bool *) args->args[10], (bool *) args->args[11]);
+            *((size_t *) ret) = ecall_get_cls_rules_and_enable_eviction(*((int *) args->args[0]),
+                                                                        *((int *) args->args[1]),
+                                                                        *((size_t *) args->args[2]),
+                                                                        *((size_t *) args->args[3]),
+                                                                        (struct cls_rule **) args->args[4],
+                                                                        *((size_t *) args->args[5]),
+                                                                        (size_t *) args->args[6],
+                                                                        (const struct mf_subfield *) args->args[7],
+                                                                        *((size_t *) args->args[8]),
+                                                                        *((uint32_t *) args->args[9]),
+                                                                        (bool *) args->args[10],
+                                                                        (bool *) args->args[11]);
             break;
         case hotcall_ecall_eviction_group_add_rules:
             ecall_eviction_group_add_rules(*((int *) args->args[0]),

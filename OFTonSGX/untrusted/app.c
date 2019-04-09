@@ -431,12 +431,6 @@ SGX_rule_calculate_tag(int bridge_id, struct cls_rule * o_cls_rule, const struct
 
 // This Functions are used for the table_dpif in ofproto_dpif {
 
-// 1.
-void
-SGX_table_dpif_init(int bridge_id, int n_tables){
-    ECALL(ecall_sgx_table_dpif, false, 2, CAST(bridge_id), CAST(n_tables));
-}
-
 // 2.
 int
 SGX_table_update_taggable(int bridge_id, uint8_t table_id){
@@ -504,32 +498,44 @@ SGX_ofproto_get_vlan_usage__r(int bridge_id, uint16_t * buf, int elem){
 // Optimized calls
 
 size_t
-SGX_get_cls_rules(int bridge_id, int table_id, size_t start_index, size_t end_index, struct cls_rule ** buf, size_t buf_size, size_t *n_rules) {
+SGX_get_cls_rules(int bridge_id,
+                  int table_id,
+                  size_t start_index,
+                  size_t end_index,
+                  struct cls_rule ** buf,
+                  size_t buf_size,
+                  size_t *n_rules) {
     size_t n;
-    ECALL(ecall_get_cls_rules, true, 6, &n, CAST(bridge_id), CAST(table_id), CAST(start_index), CAST(end_index), buf, CAST(buf_size), n_rules);
+    ECALL(ecall_get_cls_rules,
+          true, 7, &n,
+          CAST(bridge_id),
+          CAST(table_id),
+          CAST(start_index),
+          CAST(end_index),
+          buf,
+          CAST(buf_size),
+          n_rules);
     return n;
 }
 
 
 size_t
 SGX_get_cls_rules_and_enable_eviction(int bridge_id,
-											 int table_id,
-											 size_t start_index,
-											 size_t end_index,
-											 struct cls_rule ** buf,
-											 size_t buf_size,
-											 size_t *n_rules,
-										 	 const struct mf_subfield *fields,
-										 	 size_t n_fields,
-									 	 	 uint32_t random_v,
-								 		 	 bool *no_change,
-                                             bool *is_eviction_fields_enabled)
+									 int table_id,
+									 size_t start_index,
+									 size_t end_index,
+									 struct cls_rule ** buf,
+									 size_t buf_size,
+									 size_t *n_rules,
+								 	 const struct mf_subfield *fields,
+								 	 size_t n_fields,
+							 	 	 uint32_t random_v,
+						 		 	 bool *no_change,
+                                     bool *is_eviction_fields_enabled)
 {
     size_t n;
     ECALL(ecall_get_cls_rules_and_enable_eviction,
-          true,
-          12,
-          &n,
+          true, 12, &n,
           CAST(bridge_id),
           CAST(table_id),
           CAST(start_index),
@@ -555,8 +561,7 @@ SGX_eviction_group_add_rules(int bridge_id,
                              uint32_t group_priority)
 {
     ECALL(ecall_eviction_group_add_rules,
-          false,
-          7,
+          false, 7,
           CAST(bridge_id),
           CAST(table_id),
           CAST(n),
@@ -564,12 +569,11 @@ SGX_eviction_group_add_rules(int bridge_id,
           evg_nodes,
           rule_priorities,
           CAST(group_priority));
-
 }
 
 size_t
 SGX_ofproto_get_vlan_usage(int bridge_id,
-                           size_t default_buffer_size,
+                           size_t buf_size,
                            uint16_t *vlan_buffer,
                            size_t start_index,
                            size_t end_index,
@@ -577,11 +581,9 @@ SGX_ofproto_get_vlan_usage(int bridge_id,
 {
     size_t n;
     ECALL(ecall_ofproto_get_vlan_usage,
-          true,
-          6,
-          &n,
+          true, 6, &n,
           CAST(bridge_id),
-          CAST(default_buffer_size),
+          CAST(buf_size),
           vlan_buffer,
           CAST(start_index),
           CAST(end_index),
@@ -590,16 +592,22 @@ SGX_ofproto_get_vlan_usage(int bridge_id,
 }
 
 size_t
-SGX_ofproto_flush(int bridge_id, struct cls_rule **cls_rules, uint32_t *hashes, size_t default_buffer_size, size_t start_index , size_t end_index, size_t *n_rules) {
+SGX_ofproto_flush(int bridge_id,
+                  struct cls_rule **cls_rules,
+                  uint32_t *hashes,
+                  size_t buf_size,
+                  size_t start_index,
+                  size_t end_index,
+                  size_t *n_rules) {
     size_t n;
     ECALL(ecall_ofproto_flush,
-          7, true, &n,
+          true, 7, &n,
           CAST(bridge_id),
           cls_rules,
           hashes,
-          CAST(default_buffer_size),
-          start_index,
-          end_index,
+          CAST(buf_size),
+          CAST(start_index),
+          CAST(end_index),
           n_rules);
     return n;
 }

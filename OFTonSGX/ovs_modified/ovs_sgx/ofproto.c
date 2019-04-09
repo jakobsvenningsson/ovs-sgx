@@ -526,8 +526,6 @@ ofproto_init_tables(struct ofproto *ofproto, int n_tables)
       VLOG_ERR("Error init enclave.");
     }
     ofproto->bridge_id = bridge_id;
-    //Initialization of special table_dpif
-    SGX_table_dpif_init(bridge_id, n_tables);
 #endif
 
 }
@@ -1000,56 +998,37 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
 #ifndef SGX
     struct oftable *table;
     table = &ofproto->tables[table_id];
-
     oftable_set_name(table, s->name);
-#else
-    //This function will configure the table name
-    SGX_oftable_set_name(ofproto->bridge_id, table_id,s->name);
-#endif
-
-#ifndef SGX
     if (table->flags & OFTABLE_READONLY) {
         return;
     }
-#else
-    //Is the table read-only?????
-    if(SGX_istable_readonly(ofproto->bridge_id, table_id)){
-    	return;
-    }
-
-#endif
-
-
-#ifndef SGX
     if (s->groups) {
         oftable_enable_eviction(table, s->groups, s->n_groups);
     } else {
 
         oftable_disable_eviction(table);
     }
+    table->max_flows = s->max_flows;
+    if (classifier_count(&table->cls) > table->max_flows
+        && table->eviction_fields) {
 
 #else
+    //This function will configure the table name
+    SGX_oftable_set_name(ofproto->bridge_id, table_id,s->name);
+    //Is the table read-only?????
+    if(SGX_istable_readonly(ofproto->bridge_id, table_id)){
+        return;
+    }
     if (s->groups) {
-
         oftable_enable_eviction(ofproto->bridge_id, table_id, s->groups, s->n_groups);
     } else {
         SGX_oftable_disable_eviction(ofproto->bridge_id, table_id);
     }
+
+    SGX_table_mflows_set(ofproto->bridge_id, table_id,s->max_flows);
+   if (SGX_cls_count(ofproto->bridge_id, table_id)>SGX_table_mflows(ofproto->bridge_id, table_id)
+           && SGX_eviction_fields_enable(ofproto->bridge_id, table_id)){
 #endif
-
-
-
-
-#ifndef SGX
-    table->max_flows = s->max_flows;
-    if (classifier_count(&table->cls) > table->max_flows
-        && table->eviction_fields) {
-#else
-    	SGX_table_mflows_set(ofproto->bridge_id, table_id,s->max_flows);
-  	   if (SGX_cls_count(ofproto->bridge_id, table_id)>SGX_table_mflows(ofproto->bridge_id, table_id)
-  			   && SGX_eviction_fields_enable(ofproto->bridge_id, table_id)){
-#endif
-
     	/* 'table' contains more flows than allowed.  We might not be able to
          * evict them right away because of the asynchronous nature of flow
          * table changes.  Schedule eviction for later. */
@@ -1483,8 +1462,7 @@ ofproto_get_memory_usage(const struct ofproto *ofproto, struct simap *usage)
     }
 #else
    //This function is going to retrieve the number of rules
-    n_rules=SGX_total_rules(ofproto->bridge_id);
-
+    n_rules = SGX_total_rules(ofproto->bridge_id);
 #endif
 
     simap_increase(usage, "rules", n_rules);
@@ -1718,15 +1696,9 @@ ofproto_add_flow(struct ofproto *ofproto, const struct match *match,
     rule = rule_from_cls_rule(classifier_find_match_exactly(
                                   &ofproto->tables[0].cls, match, priority));
 #else
-
-    SGX_cls_find_match_exactly(ofproto->bridge_id, 0,match,priority,&sin);
-
-    rule=rule_from_cls_rule(sin);
-
+    SGX_cls_find_match_exactly(ofproto->bridge_id, 0,match,priority, &sin);
+    rule = rule_from_cls_rule(sin);
 #endif
-
-
-
 
 //from version 2.0
     if(rule){
@@ -1783,8 +1755,7 @@ ofproto_delete_flow(struct ofproto *ofproto,
 #else
     struct cls_rule *cls_rule_temp;
     SGX_cls_find_match_exactly(ofproto->bridge_id, 0,target,priority,&cls_rule_temp);
-    rule=rule_from_cls_rule(cls_rule_temp);
-
+    rule = rule_from_cls_rule(cls_rule_temp);
 #endif
     if (!rule) {
         /* No such rule -> success. */
@@ -2293,7 +2264,6 @@ ofproto_rule_destroy__(struct rule *rule)
         cls_rule_destroy(&rule->cr);
 #else
         SGX_cls_rule_destroy(rule->ofproto->bridge_id, &rule->cr);
-
 #endif
         free(rule->ofpacts);
         rule->ofproto->ofproto_class->rule_dealloc(rule);
@@ -2940,6 +2910,7 @@ collect_rules_loose(struct ofproto *ofproto, uint8_t table_id,
                 error = OFPROTO_POSTPONE;
                 goto exit;
             }
+            // rule_is_modifiable contains SGX
             if (!ofproto_rule_is_hidden(rule)
                 && ofproto_rule_has_out_port(rule, out_port)
                     && !((rule->flow_cookie ^ cookie) & cookie_mask)) {
@@ -2974,6 +2945,7 @@ exit:
     		                goto exit;
     		}
 
+            // rule_is_modifiable contains SGX
     		 if (!ofproto_rule_is_hidden(rule)
     		                && ofproto_rule_has_out_port(rule, out_port)
     		                    && !((rule->flow_cookie ^ cookie) & cookie_mask)) {
@@ -3035,6 +3007,7 @@ collect_rules_strict(struct ofproto *ofproto, uint8_t table_id,
                 error = OFPROTO_POSTPONE;
                 goto exit;
             }
+            // rule_is_modifiable contains SGX
             if (!ofproto_rule_is_hidden(rule)
                 && ofproto_rule_has_out_port(rule, out_port)
                     && !((rule->flow_cookie ^ cookie) & cookie_mask)) {
@@ -3064,6 +3037,8 @@ exit:
                     error = OFPROTO_POSTPONE;
                     goto exit;
                 }
+
+                // rule_is_modifiable contains SGX
                 if (!ofproto_rule_is_hidden(rule)
                     && ofproto_rule_has_out_port(rule, out_port)
                         && !((rule->flow_cookie ^ cookie) & cookie_mask)) {
@@ -3567,6 +3542,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     clock_gettime(CLOCK_REALTIME,&et);
     //VLOG_INFO("J03: The time is:  %lu %lu",(et.tv_sec - st.tv_sec),(et.tv_nsec - st.tv_nsec));
 
+    // rule_is_modifiable contains SGX
     if (victim && !rule_is_modifiable(victim)) {
         error = OFPERR_OFPBRC_EPERM;
     } else if (victim && victim->pending) {
@@ -3660,7 +3636,7 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
         ovs_be64 new_cookie;
 
         /* FIXME: Implement OFPFF12_RESET_COUNTS */
-
+        // rule_is_modifiable contains SGX
         if (rule_is_modifiable(rule)) {
             /* At least one rule is modifiable, don't report EPERM error. */
             error = 0;
@@ -3845,13 +3821,18 @@ ofproto_rule_send_removed(struct rule *rule, uint8_t reason)
 {
     struct ofputil_flow_removed fr;
 
+
+#ifndef SGX
     if (ofproto_rule_is_hidden(rule) || !rule->send_flow_removed) {
         return;
     }
-#ifndef SGX
     minimatch_expand(&rule->cr.match, &fr.match);
     fr.priority = rule->cr.priority;
 #else
+    // rule_is_hidden contains SGX
+    if (ofproto_rule_is_hidden(rule) || !rule->send_flow_removed) {
+        return;
+    }
     SGX_minimatch_expand(rule->ofproto->bridge_id, &rule->cr, &fr.match);
     fr.priority=SGX_cr_priority(rule->ofproto->bridge_id, &rule->cr);
 #endif
@@ -4286,6 +4267,7 @@ ofproto_collect_ofmonitor_refresh_rule(const struct ofmonitor *m,
 {
     enum nx_flow_monitor_flags update;
 
+    // rule_is_modifiable contains SGX
     if (ofproto_rule_is_hidden(rule)) {
         return;
     }
@@ -4763,6 +4745,7 @@ ofopgroup_complete(struct ofopgroup *group)
 
               - The operation's only effect was to update rule->modified. */
 
+        // rule_is_modifiable contains SGX
         if (!(op->error
               || ofproto_rule_is_hidden(rule)
               || (op->type == OFOPERATION_MODIFY
@@ -5504,13 +5487,14 @@ oftable_replace_rule(struct rule *rule)
 #ifndef SGX
     struct oftable *table = &ofproto->tables[rule->table_id];
     victim = rule_from_cls_rule(classifier_replace(&table->cls, &rule->cr));
-#else
-
+#elif OPTIMIZED
     struct cls_rule * sgx_cls_rule; //An auxiliary cls_rule....
-
     SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id,&rule->cr,&sgx_cls_rule);
     victim = rule_from_cls_rule(sgx_cls_rule);
-
+#else
+    struct cls_rule * sgx_cls_rule; //An auxiliary cls_rule....
+    SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id,&rule->cr,&sgx_cls_rule);
+    victim = rule_from_cls_rule(sgx_cls_rule);
 #endif
 
 

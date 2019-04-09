@@ -62,7 +62,7 @@ SGX_ofproto_flush(int bridge_id,
 				  uint32_t *hashes,
 				  size_t default_buffer_size,
 				  size_t start_index,
-				  size_t end_index, 
+				  size_t end_index,
 				  size_t *n_rules);
 
 
@@ -136,7 +136,6 @@ void SGX_miniflow_expand(int bridge_id, struct cls_rule *o_cls_rule,struct flow 
 uint32_t SGX_rule_calculate_tag(int bridge_id, struct cls_rule *o_cls_rule,const struct flow *flow,int table_id);
 
 
-void SGX_table_dpif_init(int bridge_id, int n_tables);
 int SGX_table_update_taggable(int bridge_id, uint8_t table_id);
 int SGX_is_sgx_other_table(int bridge_id, int id);
 uint32_t SGX_rule_calculate_tag_s(int bridge_id, int id,const struct flow *flow);

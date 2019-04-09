@@ -73,6 +73,19 @@ oftable_init(struct oftable * table){
     table->max_flows = UINT_MAX;
 }
 
+// 1. Creation and Initialization
+void
+sgx_table_dpif_init(int bridge_id, int n_tables){
+    // I need to create the struct SGX_table_dpif in memory
+    int i;
+
+    SGX_table_dpif[bridge_id] = xmalloc(n_tables * sizeof(struct SGX_table_dpif));
+    for (i = 0; i < n_tables; i++) {
+        SGX_table_dpif[bridge_id][i].catchall_table = NULL;
+        SGX_table_dpif[bridge_id][i].other_table    = NULL;
+    }
+}
+
 void
 ecall_ofproto_init_tables(int bridge_id, int n_tables){
     struct oftable * table;
@@ -83,6 +96,7 @@ ecall_ofproto_init_tables(int bridge_id, int n_tables){
         oftable_init(table);
     }
     sgx_table_cls_init(bridge_id);
+    sgx_table_dpif_init(bridge_id, n_tables);
 }
 
 void
@@ -918,18 +932,7 @@ ecall_miniflow_expand(int bridge_id, struct cls_rule * o_cls_rule, struct flow *
 
 // These functions are for the ofproto_dpif tables.
 
-// 1. Creation and Initialization
-void
-ecall_sgx_table_dpif(int bridge_id, int n_tables){
-    // I need to create the struct SGX_table_dpif in memory
-    int i;
 
-    SGX_table_dpif[bridge_id] = xmalloc(n_tables * sizeof(struct SGX_table_dpif));
-    for (i = 0; i < n_tables; i++) {
-        SGX_table_dpif[bridge_id][i].catchall_table = NULL;
-        SGX_table_dpif[bridge_id][i].other_table    = NULL;
-    }
-}
 
 // 2. void ecall_table_update_taggable
 int
@@ -1006,7 +1009,7 @@ ecall_hidden_tables_check(int bridge_id){
 }
 
 // DEBUG
-void
+/*void
 ecall_table_dpif_init(int bridge_id){
     // Initialization of the table_dpif
     int i;
@@ -1017,7 +1020,7 @@ ecall_table_dpif_init(int bridge_id){
         table->other_table    = NULL;
         table->basis = random_uint32();
     }
-}
+}*/
 
 // This functions are for ofopgroup_complete()
 
@@ -1092,7 +1095,13 @@ ecall_ofproto_get_vlan_r(int bridge_id, uint16_t * buf, int elem){
 
 
 size_t
-ecall_get_cls_rules(int bridge_id, int table_id, size_t start_index, size_t end_index, struct cls_rule ** buf, size_t buf_size, size_t *n_rules) {
+ecall_get_cls_rules(int bridge_id,
+                    int table_id,
+                    size_t start_index,
+                    size_t end_index,
+                    struct cls_rule ** buf,
+                    size_t buf_size,
+                    size_t *n_rules) {
 
     size_t n = 0, i = 0;
     struct cls_cursor cursor;
@@ -1202,7 +1211,13 @@ ecall_ofproto_get_vlan_usage(int bridge_id,
 
 
 size_t
-ecall_ofproto_flush(int bridge_id, struct cls_rule **cls_rules, uint32_t *hashes, size_t buf_size, size_t start_index, size_t end_index, size_t *n_rules) {
+ecall_ofproto_flush(int bridge_id,
+                    struct cls_rule **cls_rules,
+                    uint32_t *hashes,
+                    size_t buf_size,
+                    size_t start_index,
+                    size_t end_index,
+                    size_t *n_rules) {
 
     int count = 0, n = 0;
     for (size_t i = 0; i < SGX_n_tables[bridge_id]; i++) {
