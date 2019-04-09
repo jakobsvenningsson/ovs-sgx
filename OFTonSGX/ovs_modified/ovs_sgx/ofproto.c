@@ -450,6 +450,9 @@ ofproto_create(const char *datapath_name, const char *datapath_type,
     ofproto->tables = NULL;
     ofproto->n_tables = 0;
     list_init(&ofproto->expirable);
+
+    list_init(&ofproto->rules);
+
     ofproto->connmgr = connmgr_create(ofproto, datapath_name, datapath_name);
     ofproto->state = S_OPENFLOW;
     list_init(&ofproto->pending);
@@ -488,7 +491,6 @@ ofproto_create(const char *datapath_name, const char *datapath_type,
     }
 #else
     sgx_oftable_check_hidden(ofproto->bridge_id);
-
 #endif
     ofproto->datapath_id = pick_datapath_id(ofproto);
     init_ports(ofproto);
@@ -3536,11 +3538,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     rule->add_seqno = 0;
     rule->modify_seqno = 0;
 
-    /* Insert new rule. */
-    clock_gettime(CLOCK_REALTIME,&st);
     victim = oftable_replace_rule(rule);
-    clock_gettime(CLOCK_REALTIME,&et);
-    //VLOG_INFO("J03: The time is:  %lu %lu",(et.tv_sec - st.tv_sec),(et.tv_nsec - st.tv_nsec));
 
     // rule_is_modifiable contains SGX
     if (victim && !rule_is_modifiable(victim)) {
@@ -5029,12 +5027,54 @@ choose_rule_to_evict(struct oftable *table)
     return NULL;
 }
 #endif
+
+// Helper function for ofproto_evict
+static struct rule *
+opt_ofproto_get_rules_pending_status(struct ofproto *ofproto,
+                                     struct rule *start,
+                                     struct cls_rule **cls_rule_addresses,
+                                     bool *pendings,
+                                     size_t buf_size,
+                                     size_t *n_rules)
+{
+
+    struct rule *rule;
+    struct rule *start_node = start ? start : OBJECT_CONTAINING((&ofproto->rules)->next, rule, element);
+    size_t n = 0, count = 0;
+    struct rule *breakpoint = NULL;
+
+    for(rule = start_node; &(rule)->element != &ofproto->rules;
+        ASSIGN_CONTAINER(rule, rule->element.next, element)) {
+        if(!(rule->hard_timeout || rule->idle_timeout)) {
+            continue;
+        }
+        count++;
+        if(n >= buf_size) {
+            n++;
+            if(!breakpoint) {
+                breakpoint = rule;
+            }
+            continue;
+        }
+        //VLOG_ERR("RULE: %d %p %d\n", rule->idle_timeout, &rule->cr, rule->pending);
+        cls_rule_addresses[n] = &rule->cr;
+        pendings[n] = rule->pending;
+        n++;
+    }
+
+    *n_rules = count;
+    return breakpoint;
+}
+
+
 /* Searches 'ofproto' for tables that have more flows than their configured
  * maximum and that have flow eviction enabled, and evicts as many flows as
  * necessary and currently feasible from them.
  *
  * This triggers only when an OpenFlow table has N flows in it and then the
  * client configures a maximum number of flows less than N. */
+
+
 static void
 ofproto_evict(struct ofproto *ofproto)
 {
@@ -5049,31 +5089,135 @@ ofproto_evict(struct ofproto *ofproto)
              && table->eviction_fields) {
       	    struct rule *rule;
             rule = choose_rule_to_evict(table);
+            struct rule *rule =rule_from_cls_rule(cls_rule_t);
+            if (!rule || rule->pending) {
+                break;
+            }
+            ofoperation_create(group, rule,
+                               OFOPERATION_DELETE, OFPRR_EVICTION, NULL);
+            oftable_remove_rule(rule);
+            ofproto->ofproto_class->rule_destruct(rule);
+        }
+    }
+#elif OPTIMIZED
+
+    // Retrieve the pending status of each rule in the bridge.
+
+    size_t pending_buffer_size = 2, total_rules = 0;
+
+    struct cls_rule **cls_rule_addresses;
+    struct cls_rule *cls_rule_buffer[pending_buffer_size];
+    cls_rule_addresses = cls_rule_buffer;
+
+    bool *pendings;
+    bool pendings_buffer[pending_buffer_size];
+    pendings = pendings_buffer;
+
+    struct rule *breakpoint = opt_ofproto_get_rules_pending_status(ofproto,
+                                                                   NULL,
+                                                                   cls_rule_addresses,
+                                                                   pendings,
+                                                                   pending_buffer_size,
+                                                                   &total_rules);
+
+    struct cls_rule *extended_cls_buffer[total_rules];
+    bool extended_pending_buffer[total_rules];
+    if(total_rules >= pending_buffer_size) {
+        memcpy(extended_cls_buffer, cls_rule_buffer, sizeof(cls_rule_buffer));
+        memcpy(extended_pending_buffer, pendings_buffer, sizeof(pendings_buffer));
+        cls_rule_addresses = extended_cls_buffer;
+        pendings = extended_pending_buffer;
+        size_t dummy = 0;
+        opt_ofproto_get_rules_pending_status(ofproto,
+                                             breakpoint,
+                                             cls_rule_addresses + pending_buffer_size,
+                                             pendings + pending_buffer_size,
+                                             total_rules - pending_buffer_size, &dummy);
+    }
+
+
+
+    // Evict rules
+    size_t default_buffer_size = 2, total_evictions;
+    struct cls_rule **eviction_cls_rules;
+    struct cls_rule *eviction_rule_buffer[default_buffer_size];
+    eviction_cls_rules = eviction_rule_buffer;
+
+    uint32_t *eviction_hashes;
+    uint32_t hashes[default_buffer_size];
+    eviction_hashes = hashes;
+    size_t nn = 0;
+    size_t n = SGX_ofproto_evict(ofproto->bridge_id,
+                                 ofproto->n_tables,
+                                 pendings,
+                                 cls_rule_addresses,
+                                 total_rules,
+                                 eviction_hashes,
+                                 eviction_cls_rules,
+                                 default_buffer_size,
+                                 &nn,
+                                 &total_evictions);
+
+    //VLOG_ERR("Evicted %d total %d %d\n", n, total_evictions, nn);
+
+    size_t leftover_evictions = total_evictions - n;
+    struct cls_rule *extended_buf[total_evictions];
+    uint32_t extended_hashes[total_evictions];
+    if(leftover_evictions > 0) {
+        memcpy(extended_buf, eviction_rule_buffer, sizeof(eviction_rule_buffer));
+        memcpy(extended_hashes, hashes, sizeof(hashes));
+        size_t n_evictions;
+        // Dummy variable for debugging, remove!
+        nn = 0;
+        size_t c = SGX_ofproto_evict(ofproto->bridge_id,
+                            ofproto->n_tables,
+                            pendings,
+                            cls_rule_addresses,
+                            total_rules,
+                            extended_hashes + n,
+                            extended_buf + n,
+                            leftover_evictions,
+                            &nn,
+                            &n_evictions);
+
+        //VLOG_ERR("Evicted %d total %d %d\n", c, n_evictions, nn);
+
+        eviction_cls_rules = extended_buf;
+        eviction_hashes = extended_hashes;
+    }
+
+     for(size_t i = 0; i < total_evictions; ++i) {
+         struct rule *rule = rule_from_cls_rule(eviction_cls_rules[i]);
+         ofoperation_create(group, rule,
+                          OFOPERATION_DELETE, OFPRR_EVICTION, eviction_hashes[i]);
+         list_remove(&rule->element);
+         if (!list_is_empty(&rule->expirable)) {
+             list_remove(&rule->expirable);
+         }
+         ofproto->ofproto_class->rule_destruct(rule);
+     }
+
 #else
     	int i;
     	for(i=0;i<ofproto->n_tables;i++){
     		while(SGX_cls_count(ofproto->bridge_id, i) > SGX_table_mflows(ofproto->bridge_id, i)
     				&& SGX_eviction_fields_enable(ofproto->bridge_id, i)){
-              struct cls_rule *cls_rule_t = NULL;
-              SGX_choose_rule_to_evict(ofproto->bridge_id, i, &cls_rule_t);
+                  struct cls_rule *cls_rule_t = NULL;
+                  SGX_choose_rule_to_evict(ofproto->bridge_id, i, &cls_rule_t);
+                  struct rule *rule =rule_from_cls_rule(cls_rule_t);
 
-              struct rule *rule =rule_from_cls_rule(cls_rule_t);
+                  if (!rule || rule->pending) {
+                      break;
+                  }
+
+                  ofoperation_create(group, rule,
+                                     OFOPERATION_DELETE, OFPRR_EVICTION, NULL);
+                  oftable_remove_rule(rule);
+                  ofproto->ofproto_class->rule_destruct(rule);
+              }
+          }
 #endif
 
-
-              if (!rule || rule->pending) {
-                  break;
-              }
-
-
-              ofoperation_create(group, rule,
-                                 OFOPERATION_DELETE, OFPRR_EVICTION, NULL);
-
-              oftable_remove_rule(rule);
-
-              ofproto->ofproto_class->rule_destruct(rule);
-        }
-    }
     ofopgroup_submit(group);
 }
 
@@ -5463,6 +5607,7 @@ oftable_remove_rule(struct rule *rule)
     classifier_remove(&table->cls, &rule->cr);
 #else
     SGX_cls_remove(rule->ofproto->bridge_id, rule->table_id, &rule->cr);
+    list_remove(&rule->element);
 #endif
     eviction_group_remove_rule(rule);
     if (!list_is_empty(&rule->expirable)) {
@@ -5484,16 +5629,19 @@ oftable_replace_rule(struct rule *rule)
     if (may_expire) {
         list_insert(&ofproto->expirable, &rule->expirable);
     }
+
+    list_insert(&ofproto->rules, &rule->element);
+
 #ifndef SGX
     struct oftable *table = &ofproto->tables[rule->table_id];
     victim = rule_from_cls_rule(classifier_replace(&table->cls, &rule->cr));
 #elif OPTIMIZED
     struct cls_rule * sgx_cls_rule; //An auxiliary cls_rule....
-    SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id,&rule->cr,&sgx_cls_rule);
+    SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id, &rule->cr, &sgx_cls_rule);
     victim = rule_from_cls_rule(sgx_cls_rule);
 #else
     struct cls_rule * sgx_cls_rule; //An auxiliary cls_rule....
-    SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id,&rule->cr,&sgx_cls_rule);
+    SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id, &rule->cr, &sgx_cls_rule);
     victim = rule_from_cls_rule(sgx_cls_rule);
 #endif
 
@@ -5502,6 +5650,7 @@ oftable_replace_rule(struct rule *rule)
     	if (!list_is_empty(&victim->expirable)) {
             list_remove(&victim->expirable);
         }
+        list_remove(&victim->element);
         eviction_group_remove_rule(victim);
     }
     eviction_group_add_rule(rule);

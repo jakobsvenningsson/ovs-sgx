@@ -611,3 +611,32 @@ SGX_ofproto_flush(int bridge_id,
           n_rules);
     return n;
 }
+
+
+size_t
+SGX_ofproto_evict(int bridge_id,
+                  int ofproto_n_tables,
+                  bool *pendings,
+                  struct cls_rule **all_cls_rules,
+                  size_t m,
+                  uint32_t *hashes,
+                  struct cls_rule **cls_rules,
+                  size_t buf_size,
+                  size_t *nn,
+                  size_t *n_evictions)
+{
+    size_t n;
+    ECALL(ecall_ofproto_evict,
+          true, 10, &n,
+          CAST(bridge_id),
+          CAST(ofproto_n_tables),
+          pendings,
+          all_cls_rules,
+          CAST(m),
+          hashes,
+          cls_rules,
+          CAST(buf_size),
+          nn,
+          n_evictions);
+    return n;
+}

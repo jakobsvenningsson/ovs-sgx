@@ -67,6 +67,18 @@ enclave {
 										  size_t end_index,
 										  [user_check] size_t *n_rules);
 
+		public size_t
+		ecall_ofproto_evict(int bridge_id,
+							int ofproto_n_tables,
+							[user_check] bool *pendings,
+							[user_check] struct cls_rule **all_cls_rules,
+							size_t m,
+							[user_check] uint32_t *hashes,
+							[user_check] struct cls_rule ** cls_rules,
+							size_t buf_size,
+							[user_check] size_t *nn,
+							[user_check] size_t *n_evictions);
+
 
 
 		public void ecall_ofproto_init_tables(int bridge_id, int n_tables);

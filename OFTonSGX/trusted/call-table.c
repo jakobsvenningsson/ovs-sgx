@@ -259,6 +259,17 @@ execute_function(int function, argument_list * args, void *ret){
                                                         *((size_t *) args->args[5]),
                                                         (size_t *) args->args[6]);
             break;
+        case hotcall_ecall_ofproto_evict:
+            *((size_t *) ret) = ecall_ofproto_evict(*((int *) args->args[0]),
+                                                    *((int *) args->args[1]),
+                                                    (bool *) args->args[2],
+                                                    (struct cls_rule **) args->args[3],
+                                                    *((size_t *) args->args[4]),
+                                                    (uint32_t *) args->args[5],
+                                                    (struct cls_rule **) args->args[6],
+                                                    *((size_t *) args->args[7]),
+                                                    (size_t *) args->args[8], (size_t *) args->args[9]);
+            break;
 
 
 

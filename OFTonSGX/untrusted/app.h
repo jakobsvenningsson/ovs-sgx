@@ -65,6 +65,17 @@ SGX_ofproto_flush(int bridge_id,
 				  size_t end_index,
 				  size_t *n_rules);
 
+size_t
+SGX_ofproto_evict(int bridge_id,
+                int ofproto_n_tables,
+				bool *pendings,
+				struct cls_rule **all_cls_rules,
+				size_t m,
+                uint32_t *hashes,
+                struct cls_rule ** cls_rules,
+                size_t buf_size,
+				size_t *nn,
+                size_t *n_evictions);
 
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);
