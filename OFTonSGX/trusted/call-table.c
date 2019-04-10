@@ -270,6 +270,30 @@ execute_function(int function, argument_list * args, void *ret){
                                                     *((size_t *) args->args[7]),
                                                     (size_t *) args->args[8], (size_t *) args->args[9]);
             break;
+        case hotcall_ecall_add_flow:
+            ecall_add_flow(*((int *) args->args[0]),
+                           *((int *) args->args[1]),
+                            (struct cls_rule *) args->args[2],
+                            (struct cls_rule **) args->args[3],
+                            (struct cls_rule **) args->args[4],
+                            (struct match *) args->args[5],
+                            (uint32_t *) args->args[6],
+                            (uint16_t *) args->args[7],
+                            (uint16_t *) args->args[8],
+                            *((unsigned int *) args->args[9]),
+                            *((uint16_t *) args->args[10]),
+                            *((uint32_t *) args->args[11]),
+                            *((uint32_t *) args->args[12]),
+                            *((struct heap_node *) args->args[13]),
+                            (struct cls_rule **) args->args[14],
+                            *((int *) args->args[15]),
+                            *((bool *) args->args[16]),
+                            (bool *) args->args[17],
+                            (bool *) args->args[18],
+                            (bool *) args->args[19],
+                            (bool *) args->args[20],
+                            (bool *) args->args[21]);
+            break;
 
 
 

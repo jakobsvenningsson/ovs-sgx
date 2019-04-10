@@ -79,6 +79,30 @@ enclave {
 							[user_check] size_t *nn,
 							[user_check] size_t *n_evictions);
 
+		public void
+		ecall_add_flow(int bridge_id,
+					 int table_id,
+					 [user_check] struct cls_rule *cr,
+					 [user_check] struct cls_rule **victim,
+					 [user_check] struct cls_rule **evict,
+					 [user_check] struct match *match,
+					 [user_check] uint32_t *evict_rule_hash,
+					 [user_check] uint16_t *vid,
+					 [user_check] uint16_t *vid_mask,
+					 unsigned int priority,
+					 uint16_t flags,
+					 uint32_t group_eviction_priority,
+					 uint32_t rule_eviction_priority,
+					 struct heap_node eviction_node,
+					 [user_check] struct  cls_rule **pending_deletions,
+					 int n_pending,
+					 bool has_timeout,
+					 [user_check] bool *table_overflow,
+					 [user_check] bool *is_rule_modifiable,
+					 [user_check] bool *is_deletion_pending,
+					 [user_check] bool *is_rule_overlapping,
+					 [user_check] bool *is_read_only);
+
 
 
 		public void ecall_ofproto_init_tables(int bridge_id, int n_tables);

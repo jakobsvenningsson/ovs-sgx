@@ -640,3 +640,54 @@ SGX_ofproto_evict(int bridge_id,
           n_evictions);
     return n;
 }
+
+void
+SGX_add_flow(int bridge_id,
+			 int table_id,
+			 struct cls_rule *cr,
+             struct cls_rule **victim,
+             struct cls_rule **evict,
+			 struct match *match,
+             uint32_t *evict_rule_hash,
+             uint16_t *vid,
+             uint16_t *vid_mask,
+			 unsigned int priority,
+			 uint16_t flags,
+             uint32_t group_eviction_priority,
+			 uint32_t rule_eviction_priority,
+             struct heap_node eviction_node,
+             struct cls_rule **pending_deletions,
+             int n_pending,
+             bool has_timeout,
+             bool *table_overflow,
+             bool *is_rule_modifiable,
+             bool *is_rule_overlapping,
+             bool *is_deletion_pending,
+			 bool *is_read_only)
+ {
+     ECALL(
+         ecall_add_flow, false, 22,
+         CAST(bridge_id),
+         CAST(table_id),
+         cr,
+         victim,
+         evict,
+         match,
+         evict_rule_hash,
+         vid,
+         vid_mask,
+         CAST(priority),
+         CAST(flags),
+         CAST(group_eviction_priority),
+         CAST(rule_eviction_priority),
+         CAST(eviction_node),
+         pending_deletions,
+         CAST(n_pending),
+         CAST(has_timeout),
+         table_overflow,
+         is_rule_modifiable,
+         is_rule_overlapping,
+         is_deletion_pending,
+         is_read_only
+     );
+ }

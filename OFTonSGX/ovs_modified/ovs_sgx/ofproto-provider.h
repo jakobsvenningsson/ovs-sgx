@@ -238,6 +238,8 @@ struct rule {
                                  * is expirable, otherwise empty. */
 
     struct list element;
+    uint16_t tmp_storage_vid;
+    uint16_t tmp_storage_vid_mask;
 };
 
 static inline struct rule *

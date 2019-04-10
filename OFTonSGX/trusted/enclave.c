@@ -8,6 +8,7 @@
 
 #include "call-table.h"
 #include "hotcall.h"
+#include "openflow-common.h"
 #include <sgx_spinlock.h>
 
 #ifdef TIMEOUT
@@ -391,11 +392,11 @@ ecall_choose_rule_to_evict_p(int bridge_id, int table_id, struct cls_rule ** o_c
     was_evictable = sgx_cls_rule->evictable;
     // Make rule we are inserting immune to eviction.
     sgx_cls_rule->evictable = false;
-    struct cls_rule * tmp;
+    struct cls_rule * tmp = NULL;
     ecall_choose_rule_to_evict(bridge_id, table_id, &tmp);
     // Put back old eviction status
     sgx_cls_rule->evictable = was_evictable;
-    return tmp;
+    return tmp ? tmp : NULL;
 }
 
 // 21 returns the table max_flows
@@ -1339,3 +1340,80 @@ ecall_ofproto_evict(int bridge_id,
      *n_evictions = total_nr_evictions;
      return n;
 }
+
+void
+ecall_add_flow(int bridge_id,
+			 int table_id,
+			 struct cls_rule *cr,
+             struct cls_rule **victim,
+             struct cls_rule **evict,
+			 struct match *match,
+             uint32_t *evict_rule_hash,
+             uint16_t *vid,
+             uint16_t *vid_mask,
+			 unsigned int priority,
+			 uint16_t flags,
+             uint32_t eviction_group_priority,
+             uint32_t eviction_rule_priority,
+             struct heap_node eviction_node,
+             struct  cls_rule **pending_deletions,
+             int n_pending,
+             bool has_timout,
+             bool *table_overflow,
+             bool *is_rule_modifiable,
+             bool *is_deletion_pending,
+             bool *is_rule_overlapping,
+			 bool *is_read_only)
+ {
+     if (ecall_istable_readonly(bridge_id, table_id)){
+         *is_read_only = true;
+         return;
+     }
+
+     ecall_cls_rule_init(bridge_id, cr, match, priority);
+
+     for(int i = 0; i < n_pending; ++i) {
+         if (ecall_cls_rule_equal(bridge_id, cr, pending_deletions[i])) {
+             ecall_cls_rule_destroy(bridge_id, cr);
+             *is_deletion_pending = true;
+             return;
+         }
+     }
+
+    if (flags & OFPFF_CHECK_OVERLAP && ecall_cr_rule_overlaps(bridge_id, table_id, cr)) {
+         ecall_cls_rule_destroy(bridge_id, cr);
+         *is_rule_overlapping = true;
+         return;
+     }
+
+     ecall_classifier_replace(bridge_id, table_id, _a, victim);
+     if(*victim) {
+         ecall_evg_remove_rule(bridge_id, table_id, *victim);
+     }
+
+     if(ecall_eviction_fields_enable(bridge_id, table_id) && has_timout) {
+     	size_t result = ecall_evg_add_rule(bridge_id, table_id, cr, eviction_group_priority,
+     	    			eviction_rule_priority, eviction_node);
+
+     }
+
+     bool rule_is_mod = !(ecall_rule_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
+
+     if(*victim && !rule_is_mod) {
+         *is_rule_modifiable = false;
+         return;
+     }
+
+     if (ecall_cls_count(bridge_id, table_id) > ecall_table_mflows(bridge_id, table_id)){
+         *table_overflow = true;
+         *evict = ecall_choose_rule_to_evict_p(bridge_id, table_id, NULL, cr);
+         if(*evict) {
+             ecall_cls_remove(bridge_id, table_id, *evict);
+             ecall_evg_remove_rule(bridge_id, table_id, *evict);
+             *evict_rule_hash = ecall_cls_rule_hash(bridge_id, *evict, table_id);
+         }
+     }
+
+     *vid = ecall_miniflow_get_vid(bridge_id, cr);
+     *vid_mask = ecall_minimask_get_vid_mask(bridge_id, cr);
+ }

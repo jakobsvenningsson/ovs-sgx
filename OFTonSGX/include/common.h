@@ -72,6 +72,7 @@
 #define hotcall_ecall_ofproto_get_vlan_usage 62
 #define hotcall_ecall_ofproto_flush 63
 #define hotcall_ecall_ofproto_evict 64
+#define hotcall_ecall_add_flow 65
 //#define hotcall_ecall_destroy_rule_if_overlaps 59
 //#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
 //#define hotcall_ecall_miniflow_expand_and_tag 61
@@ -100,7 +101,7 @@
 
 typedef struct {
     int n_args;
-    void *args[12];
+    void *args[22];
 } argument_list;
 
 

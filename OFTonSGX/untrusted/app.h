@@ -72,10 +72,34 @@ SGX_ofproto_evict(int bridge_id,
 				struct cls_rule **all_cls_rules,
 				size_t m,
                 uint32_t *hashes,
-                struct cls_rule ** cls_rules,
+                struct cls_rule **cls_rules,
                 size_t buf_size,
 				size_t *nn,
                 size_t *n_evictions);
+
+void
+SGX_add_flow(int bridge_id,
+			 int table_id,
+			 struct cls_rule *cr,
+			 struct cls_rule **victim,
+			 struct cls_rule **evict,
+			 struct match *match,
+			 uint32_t *evict_rule_hash,
+			 uint16_t *vid,
+			 uint16_t *vid_mask,
+			 unsigned int priority,
+			 uint16_t flags,
+			 uint32_t group_eviction_priority,
+			 uint32_t rule_eviction_priority,
+			 struct heap_node eviction_node,
+			 struct cls_rule **pending_deletions,
+			 int n_pending,
+			 bool has_timeout,
+			 bool *table_overflow,
+			 bool *is_rule_modifiable,
+			 bool *is_rule_overlapping,
+			 bool *is_deletion_pending,
+			 bool *is_read_only);
 
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);

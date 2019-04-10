@@ -24,4 +24,10 @@ enum ofp_version {
     OFP15_VERSION = 0x06
 };
 
+enum ofp_flow_mod_flags {
+    OFPFF_SEND_FLOW_REM = 1 << 0,  /* Send flow removed message when flow
+                                    * expires or is deleted. */
+    OFPFF_CHECK_OVERLAP = 1 << 1,  /* Check for overlapping entries first. */
+};
+
 #endif /* ENCLAVE_MYENCLAVE_TRUSTED_INCLUDE_OPENFLOW_COMMON_H_ */
