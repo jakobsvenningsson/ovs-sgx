@@ -49,6 +49,20 @@ function dump_flows() {
   create_csv_file $TARGETS "dump_flows"
 }
 
+function evict_rule_batch() {
+  source ${BASE_PATH}/scripts/evict_rule_batch.sh
+  benchmark_evict_rule_batch $ITERATIONS $TARGETS
+  echo $?
+  create_csv_file $TARGETS "evict_rule_batch"
+}
+
+function evict_rule_single() {
+  source ${BASE_PATH}/scripts/evict_rule_single.sh
+  benchmark_evict_rule_single $ITERATIONS $TARGETS
+  echo $?
+  create_csv_file $TARGETS "evict_rule_single"
+}
+
 function print_help() {
   echo "usage: ./benchmark.sh [test-case] [iterations] [ovs-version]"
   echo "example: ./benchmark.sh add-flow 100 SGX"
@@ -82,12 +96,21 @@ case $BENCHMARK in
   dump-flows)
     dump_flows
     ;;
+  evict-rule-batch)
+    evict_rule_batch
+    ;;
+  evict-rule-single)
+    evict_rule_single
+    ;;
   all)
     add_flow
     del_flow_strict
     del_flow_loose
     mod_flow_strict
     mod_flow_loose
+    dump_flows
+    evict_rule_single
+    evict_rule_batch
     ;;
   help)
     print_help

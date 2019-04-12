@@ -73,6 +73,13 @@
 #define hotcall_ecall_ofproto_flush 63
 #define hotcall_ecall_ofproto_evict 64
 #define hotcall_ecall_add_flow 65
+#define hotcall_ecall_collect_rules_loose 66
+#define hotcall_ecall_collect_rules_strict 67
+#define hotcall_ecall_delete_flows 68
+#define hotcall_ecall_configure_table 69
+#define hotcall_ecall_need_to_evict 70
+#define hotcall_ecall_collect_rules_loose_stats_request 71
+#define hotcall_ecall_ofproto_rule_send_removed 72
 //#define hotcall_ecall_destroy_rule_if_overlaps 59
 //#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
 //#define hotcall_ecall_miniflow_expand_and_tag 61

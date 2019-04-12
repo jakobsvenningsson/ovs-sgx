@@ -354,6 +354,30 @@ execute_function(int function, argument_list * args, void *ret){
                 *((int *) args->args[1])
             );
             break;
+        case hotcall_ecall_collect_rules_loose_stats_request:
+            *((size_t *) ret) = ecall_collect_rules_loose_stats_request(
+                *((int *) args->args[0]),
+                *((int *) args->args[1]),
+                *((int *) args->args[2]),
+                *((size_t *) args->args[3]),
+                *((size_t *) args->args[4]),
+                (struct match *) args->args[5],
+                (struct cls_rule **) args->args[6],
+                (struct match *) args->args[7],
+                (unsigned int *) args->args[8],
+                (size_t *) args->args[9]
+            );
+            break;
+        case hotcall_ecall_ofproto_rule_send_removed:
+            ecall_ofproto_rule_send_removed(
+                *((int *) args->args[0]),
+                (struct cls_rule *) args->args[1],
+                (struct match *) args->args[2],
+                (unsigned int *) args->args[3],
+                (bool *) args->args[4]
+            );
+            break;
+
 
 
         /*case ecall_destroy_rule_if_overlaps:

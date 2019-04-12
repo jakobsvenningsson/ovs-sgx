@@ -769,3 +769,37 @@ SGX_need_to_evict(int bridge_id, int table_id) {
     );
     return evict;
 }
+
+size_t
+SGX_collect_rules_loose_stats_request(int bridge_id,
+                                      int table_id,
+                                      int n_tables,
+                                      size_t start_index,
+                                      size_t buffer_size,
+                                      struct match *match,
+                                      struct cls_rule **cls_rules,
+                                      struct match *matches,
+                                      unsigned int *priorities,
+                                      size_t *n_rules)
+{
+    size_t n;
+    ECALL(ecall_collect_rules_loose_stats_request,
+        true, 10, &n,
+        CAST(bridge_id),
+        CAST(table_id),
+        CAST(n_tables),
+        CAST(start_index),
+        CAST(buffer_size),
+        match,
+        cls_rules,
+        matches,
+        priorities,
+        n_rules
+    );
+    return n;
+}
+
+void
+SGX_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match *match, unsigned int *priority, bool *rule_is_hidden) {
+    ECALL(ecall_ofproto_rule_send_removed, false, 5, CAST(bridge_id), cr, match, priority, rule_is_hidden);
+}

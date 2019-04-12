@@ -151,6 +151,27 @@ enclave {
 	  ecall_need_to_evict(int bridge_id, int table_id);
 
 
+
+	  public size_t
+	  ecall_collect_rules_loose_stats_request(int bridge_id,
+	                                        int table_id,
+	                                        int n_tables,
+	                                        size_t start_index,
+											size_t buffer_size,
+	                                        [user_check] struct match *match,
+	                                        [user_check] struct cls_rule **cls_rules,
+	                                        [user_check] struct match *matches,
+	                                        [user_check] unsigned int *priorities,
+	                                        [user_check] size_t *n_rules);
+
+
+		public void
+		ecall_ofproto_rule_send_removed(int bridge_id,
+										[user_check] struct cls_rule *cr,
+										[user_check] struct match *match,
+										[user_check] unsigned int *priority,
+										[user_check] bool *rule_is_hidden);
+
 		public void ecall_ofproto_init_tables(int bridge_id, int n_tables);
 		public void ecall_readonly_set(int bridge_id, int table_id);
 		public int ecall_istable_readonly(int bridge_id, uint8_t table_id);

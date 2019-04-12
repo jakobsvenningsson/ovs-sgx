@@ -73,11 +73,12 @@ function compile() {
   cd $HOME/ovs-sgx
 
   ./build.sh "$C_FLAGS" > /dev/null 2> $HOME/ovs-sgx/benchmark/logs/benchmark.log
-  if [ $? -eq "0" ]; then
+  if [ $? == 0 ]; then
     echo "Failed to build project, status code $?."
     echo "Check benchmark.log for more information."  
     exit
   fi
+  echo $?
   echo "Compilation successfull."
 
   cd $HOME/ovs-sgx

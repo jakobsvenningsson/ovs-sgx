@@ -149,6 +149,23 @@ SGX_delete_flows(int bridge_id,
  bool
  SGX_need_to_evict(int bridge_id, int table_id);
 
+
+ size_t
+ SGX_collect_rules_loose_stats_request(int bridge_id,
+                                       int table_id,
+                                       int n_tables,
+                                       size_t start_index,
+                                       size_t buffer_size,
+                                       struct match *match,
+                                       struct cls_rule **cls_rules,
+                                       struct match *matches,
+                                       unsigned int *priorities,
+                                       size_t *n_rules);
+
+void
+SGX_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match *match, unsigned int *priority, bool *rule_is_hidden);
+
+
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);
 int SGX_istable_readonly(int bridge_id, uint8_t table_id);

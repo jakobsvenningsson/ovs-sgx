@@ -32,8 +32,11 @@ cd ovs
                      	 -L$ROOT_FOLDER/TLSonSGX" \
             	LIBS="-lOFTonSGX -lTLSonSGX -lmbedtls -lmbedx509 -lmbedcrypto -lpthread -lstdc++"
 
+
 make clean
 make
+echo "Compilation successfull."
+
 make install
 make modules_install
 
