@@ -1284,10 +1284,9 @@ ecall_ofproto_flush(int bridge_id,
 
 
 bool
-operation_is_pending(bool *pendings, struct cls_rule **all_cls_rules, size_t n, struct cls_rule *r, size_t *nn) {
+operation_is_pending(bool *pendings, struct cls_rule **all_cls_rules, size_t n, struct cls_rule *r) {
     for(size_t i = 0; i < n; ++i) {
         if(all_cls_rules[i] == r) {
-            *nn = 99;
             return pendings[i];
         }
     }
@@ -1303,7 +1302,6 @@ ecall_ofproto_evict(int bridge_id,
                     uint32_t *rule_hashes,
                     struct cls_rule ** cls_rules,
                     size_t buf_size,
-                    size_t *nn,
                     size_t *n_evictions)
 {
     size_t n = 0, total_nr_evictions = 0;
@@ -1326,7 +1324,7 @@ ecall_ofproto_evict(int bridge_id,
             struct cls_rule *tmp;
             ecall_choose_rule_to_evict(bridge_id, table_id, &tmp);
 
-            if (operation_is_pending(pendings, all_cls_rules, n_rules, tmp, nn)) {
+            if (operation_is_pending(pendings, all_cls_rules, n_rules, tmp)) {
                 break;
             }
 
@@ -1386,7 +1384,7 @@ ecall_add_flow(int bridge_id,
          return;
      }
 
-     ecall_classifier_replace(bridge_id, table_id, _a, victim);
+     ecall_classifier_replace(bridge_id, table_id, cr, victim);
      if(*victim) {
          ecall_evg_remove_rule(bridge_id, table_id, *victim);
      }
@@ -1417,3 +1415,135 @@ ecall_add_flow(int bridge_id,
      *vid = ecall_miniflow_get_vid(bridge_id, cr);
      *vid_mask = ecall_minimask_get_vid_mask(bridge_id, cr);
  }
+
+ size_t
+ ecall_collect_rules_strict(int bridge_id,
+                            int table_id,
+                              int ofproto_n_tables,
+                              struct match *match,
+                              unsigned int priority,
+                              bool *rule_is_hidden_buffer,
+                              struct cls_rule **cls_rule_buffer,
+                              bool *rule_is_modifiable,
+                              size_t buffer_size)
+  {
+      struct oftable * table;
+      struct cls_rule cr;
+      size_t n = 0;
+      ecall_cls_rule_init_i(bridge_id, &cr, match, priority);
+      FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables){
+          struct cls_rule * cls_rule = classifier_find_rule_exactly(&table->cls, &cr);
+          if(cls_rule) {
+              struct sgx_cls_rule * sgx_cls_rule = CONTAINER_OF(cls_rule, struct sgx_cls_rule, cls_rule);
+              cls_rule_buffer[n] = sgx_cls_rule->o_cls_rule;
+              rule_is_hidden_buffer[n] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule)> UINT16_MAX;
+              rule_is_modifiable[n] = !(ecall_rule_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
+              n++;
+          }
+      }
+      cls_rule_destroy(&cr);
+      return n;
+
+  }
+
+
+
+  size_t
+  ecall_collect_rules_loose(int bridge_id,
+                            int table_id,
+                            int ofproto_n_tables,
+                            size_t start_index,
+                            struct match *match,
+                            bool *rule_is_hidden_buffer,
+                            struct cls_rule **cls_rule_buffer,
+                            size_t buffer_size,
+                            bool *rule_is_modifiable,
+                            size_t *n_rules)
+   {
+       struct oftable * table;
+       struct cls_rule cr;
+       ecall_cls_rule_init_i(bridge_id, &cr, match, 0);
+       size_t n = 0, count = 0;
+
+       FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables){
+           struct cls_cursor cursor;
+           struct sgx_cls_rule * rule;
+
+           cls_cursor_init(&cursor, &table->cls, &cr);
+           CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
+               if (n >= buffer_size || (count < start_index)) {
+                   count++;
+                   continue;
+               }
+               count++;
+               cls_rule_buffer[n] = rule->o_cls_rule;
+               rule_is_hidden_buffer[n] = ecall_cr_priority(bridge_id, rule->o_cls_rule) > UINT16_MAX;
+               rule_is_modifiable[n] = !(ecall_rule_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
+               n++;
+           }
+       }
+       cls_rule_destroy(&cr);
+       *n_rules = count;
+       return n;
+   }
+
+
+
+
+   void
+   ecall_delete_flows(int bridge_id,
+   				 int *rule_table_ids,
+   				 struct cls_rule **cls_rules,
+   				 bool *rule_is_hidden,
+   				 uint32_t *rule_hashes,
+   				 unsigned int *rule_priorities,
+   				 struct match *match, size_t n)
+{
+    for(int i = 0; i < n; ++i) {
+        struct sgx_cls_rule * sgx_cls_rule;
+        sgx_cls_rule = node_search(bridge_id, cls_rules[i]);
+
+        rule_is_hidden[i] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule) > UINT16_MAX;
+        ecall_minimatch_expand(bridge_id, sgx_cls_rule->o_cls_rule, &match[i]);
+        rule_priorities[i] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule);
+        rule_hashes[i] = ecall_cls_rule_hash(bridge_id, sgx_cls_rule->o_cls_rule, rule_table_ids[i]);
+
+        ecall_cls_remove(bridge_id, rule_table_ids[i], sgx_cls_rule->o_cls_rule);
+        ecall_evg_remove_rule(bridge_id, rule_table_ids[i], sgx_cls_rule->o_cls_rule);
+    }
+}
+
+bool
+ecall_need_to_evict(int bridge_id, int table_id) {
+    bool eviction_is_enabled = ecall_eviction_fields_enable(bridge_id, table_id);
+    bool overflow = ecall_cls_count(bridge_id, table_id) > ecall_table_mflows(bridge_id, table_id);
+    return eviction_is_enabled && overflow;
+}
+
+void
+ecall_configure_table(int bridge_id,
+                     int table_id,
+                     char *name,
+                     unsigned int max_flows,
+                     struct mf_subfield *groups,
+                     size_t n_groups,
+                     bool *need_to_evict,
+                     bool *is_read_only)
+{
+    ecall_oftable_set_name(bridge_id, table_id, name);
+
+    if(ecall_istable_readonly(bridge_id, table_id)){
+        *is_read_only = true;
+        return;
+    }
+
+    ecall_table_mflows_set(bridge_id, table_id, max_flows);
+
+    if (groups) {
+        return;
+    } else {
+        ecall_oftable_disable_eviction(bridge_id, table_id);
+    }
+
+    *need_to_evict = ecall_need_to_evict(bridge_id, table_id);
+}

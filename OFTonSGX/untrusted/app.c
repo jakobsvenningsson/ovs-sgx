@@ -31,7 +31,7 @@ static int bridge_counter = 0;
     # define CAST(X) &X
 #else
 # define ECALL(f, has_return, n_args, args ...) \
-    f(global_eid, args);
+    f(global_eid, args)
 # define CAST(X) X
 #endif /* ifdef HOTCALL */
 
@@ -622,12 +622,11 @@ SGX_ofproto_evict(int bridge_id,
                   uint32_t *hashes,
                   struct cls_rule **cls_rules,
                   size_t buf_size,
-                  size_t *nn,
                   size_t *n_evictions)
 {
     size_t n;
     ECALL(ecall_ofproto_evict,
-          true, 10, &n,
+          true, 9, &n,
           CAST(bridge_id),
           CAST(ofproto_n_tables),
           pendings,
@@ -636,7 +635,6 @@ SGX_ofproto_evict(int bridge_id,
           hashes,
           cls_rules,
           CAST(buf_size),
-          nn,
           n_evictions);
     return n;
 }
@@ -691,3 +689,83 @@ SGX_add_flow(int bridge_id,
          is_read_only
      );
  }
+
+ size_t
+ SGX_collect_rules_strict(int bridge_id,
+                         int table_id,
+                         int n_tables,
+                         struct match *match,
+                         unsigned int priority,
+                         bool *rule_is_hidden_buffer,
+                         struct cls_rule **cls_rule_buffer,
+                         bool *rule_is_modifiable,
+                         size_t buffer_size)
+{
+    size_t n;
+    ECALL(
+        ecall_collect_rules_strict, true, 9,
+        &n, CAST(bridge_id), CAST(table_id), CAST(n_tables), match, CAST(priority),
+        rule_is_hidden_buffer, cls_rule_buffer, rule_is_modifiable, CAST(buffer_size)
+    );
+    return n;
+}
+
+
+size_t
+SGX_collect_rules_loose(int bridge_id,
+                       int table_id,
+                       int ofproto_n_tables,
+                       size_t start_index,
+                       struct match *match,
+                       bool *rule_is_hidden_buffer,
+                       struct cls_rule **cls_rule_buffer,
+                       size_t buffer_size,
+                       bool *rule_is_modifiable,
+                       size_t *n_rules)
+{
+    size_t n;
+    ECALL(
+        ecall_collect_rules_loose, true, 10,
+        &n, CAST(bridge_id), CAST(table_id), CAST(ofproto_n_tables), CAST(start_index), match,
+        rule_is_hidden_buffer, cls_rule_buffer, CAST(buffer_size), rule_is_modifiable, n_rules
+    );
+    return n;
+}
+
+void
+SGX_delete_flows(int bridge_id,
+				 int *rule_table_ids,
+				 struct cls_rule **cls_rules,
+				 bool *rule_is_hidden,
+				 uint32_t *rule_hashes,
+				 unsigned int *rule_priorities,
+				 struct match *match, size_t n)
+ {
+     ECALL(
+         ecall_delete_flows, false, 8, CAST(bridge_id), rule_table_ids, cls_rules, rule_is_hidden, rule_hashes, rule_priorities, match, CAST(n)
+     );
+ }
+
+ void
+ SGX_configure_table(int bridge_id,
+                     int table_id,
+                     char *name,
+                     unsigned int max_flows,
+                     struct mf_subfield *groups,
+                     size_t n_groups,
+                     bool *need_to_evict,
+                     bool *is_read_only)
+{
+    ECALL(
+        ecall_configure_table, false, 8, CAST(bridge_id), CAST(table_id), name, CAST(max_flows), groups, CAST(n_groups), need_to_evict, is_read_only
+    );
+}
+
+bool
+SGX_need_to_evict(int bridge_id, int table_id) {
+    bool evict;
+    ECALL(
+            ecall_need_to_evict, true, 2, &evict, CAST(bridge_id), CAST(table_id)
+    );
+    return evict;
+}

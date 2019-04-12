@@ -8,21 +8,21 @@ BASE_PATH=$HOME/ovs-sgx/benchmark
 
 function add_flow() {
   source ${BASE_PATH}/scripts/add_flow.sh
-  benchmark_add_flow $TARGETS $ITERATIONS
+  benchmark_add_flow $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "add_flow"
 }
 
 function del_flow_strict() {
   source ${BASE_PATH}/scripts/del_flow_strict.sh
-  benchmark_del_flow_strict $TARGETS $ITERATIONS
+  benchmark_del_flow_strict $ITERATIONS $TARGETS 
   echo $?
   create_csv_file $TARGETS "del_flow_strict"
 }
 
 function del_flow_loose() {
   source ${BASE_PATH}/scripts/del_flow_loose.sh
-  benchmark_del_flow_loose $TARGETS $ITERATIONS
+  benchmark_del_flow_loose $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "del_flow_loose"
 }
@@ -30,16 +30,23 @@ function del_flow_loose() {
 
 function mod_flow_strict() {
   source ${BASE_PATH}/scripts/mod_flow_strict.sh
-  benchmark_mod_flow_strict $TARGETS $ITERATIONS
+  benchmark_mod_flow_strict $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "mod_flow_strict"
 }
 
 function mod_flow_loose() {
   source ${BASE_PATH}/scripts/mod_flow_loose.sh
-  benchmark_mod_flow_loose $TARGETS $ITERATIONS
+  benchmark_mod_flow_loose $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "mod_flow_loose"
+}
+
+function dump_flows() {
+  source ${BASE_PATH}/scripts/dump_flows.sh
+  benchmark_dump_flows $ITERATIONS $TARGETS
+  echo $?
+  create_csv_file $TARGETS "dump_flows"
 }
 
 function print_help() {
@@ -71,6 +78,9 @@ case $BENCHMARK in
     ;;
   mod-flow-loose)
     mod_flow_loose
+    ;;
+  dump-flows)
+    dump_flows
     ;;
   all)
     add_flow

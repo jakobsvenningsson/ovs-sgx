@@ -74,7 +74,6 @@ SGX_ofproto_evict(int bridge_id,
                 uint32_t *hashes,
                 struct cls_rule **cls_rules,
                 size_t buf_size,
-				size_t *nn,
                 size_t *n_evictions);
 
 void
@@ -100,6 +99,55 @@ SGX_add_flow(int bridge_id,
 			 bool *is_rule_overlapping,
 			 bool *is_deletion_pending,
 			 bool *is_read_only);
+
+ size_t
+ SGX_collect_rules_strict(int bridge_id,
+	 					 int table_id,
+						 int n_tables,
+						 struct match *match,
+						 unsigned int priority,
+                         bool *rule_is_hidden_buffer,
+                         struct cls_rule **cls_rule_buffer,
+						 bool *rule_is_modifiable,
+                         size_t buffer_size);
+
+
+
+
+ size_t
+ SGX_collect_rules_loose(int bridge_id,
+                        int table_id,
+                        int ofproto_n_tables,
+                        size_t start_index,
+                        struct match *match,
+                        bool *rule_is_hidden_buffer,
+                        struct cls_rule **cls_rule_buffer,
+                        size_t buffer_size,
+						bool *rule_is_modifiable,
+                        size_t *n_rules);
+
+void
+SGX_delete_flows(int bridge_id,
+				 int *rule_table_ids,
+				 struct cls_rule **cls_rules,
+				 bool *rule_is_hidden,
+				 uint32_t *rule_hashes,
+				 unsigned int *rule_priorities,
+				 struct match *match, size_t n);
+
+
+ void
+ SGX_configure_table(int bridge_id,
+                     int table_id,
+                     char *name,
+                     unsigned int max_flows,
+                     struct mf_subfield *groups,
+                     size_t n_groups,
+                     bool *need_to_evict,
+                     bool *is_read_only);
+
+ bool
+ SGX_need_to_evict(int bridge_id, int table_id);
 
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);

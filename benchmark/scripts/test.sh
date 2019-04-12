@@ -1,13 +1,16 @@
 #!/bin/bash
 
+
+GLOBAL=""
 function foo {
-  TARGETS=("SGX VANILLA" "SGX" "VANILLA")
-  echo ${TARGETS[*]}
+  echo $@
+  local TARGETS=("1VANILLA" "SGX" "VANILLA")
+  GLOBAL=($@)
 }
 
-F=`foo`
-:
-for i in ${F[*]}; do
+foo $@
+
+for i in "${GLOBAL[@]}"; do
   echo $i
 done
 

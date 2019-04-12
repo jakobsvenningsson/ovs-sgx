@@ -2,14 +2,42 @@
 
 function join_by { local IFS="$1"; shift; echo "$*"; }
 
+
+
 function get_targets() {
   local TARGETS=()
   if [ "$1" = "ALL" ]; then
-    TARGETS=("BASELINE" "SGX" "HOTCALL")
+    TARGETS=("BASELINE" "SGX" "OPTIMIZED" "HOTCALL" "HOTCALL+OPTIMIZED")
   else
-    TARGETS=$*
+    TARGETS=("$*")
   fi
   echo ${TARGETS[@]}
+}
+
+function get_compile_flags() {
+  local TARGET=$1
+  local FLAGS=""
+  case $TARGET in
+    BASELINE)
+      ;;
+    SGX)
+      FLAGS="-D SGX"
+      ;;
+    OPTIMIZED)
+      FLAGS="-D SGX -D OPTIMIZED"
+      ;;
+    HOTCALL)
+      FLAGS="-D SGX -D HOTCALL"
+      ;;
+    HOTCALL+OPTIMIZED)
+      FLAGS="-D SGX -D HOTCALL -D OPTIMIZED"
+      ;;
+    *)
+      echo "Unknown target."
+      echo ${@:2} 
+    ;;
+  esac
+  echo "$FLAGS"
 }
 
 function create_csv_file() {
@@ -28,20 +56,23 @@ function create_csv_file() {
 }
 
 function compile() {
-  local FLAGS=""
-  local C_FLAGS=$@
-  for flag in $C_FLAGS; do
-    FLAGS+="-D $flag "
-    if [ $flag = "HOTCALL" ]; then
-      FLAGS+="-D SGX"
-    fi
-  done
+  local TARGET=$2
+  echo "compile ${TARGET}"
+  local FLAGS=`get_compile_flags ${TARGET}`
+  local C_FLAGS="-D ${1} ${FLAGS}"
+  #local C_FLAGS=$@
+  #for flag in $C_FLAGS; do
+  #  FLAGS+="-D $flag "
+  #  if [ $flag = "HOTCALL" ]; then
+  #    FLAGS+="-D SGX"
+  #  fi
+  #done
 
-  echo "Compiling OVS with flags $FLAGS"
+  echo "Compiling OVS with flags $C_FLAGS"
   
   cd $HOME/ovs-sgx
 
-  ./build.sh "$FLAGS" > /dev/null 2> $HOME/ovs-sgx/benchmark/logs/benchmark.log
+  ./build.sh "$C_FLAGS" > /dev/null 2> $HOME/ovs-sgx/benchmark/logs/benchmark.log
   if [ $? -eq "0" ]; then
     echo "Failed to build project, status code $?."
     echo "Check benchmark.log for more information."  
@@ -64,14 +95,15 @@ function startup() {
   echo $?
   ovs-vsctl --no-wait init
   echo "Starting ovs-vswitch"
-  ovs-vswitchd --pidfile --log-file --detach 5>$HOME/ovs-sgx/benchmark/data/tmp/$OUTPUT_FILE
+  echo "Writing output to ${HOME}/ovs-sgx/benchmark/data/tmp/${OUTPUT_FILE}"
+  ovs-vswitchd --pidfile --log-file=$HOME/ovs-log --detach 1>$HOME/ovs-sgx/benchmark/logs/benchmark-stdout.log 2>$HOME/ovs-sgx/benchmark/logs/benchmark-stderr.log 5>$HOME/ovs-sgx/benchmark/data/tmp/$OUTPUT_FILE
   echo "Adding bridge br0"
   ovs-vsctl add-br br0
   echo $?
 }
 
 function cleanup() {
-  pkill ovs
+  pkill -9 ovs
   pkill CA_server
 }
 
@@ -82,7 +114,6 @@ function prepare() {
   ovsdb-tool create /usr/local/etc/openvswitch/conf.db $HOME/ovs-sgx/ovs/vswitchd/vswitch.ovsschema
   /sbin/modprobe openvswitch
 }
-
 
 
 

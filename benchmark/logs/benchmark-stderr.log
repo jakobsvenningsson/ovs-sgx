@@ -1,0 +1,3 @@
+2019-04-12T10:34:30Z|00001|vlog|INFO|opened log file /home/jakob/ovs-log
+2019-04-12T10:34:30Z|00002|reconnect|INFO|unix:/usr/local/var/run/openvswitch/db.sock: connecting...
+2019-04-12T10:34:30Z|00003|reconnect|INFO|unix:/usr/local/var/run/openvswitch/db.sock: connected

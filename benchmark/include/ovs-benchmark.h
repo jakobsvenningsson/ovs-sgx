@@ -5,9 +5,9 @@
     do { \
         struct timespec et; \
         struct timespec st; \
-        clock_gettime(CLOCK_REALTIME,&st); \
+        clock_gettime(CLOCK_REALTIME, &st); \
         RETURN_VAR = FUNC(ARGS); \
-        clock_gettime(CLOCK_REALTIME,&et); \
+        clock_gettime(CLOCK_REALTIME, &et); \
         { \
             char buf[32]; \
             int n = sprintf(buf, "%lu\n", et.tv_nsec - st.tv_nsec); \

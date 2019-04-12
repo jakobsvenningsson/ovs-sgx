@@ -10,12 +10,15 @@ function del_flow_loose() {
   for i in `seq 0 $N_FLOWS`; do
     ovs-ofctl del-flows br0 "in_port=2"
     ovs-ofctl add-flow br0 in_port=2,priority=10,actions=drop
+    if [[ $(($i % 300)) == 0 ]]; then
+      sleep 0.2
+    fi
   done
 }
 
 function benchmark_del_flow_loose() {
-  local ITERATIONS=$2
-  local TARGETS=$(get_targets $1)
+  local ITERATIONS=$1
+  local TARGETS=$(get_targets ${@:2})
   for target in ${TARGETS[@]}; do
     echo "FLAGS = $target"
     prepare
