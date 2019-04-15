@@ -68,9 +68,7 @@ SGX_ofproto_flush(int bridge_id,
 size_t
 SGX_ofproto_evict(int bridge_id,
                 int ofproto_n_tables,
-				bool *pendings,
-				struct cls_rule **all_cls_rules,
-				size_t m,
+				size_t start_index,
                 uint32_t *hashes,
                 struct cls_rule **cls_rules,
                 size_t buf_size,
@@ -162,9 +160,17 @@ SGX_delete_flows(int bridge_id,
                                        unsigned int *priorities,
                                        size_t *n_rules);
 
+
+size_t
+SGX_remove_rules(int bridge_id, int *table_ids, struct cls_rule **rules, bool *is_hidden, size_t n_rules);
+
+
 void
 SGX_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match *match, unsigned int *priority, bool *rule_is_hidden);
 
+
+//size_t
+//SGX_ofproto_evict_get_rest(uint32_t *rule_hashes, struct cls_rule ** cls_rules, size_t buf_size);
 
 int sgx_ofproto_init_tables(int n_tables);
 void SGX_readonly_set(int bridge_id, int table_id);

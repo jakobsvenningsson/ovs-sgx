@@ -345,6 +345,37 @@ ecall_choose_rule_to_evict(int bridge_id, int table_id, struct cls_rule ** o_cls
     }
 }
 
+void
+ecall_choose_rule_to_evict_2(int bridge_id, int table_id, struct cls_rule ** o_cls_rule, struct cls_rule **exclude, size_t n_exclude){
+    *o_cls_rule = NULL;
+    if (!SGX_oftables[bridge_id][table_id].eviction_fields) {
+        return;
+    }
+    struct eviction_group * evg;
+    HEAP_FOR_EACH(evg, size_node, &SGX_oftables[bridge_id][table_id].eviction_groups_by_size){
+        struct sgx_cls_rule * sgx_cls_rule;
+
+        HEAP_FOR_EACH(sgx_cls_rule, rule_evg_node, &evg->rules){
+            if (sgx_cls_rule->evictable) {
+                bool ex = false;
+                for(int i = 0; i < n_exclude; ++i) {
+                    if(exclude[i] == sgx_cls_rule->o_cls_rule) {
+                        ex = true;
+                    }
+                }
+
+                if(ex) {
+                    continue;
+                }
+
+
+                *o_cls_rule = sgx_cls_rule->o_cls_rule;
+                return;
+            }
+        }
+    }
+}
+
 // 19 choose and return a rule to evict from table
 void
 choose_rule_to_evict(int bridge_id, int table_id, struct sgx_cls_rule ** o_cls_rule, struct sgx_cls_rule **exclude_rules, size_t n_excluded){
@@ -1296,15 +1327,21 @@ operation_is_pending(bool *pendings, struct cls_rule **all_cls_rules, size_t n, 
 size_t
 ecall_ofproto_evict(int bridge_id,
                     int ofproto_n_tables,
-                    bool *pendings,
-                    struct cls_rule **all_cls_rules,
-                    size_t n_rules,
+                    size_t start_index,
                     uint32_t *rule_hashes,
                     struct cls_rule ** cls_rules,
                     size_t buf_size,
                     size_t *n_evictions)
 {
+
     size_t n = 0, total_nr_evictions = 0;
+
+    size_t size = start_index + buf_size;
+    uint32_t rule_prios[size];
+    uint32_t group_prios[size];
+    int table_ids[size];
+
+    struct cls_rule *skip_rules[start_index];
 
     for(size_t table_id = 0; table_id < ofproto_n_tables; table_id++){
 
@@ -1315,28 +1352,60 @@ ecall_ofproto_evict(int bridge_id,
         int rules_in_table = ecall_cls_count(bridge_id, table_id);
         int max_flows = ecall_table_mflows(bridge_id, table_id);
         total_nr_evictions += (rules_in_table > max_flows ? rules_in_table - max_flows : 0);
+        int count = ecall_cls_count(bridge_id, table_id);
 
-        while(ecall_cls_count(bridge_id, table_id) > max_flows){
-            if(n >= buf_size) {
-                break;
-            }
-
+        while(count > max_flows){
             struct cls_rule *tmp;
             ecall_choose_rule_to_evict(bridge_id, table_id, &tmp);
-
-            if (operation_is_pending(pendings, all_cls_rules, n_rules, tmp)) {
+            if(!tmp) {
                 break;
             }
 
-            rule_hashes[n] = ecall_cls_rule_hash(bridge_id, tmp, table_id);
-            cls_rules[n++] = tmp;
+            count--;
 
-            ecall_cls_remove(bridge_id, table_id, tmp);
+            if(n >= start_index) {
+                rule_hashes[n - start_index] = ecall_cls_rule_hash(bridge_id, tmp, table_id);
+                cls_rules[n - start_index] = tmp;
+            } else {
+                skip_rules[n] = tmp;
+            }
+
+            struct sgx_cls_rule * sgx_cls_rule;
+            sgx_cls_rule = node_search(bridge_id, tmp);
+            table_ids[n] = table_id;
+            group_prios[n] = sgx_cls_rule->evict_group->size_node.priority;
+            rule_prios[n] = sgx_cls_rule->rule_evg_node.priority;
+            n++;
+
             ecall_evg_remove_rule(bridge_id, table_id, tmp);
         }
     }
+
+    for(int i = 0; i < n; ++i) {
+        struct sgx_cls_rule * sgx_cls_rule;
+        if(i >= start_index) {
+            sgx_cls_rule = node_search(bridge_id, cls_rules[i - start_index]);
+            ecall_evg_add_rule(bridge_id, table_ids[i], cls_rules[i  - start_index], group_prios[i], rule_prios[i], sgx_cls_rule->rule_evg_node);
+        } else {
+            sgx_cls_rule = node_search(bridge_id, skip_rules[i]);
+            ecall_evg_add_rule(bridge_id, table_ids[i], skip_rules[i], group_prios[i], rule_prios[i], sgx_cls_rule->rule_evg_node);
+        }
+    }
+
      *n_evictions = total_nr_evictions;
-     return n;
+     return n - start_index;
+}
+
+size_t
+ecall_remove_rules(int bridge_id, int *table_ids, struct cls_rule **rules, bool *is_hidden, size_t n_rules) {
+    size_t n = 0;
+    for(size_t i = 0; i < n_rules; ++i) {
+        is_hidden[i] = ecall_cr_priority(bridge_id, rules[i]) > UINT16_MAX;
+        ecall_cls_remove(bridge_id, table_ids[i], rules[i]);
+        ecall_evg_remove_rule(bridge_id, table_ids[i], rules[i]);
+        ecall_cls_rule_destroy(bridge_id, rules[i]);
+    }
+    return n;
 }
 
 void
@@ -1530,6 +1599,7 @@ ecall_configure_table(int bridge_id,
                      bool *need_to_evict,
                      bool *is_read_only)
 {
+
     ecall_oftable_set_name(bridge_id, table_id, name);
 
     if(ecall_istable_readonly(bridge_id, table_id)){
@@ -1537,14 +1607,13 @@ ecall_configure_table(int bridge_id,
         return;
     }
 
-    ecall_table_mflows_set(bridge_id, table_id, max_flows);
-
     if (groups) {
         return;
     } else {
         ecall_oftable_disable_eviction(bridge_id, table_id);
     }
 
+    ecall_table_mflows_set(bridge_id, table_id, max_flows);
     *need_to_evict = ecall_need_to_evict(bridge_id, table_id);
 }
 

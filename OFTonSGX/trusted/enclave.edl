@@ -70,9 +70,7 @@ enclave {
 		public size_t
 		ecall_ofproto_evict(int bridge_id,
 							int ofproto_n_tables,
-							[user_check] bool *pendings,
-							[user_check] struct cls_rule **all_cls_rules,
-							size_t m,
+							size_t start_index,
 							[user_check] uint32_t *hashes,
 							[user_check] struct cls_rule ** cls_rules,
 							size_t buf_size,
@@ -171,6 +169,14 @@ enclave {
 										[user_check] struct match *match,
 										[user_check] unsigned int *priority,
 										[user_check] bool *rule_is_hidden);
+
+
+		public size_t
+		ecall_remove_rules(int bridge_id, [user_check] int *table_ids, [user_check] struct cls_rule **rules, [user_check] bool *is_hidden, size_t n_rules);
+
+
+		//public void
+		//ecall_ofproto_evict_get_rest([user_check] uint32_t *rule_hashes, [user_check] struct cls_rule ** cls_rules, size_t buf_size);
 
 		public void ecall_ofproto_init_tables(int bridge_id, int n_tables);
 		public void ecall_readonly_set(int bridge_id, int table_id);

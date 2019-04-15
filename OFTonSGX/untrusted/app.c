@@ -616,9 +616,7 @@ SGX_ofproto_flush(int bridge_id,
 size_t
 SGX_ofproto_evict(int bridge_id,
                   int ofproto_n_tables,
-                  bool *pendings,
-                  struct cls_rule **all_cls_rules,
-                  size_t m,
+                  size_t start_index,
                   uint32_t *hashes,
                   struct cls_rule **cls_rules,
                   size_t buf_size,
@@ -626,12 +624,10 @@ SGX_ofproto_evict(int bridge_id,
 {
     size_t n;
     ECALL(ecall_ofproto_evict,
-          true, 9, &n,
+          true, 7, &n,
           CAST(bridge_id),
           CAST(ofproto_n_tables),
-          pendings,
-          all_cls_rules,
-          CAST(m),
+          CAST(start_index),
           hashes,
           cls_rules,
           CAST(buf_size),
@@ -803,3 +799,16 @@ void
 SGX_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match *match, unsigned int *priority, bool *rule_is_hidden) {
     ECALL(ecall_ofproto_rule_send_removed, false, 5, CAST(bridge_id), cr, match, priority, rule_is_hidden);
 }
+
+
+size_t
+SGX_remove_rules(int bridge_id, int *table_ids, struct cls_rule **rules, bool *is_hidden, size_t n_rules) {
+    size_t n;
+    ECALL(ecall_remove_rules, true, 5, &n, CAST(bridge_id), table_ids, rules, is_hidden, CAST(n_rules));
+    return n;
+}
+
+/*size_t
+SGX_ofproto_evict_get_rest(uint32_t *rule_hashes, struct cls_rule ** cls_rules, size_t buf_size) {
+    ECALL(ecall_ofproto_evict_get_rest, false, 3, rule_hashes, cls_rules, CAST(buf_size));
+}*/

@@ -80,6 +80,8 @@
 #define hotcall_ecall_need_to_evict 70
 #define hotcall_ecall_collect_rules_loose_stats_request 71
 #define hotcall_ecall_ofproto_rule_send_removed 72
+#define hotcall_ecall_remove_rules 73
+#define hotcall_ecall_ofproto_evict_get_rest 74
 //#define hotcall_ecall_destroy_rule_if_overlaps 59
 //#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
 //#define hotcall_ecall_miniflow_expand_and_tag 61
