@@ -3,17 +3,46 @@
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509.h"
 #include <sgx_urts.h>
+#include <pthread.h>
+
+#include "spinlock.h"
+#include "common.h"
+#include "hotcall-producer.h"
 
 #include "enclave_u.h"
 #include "utils.h"
 #include "wrapper_ssl.h"
-
 
 static sgx_enclave_id_t eid = 0;
 static int enclave_status   = 10;
 
 // #define PRINT_FUNC() printf("#####%s\n",__PRETTY_FUNCTION__)
 #define PRINT_FUNC()
+
+#ifdef HOTCALL_TLS
+# define ECALL(f, has_return, n_args, args ...) \
+    argument_list arg_list; \
+    void * return_val; \
+    compile_arg_list(&return_val, &arg_list, has_return, n_args, args); \
+    make_hotcall(&ctx, hotcall_ ## f, &arg_list, return_val)
+    # define CAST(X) &X
+#else
+# define ECALL(f, has_return, n_args, args ...) \
+    f(eid, args)
+# define CAST(X) X
+#endif /* ifdef HOTCALL */
+
+void *
+ecall_polling_thread(void * vargp){
+    printf("Running polling thread.\n");
+    int ecall_return;
+    MAKE_ECALL_ARGS(start_poller_tls, &ecall_return, eid, &ctx);
+    if (ecall_return == 0) {
+        printf("Application ran with success\n");
+    } else {
+        printf("Application failed %d \n", ecall_return);
+    }
+}
 
 #include <string>
 #include <iostream>
@@ -62,11 +91,25 @@ SSL_library_init(){
         initialize_enclave(&eid);
         enclave_status = 0;
         printf("@@@SSL Library_init: enclave initilizaed\n");
+
+        #ifdef HOTCALL_TLS
+        printf("TLS HOTCALLS ENABLED STARTING THREAD.\n");
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, ecall_polling_thread, NULL);
+        #else
+        puts("NO HOTCALLS.");
+        #endif
+        #ifdef TIMEOUT_TLS
+        puts("TIMEOUT ENABLED\n");
+        #endif
     }
     string lastMeasureString = getIMAmeasure();
     float key_gen_time       = 0;
     const char * lastMeasure = lastMeasureString.c_str();
-    ecall_ssl_library_init(eid, lastMeasure, 256);
+    printf("Before ecall_ssl_library_init\n");
+    int mSize = 256;
+    ECALL(ecall_ssl_library_init, false, 2, lastMeasure, CAST(mSize));
+    printf("After ecall_ssl_library_init\n");
     return 1;
 }
 
@@ -83,23 +126,23 @@ SSLv23_client_method(){
 SSL_CTX *
 SSL_CTX_new(SSL_METHOD * ssl_method){
     PRINT_FUNC();
-    SSL_CTX * ctx = (SSL_CTX *) calloc(1, sizeof(*ctx));
-    ecall_ssl_ctx_new(eid);
-    return ctx;
+    SSL_CTX * ssl_ctx = (SSL_CTX *) calloc(1, sizeof(*ssl_ctx));
+    ECALL(ecall_ssl_ctx_new, false, 0, NULL);
+    return ssl_ctx;
 }
 
 void
-SSL_CTX_free(SSL_CTX * ctx){
+SSL_CTX_free(SSL_CTX * ssl_ctx){
     PRINT_FUNC();
-    ecall_ssl_ctx_free(eid);
-    free(ctx);
+    ECALL(ecall_ssl_ctx_free, false, 0, NULL);
+    free(ssl_ctx);
 }
 
 void
-SSL_CTX_set_verify(SSL_CTX * ctx, int mode, void * reserved){
+SSL_CTX_set_verify(SSL_CTX * ssl_ctx, int mode, void * reserved){
     // SSL_VERIFY_REQUIRED is hardcoded
     PRINT_FUNC();
-    ecall_ssl_ctx_set_verify(eid);
+    ECALL(ecall_ssl_ctx_set_verify, false, 0, NULL);
 }
 
 void
@@ -133,7 +176,7 @@ SSL_get_peer_certificate(SSL * ssl){
     PRINT_FUNC();
     X509 * cert = (X509 *) calloc(1, sizeof(*cert));
     mbedtls_x509_crt_init(cert);
-    ecall_ssl_get_peer_certificate(eid, cert);
+    ECALL(ecall_ssl_get_peer_certificate, false, 1, cert);
     return cert;
 }
 
@@ -157,7 +200,7 @@ X509_NAME_oneline(X509_NAME * subject, char * buf, int size){
 void
 SSL_load_error_strings(){
     PRINT_FUNC();
-    ecall_ssl_load_error_strings(eid);
+    ECALL(ecall_ssl_load_error_strings, false, 0, NULL);
 }
 
 void
@@ -169,10 +212,10 @@ X509_free(X509 * crt){
 /* SSL functions */
 
 SSL *
-SSL_new(SSL_CTX * ctx){
+SSL_new(SSL_CTX * ssl_ctx){
     PRINT_FUNC();
     SSL * ssl = (SSL *) calloc(1, sizeof(*ssl));
-    ecall_ssl_new(eid);
+    ECALL(ecall_ssl_new, false, 0, NULL);
     printf("@@@SSL_new: After ecall\n");
     return ssl;
 }
@@ -180,7 +223,7 @@ SSL_new(SSL_CTX * ctx){
 void
 SSL_free(SSL * ssl){
     PRINT_FUNC();
-    ecall_ssl_free(eid);
+    ECALL(ecall_ssl_free, false, 0, NULL);
     free(ssl);
 }
 
@@ -193,8 +236,7 @@ int
 SSL_get_error(const SSL * ssl, int ret){
     PRINT_FUNC();
     int ret1 = 0;
-    ecall_ssl_get_error(eid, &ret1, ret);
-
+    ECALL(ecall_ssl_get_error, true, 1, &ret1, CAST(ret));
     return ret1;
 }
 
@@ -202,10 +244,11 @@ int
 SSL_want(const SSL * ssl){
     PRINT_FUNC();
     int ret1 = 0;
-    ecall_ssl_get_error(eid, &ret1, 1);
+    int dummy = 1;
+    ECALL(ecall_ssl_get_error, true, 1, &ret1, CAST(dummy));
     if (ret1 == SSL_ERROR_WANT_READ) {
         return SSL_READING;
-    } else if (ret1 == SSL_ERROR_WANT_WRITE)     {
+    } else if (ret1 == SSL_ERROR_WANT_WRITE) {
         return SSL_WRITING;
     }
     return ret1;
@@ -215,7 +258,7 @@ int
 SSL_set_fd(SSL * ssl, int fd){
     PRINT_FUNC();
     int ret = 0;
-    ecall_ssl_set_fd(eid, &ret, fd);
+    ECALL(ecall_ssl_set_fd, true, 1, &ret, CAST(fd));
     return 1;
 }
 
@@ -224,7 +267,7 @@ int
 SSL_read(SSL * ssl, void * buf, int num){
     PRINT_FUNC();
     int ret = 0;
-    ecall_ssl_read(eid, &ret, (char *) buf, num);
+    ECALL(ecall_ssl_read, true, 2, &ret, (char *) buf, CAST(num));
     return ret;
 }
 
@@ -232,7 +275,7 @@ int
 SSL_write(SSL * ssl, const void * buf, int num){
     PRINT_FUNC();
     int ret = 0;
-    ecall_ssl_write(eid, &ret, (char *) buf, num);
+    ECALL(ecall_ssl_write, true, 2, &ret, (char *) buf, CAST(num));
     return ret;
 }
 
@@ -240,8 +283,7 @@ int
 SSL_connect(SSL * ssl){
     PRINT_FUNC();
     int ret = 0;
-    ecall_ssl_connect(eid, &ret);
-    // printf("@@@SSL_connect:after ecall return value is %d\n", ret);
+    ECALL(ecall_ssl_connect, true, 0, &ret, NULL);
     return ret;
 }
 
@@ -249,7 +291,7 @@ int
 SSL_accept(SSL * ssl){
     PRINT_FUNC();
     int ret = 0;
-    ecall_ssl_accept(eid, &ret);
+    ECALL(ecall_ssl_accept, true, 0, &ret, NULL);
     return ret;
 }
 
@@ -263,7 +305,7 @@ int
 SSL_get_state(SSL * ssl){
     PRINT_FUNC();
     int ret = 0;
-    ecall_ssl_get_state(eid, &ret);
+    ECALL(ecall_ssl_get_state, true, 0, &ret, NULL);
     return ret;
 }
 
@@ -277,25 +319,21 @@ SSL_CTX_set_cipher_list(SSL_CTX * ctx, const char * str){
 void
 SSL_set_msg_callback(SSL_CTX * ctx, void * reserved_for_cb){
     PRINT_FUNC();
-    // printf("@@@SSL_set_msg_callback:method is not implemented\n");
 }
 
 void
 SSL_set_msg_callback_arg(SSL_CTX * ctx, void * arg){
     PRINT_FUNC();
-    // printf("@@@SSL_set_msg_callback_arg: method is not implemented\n");
 }
 
 void
 SSL_CTX_set_tmp_dh_callback(SSL_CTX * ctx, void * reserved_for_cb){
     PRINT_FUNC();
-    // printf("@@@SSL_CTX_set_tmp_dh_callback:method is not implemented\n");
 }
 
 long
 SSL_CTX_set_session_cache_mode(SSL_CTX * ctx, long mode){
     PRINT_FUNC();
-    // in mbedtls if mbedtls_ssl_conf_session_cache not set then no session resuming is done
     return 1;
 }
 
@@ -311,7 +349,6 @@ int
 SSL_CTX_check_private_key(const SSL_CTX * ctx){
     PRINT_FUNC();
     // Private key and certificate are within the enclave and would never leave the enclave
-    // printf("@@@SSL_CTX_check_private_key:Private key and certificate are within the enclave and would never leave the enclave\n");
     return 1;
 }
 
@@ -319,6 +356,6 @@ int
 SSL_shutdown(SSL * ssl){
     PRINT_FUNC();
     int ret = 0;
-    ecall_ssl_shutdown(eid, &ret);
+    ECALL(ecall_ssl_shutdown, true, 0, &ret, NULL);
     return ret;
 }

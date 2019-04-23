@@ -1,8 +1,8 @@
 #include "hotcall.h"
-#include "enclave-utils.h"
+#include "call-table.h"
 
 int
-ecall_start_poller(async_ecall * ctx){
+ecall_start_poller_tls(async_ecall * ctx){
     // sgx_thread_mutex_init(&ctx->mutex, NULL);
     char buf[128];
 
@@ -13,12 +13,10 @@ ecall_start_poller(async_ecall * ctx){
             #ifdef TIMEOUT
             timeout_counter = INIT_TIMER_VALUE;
             #endif
-            ENCLAVE_LOG(buf, "Running function %d\n", ctx->function);
             ctx->run = false;
             execute_function(ctx->function, ctx->args, ctx->ret);
             ctx->is_done = true;
             sgx_spin_unlock(&ctx->spinlock);
-            ENCLAVE_LOG(buf, "Running function %d done.\n", ctx->function);
             continue;
         }
 

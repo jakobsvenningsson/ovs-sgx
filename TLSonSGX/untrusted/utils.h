@@ -16,6 +16,24 @@ extern "C" {
 
 //extern sgx_enclave_id_t global_eid;    /* global enclave id */
 
+#define MAKE_ECALL_ARGS(FUNC, ecall_ret, global_eid, args...) \
+  do { \
+    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret, args); \
+    if( sgx_ret != SGX_SUCCESS) { \
+      print_error_message(sgx_ret); \
+      printf("ecall failed in ecall_%s\n", #FUNC); \
+    } \
+  } while(0)
+
+#define MAKE_ECALL(FUNC, ecall_ret, global_eid) \
+  do { \
+    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret); \
+    if( sgx_ret != SGX_SUCCESS) { \
+      print_error_message(sgx_ret); \
+      printf("ecall failed in ecall_%s\n", #FUNC); \
+    } \
+  } while(0)
+
 
 typedef struct _sgx_errlist_t {
     sgx_status_t err;

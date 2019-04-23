@@ -85,8 +85,10 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 
 function get_targets() {
   local TARGETS=()
-  if [ "$1" = "ALL" ]; then
+  if [ "$1" = "ALL_FLOW" ]; then
     TARGETS=("BASELINE" "SGX" "OPTIMIZED" "HOTCALL" "HOTCALL+OPTIMIZED")
+  elif [ "$1" = "ALL_TLS" ]; then
+    TARGETS=("BASELINE" "SGX" "HOTCALL")
   else
     TARGETS=("$*")
   fi

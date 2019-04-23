@@ -24,6 +24,10 @@ extern "C" {
 #include <unistd.h>
 #include <stdbool.h>
 
+#include "hotcall.h"
+#include "enclave-utils.h"
+
+
 #define SSL_ERROR_WANT_READ POLARSSL_ERR_NET_WANT_READ
 #define SSL_ERROR_WANT_WRITE POLARSSL_ERR_NET_WANT_WRITE
 #define SSL_AD_CLOSE_NOTIFY POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY
@@ -43,27 +47,6 @@ extern "C" {
 //CA Server
 #define SERVER_PORT "4433"
 #define SERVER_NAME "127.0.0.1"
-
-void printf(const char *fmt, ...)
-{
-    char buf[BUFSIZ] = {'\0'};
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, ap);
-    va_end(ap);
-    ocall_print(buf);
-}
-
-
-int sprintf(char* buf, const char *fmt, ...)
-{
-        va_list ap;
-        int ret;
-        va_start(ap, fmt);
-        ret = vsnprintf(buf, BUFSIZ, fmt, ap);
-        va_end(ap);
-        return ret;
-}
 
 static SSL *ssl;
 static SSL_CTX *ctx;

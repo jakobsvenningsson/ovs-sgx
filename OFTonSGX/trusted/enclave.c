@@ -1213,20 +1213,6 @@ size_t ecall_get_cls_rules_and_enable_eviction(int bridge_id,
     return ecall_get_cls_rules(bridge_id, table_id, 0, -1, buf, buf_size, n_rules);
 }
 
-
-/*void ecall_eviction_group_add_rules(struct rule **rules, size_t n) {
-    for(int i = 0; i < n; ++i) {
-        struct rule *rule = rules[i];
-        if(ecall_eviction_fields_enable(rule->ofproto->bridge_id, rule->table_id)) {
-            ecall_evg_add_rule(rule->ofproto->bridge_id,
-                               rule->table_id, &rule->cr,
-                               eviction_group_priority(0),
-                               rule_eviction_priority(rule),
-                               rule->evg_node);
-        }
-    }
-}*/
-
 void ecall_eviction_group_add_rules(int bridge_id,
                                            int table_id,
                                            size_t n,

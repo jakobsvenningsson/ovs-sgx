@@ -1,6 +1,9 @@
+#include "enclave_t.h"
+#include "sgx_trts.h"
 #include "enclave-utils.h"
 #include <stdarg.h>
 #include <stdio.h>      /* vsnprintf */
+
 /*
  * printf:
  *   Invokes OCALL to display the enclave buffer to the terminal.
