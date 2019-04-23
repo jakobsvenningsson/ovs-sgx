@@ -73,12 +73,12 @@ configure_context(SSL_CTX * ctx){
     SSL_CTX_set_ecdh_auto(ctx, 1);
 
     /* Set the key and cert */
-    if (SSL_CTX_use_certificate_file(ctx, "rootca-cert.pem", SSL_FILETYPE_PEM) < 0) {
+    if (SSL_CTX_use_certificate_file(ctx, "rootCA.crt", SSL_FILETYPE_PEM) < 0) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
 
-    if (SSL_CTX_use_PrivateKey_file(ctx, "rootca-key.pem", SSL_FILETYPE_PEM) < 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx, "rootCA.key", SSL_FILETYPE_PEM) < 0) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
@@ -88,7 +88,7 @@ int
 main(int argc, char ** argv){
     int sock;
     SSL_CTX * ctx;
-    char ima_buf[1012];
+    char ima_buf[1024];
     char req_buf[8196];
 
     init_openssl();
@@ -97,6 +97,9 @@ main(int argc, char ** argv){
     sock = create_socket(4433);
 
     /* Handle connections */
+
+    printf("Waiting for new connections...\n");
+
     while (1) {
         struct sockaddr_in addr;
         uint len = sizeof(addr);
@@ -135,20 +138,16 @@ main(int argc, char ** argv){
             close(client);
             continue;
         }
-
-        printf("IMA is valid!\n");
         strcpy(verdict, "MOK");
         SSL_write(ssl, verdict, 4);
 
         // Read SSL signing request into buffer
         int req_length = 0;
-        while (!strcmp(req_buf, "")) {
+        do {
             req_length = SSL_read(ssl, req_buf, sizeof(req_buf));
             printf("Inside loop, reading %d bytes\n", req_length);
             req_buf[req_length] = 0;
-        }
-
-        printf("Read %d bytes into req_buf\n", req_length);
+        } while((!strcmp(req_buf, "")));
 
         // Write SSL request to file
         char current_dir[1024];
@@ -157,7 +156,7 @@ main(int argc, char ** argv){
         // Construct sign request file string
         char sign_request_file_str[128];
         strcpy(sign_request_file_str, current_dir);
-        strcat(sign_request_file_str, "/sc-req.pem");
+        strcat(sign_request_file_str, "/sc-req.csr");
 
         FILE * req_file;
         req_file = fopen(sign_request_file_str, "wb");
@@ -165,14 +164,14 @@ main(int argc, char ** argv){
         fclose(req_file);
 
         // Sign request
-        system("openssl ca -passin pass:pw123  -batch -config openssl.cnf -out sc-cert.pem -infiles sc-req.pem");
+        system("openssl x509 -req -in sc-req.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out sc-cert.crt -days 500 -sha256");
 
         remove(sign_request_file_str);
 
 
         char cert_file_str[128];
         strcpy(cert_file_str, current_dir);
-        strcat(cert_file_str, "/sc-cert.pem");
+        strcat(cert_file_str, "/sc-cert.crt");
 
         FILE * cert_file;
         cert_file = fopen(cert_file_str, "rb");
@@ -187,10 +186,11 @@ main(int argc, char ** argv){
         int n = fread(cert_buf, sizeof(char), cert_size, cert_file);
         cert_buf[n] = '\0';
 
-        printf("Generated Certificate to be sent is %s\n", cert_buf);
-        printf("Size of Certificate is %d\n", n);
-
         SSL_write(ssl, cert_buf, n);
+
+        // Clear buffers
+        memset(ima_buf, 0, sizeof(ima_buf));
+        memset(req_buf, 0, sizeof(req_buf));
 
         free(cert_buf);
         fclose(cert_file);

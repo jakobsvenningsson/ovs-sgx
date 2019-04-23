@@ -168,6 +168,8 @@ SGX_remove_rules(int bridge_id, int *table_ids, struct cls_rule **rules, bool *i
 void
 SGX_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match *match, unsigned int *priority, bool *rule_is_hidden);
 
+void
+SGX_cls_rules_format(int bridge_id, const struct cls_rule *cls_rules, struct match *megamatches, size_t n);
 
 //size_t
 //SGX_ofproto_evict_get_rest(uint32_t *rule_hashes, struct cls_rule ** cls_rules, size_t buf_size);

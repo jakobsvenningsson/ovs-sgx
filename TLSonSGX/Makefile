@@ -77,7 +77,7 @@ else
 	Urts_Library_Name := sgx_urts
 endif
 
-App_Cpp_Files :=  untrusted/utils.cpp untrusted/wrapper_sgx.cpp untrusted/mbedtls_client.cpp
+App_Cpp_Files :=  untrusted/utils.cpp untrusted/wrapper_sgx.cpp untrusted/mbedtls_client.cpp untrusted/ocall.cpp
 App_Include_Paths := -Iuntrusted -I$(SGX_SDK)/include -Iinclude  -I$(MBEDTLS_SGX_PATH)/src/mbedtls-2.2.1/include
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
@@ -240,7 +240,7 @@ clean:
 	@rm -f $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) untrusted/enclave_u.* $(Enclave_C_Objects) $(Enclave_Cpp_Objects) trusted/enclave_t.*
 
 wrapper_library_sim:
-	@ar rcsv libTLSonSGX.a untrusted/wrapper_sgx.o untrusted/utils.o untrusted/enclave_u.o /opt/intel/sgxsdk/lib64/libsgx_urts_sim.so $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o /opt/intel/sgxsdk/lib64/libsgx_uae_service_sim.so
+	@ar rcsv libTLSonSGX.a untrusted/wrapper_sgx.o untrusted/utils.o untrusted/enclave_u.o untrusted/ocall.o /opt/intel/sgxsdk/lib64/libsgx_urts_sim.so $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o /opt/intel/sgxsdk/lib64/libsgx_uae_service_sim.so
 
 wrapper_library:
-	@ar rcsv libTLSonSGX.a untrusted/wrapper_sgx.o untrusted/utils.o untrusted/enclave_u.o /opt/intel/sgxsdk/lib64/libsgx_urts.so $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o /opt/intel/sgxsdk/lib64/libsgx_uae_service.so
+	@ar rcsv libTLSonSGX.a untrusted/wrapper_sgx.o untrusted/utils.o untrusted/enclave_u.o untrusted/ocall.o /opt/intel/sgxsdk/lib64/libsgx_urts.so $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o /opt/intel/sgxsdk/lib64/libsgx_uae_service.so

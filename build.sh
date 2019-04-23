@@ -20,16 +20,12 @@ cp tls_enclave.signed.so ../ovs
 cd ..
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OvS"
+# -I${ROOT_FOLDER}/TLSonSGX/mbedtls-SGX/build/mbedtls_SGX-2.6.0/include
+# -L${ROOT_FOLDER}/TLSonSGX/mbedtls-SGX/build/mbedtls_SGX-2.6.0/lib
 cd ovs
 ./boot.sh
-./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted \
-		        -I${ROOT_FOLDER}/OFTonSGX/untrusted \
-				-I${ROOT_FOLDER}/benchmark/include \
-		        -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
-            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
-                     	 -L$ROOT_FOLDER/OFTonSGX \
-                         -L${ROOT_FOLDER}/TLSonSGX/mbedtls/library \
-                     	 -L$ROOT_FOLDER/TLSonSGX" \
+./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted -I${ROOT_FOLDER}/TLSonSGX/App  -I${ROOT_FOLDER}/OFTonSGX/untrusted -I${ROOT_FOLDER}/benchmark/include -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
+            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ -L$ROOT_FOLDER/OFTonSGX -L${ROOT_FOLDER}/TLSonSGX/mbedtls/library -L$ROOT_FOLDER/TLSonSGX" \
             	LIBS="-lOFTonSGX -lTLSonSGX -lmbedtls -lmbedx509 -lmbedcrypto -lpthread -lstdc++"
 
 

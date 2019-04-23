@@ -178,6 +178,9 @@ enclave {
 		//public void
 		//ecall_ofproto_evict_get_rest([user_check] uint32_t *rule_hashes, [user_check] struct cls_rule ** cls_rules, size_t buf_size);
 
+		public void
+		ecall_cls_rules_format(int bridge_id, [user_check] const struct cls_rule *cls_rules, [user_check] struct match *megamatches, size_t n);
+
 		public void ecall_ofproto_init_tables(int bridge_id, int n_tables);
 		public void ecall_readonly_set(int bridge_id, int table_id);
 		public int ecall_istable_readonly(int bridge_id, uint8_t table_id);

@@ -25,8 +25,9 @@ enclave {
 	};
 
     untrusted {
+        include "ocall.h"
         /* define OCALLs here. */
         //include "wrapper_ssl.h"
-        //void ocall_print_str([in, string] const char *str);
+        void ocall_print([in, string] const char *str);
     };
 };

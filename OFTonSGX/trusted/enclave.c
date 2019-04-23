@@ -1678,3 +1678,10 @@ ecall_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match
     ecall_minimatch_expand(bridge_id, cr, match);
     *priority = pr;
 }
+
+void
+ecall_cls_rules_format(int bridge_id, const struct cls_rule *cls_rules, struct match *megamatches, size_t n) {
+    for(size_t i = 0; i < n; ++i) {
+        ecall_cls_rule_format(bridge_id, &cls_rules[i], &megamatches[i]);
+    }
+}

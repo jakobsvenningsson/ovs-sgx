@@ -62,3 +62,17 @@ dkms.conf
 *_u.h
 *_t.c
 *_t.h
+
+# PKI
+*.key
+*.crt
+*.srl
+*.csr
+
+
+# jupyter notebook
+.ipynb_checkpoints
+
+
+
+.log

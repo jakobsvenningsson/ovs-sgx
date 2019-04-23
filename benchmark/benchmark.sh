@@ -15,7 +15,7 @@ function add_flow() {
 
 function del_flow_strict() {
   source ${BASE_PATH}/scripts/del_flow_strict.sh
-  benchmark_del_flow_strict $ITERATIONS $TARGETS 
+  benchmark_del_flow_strict $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "del_flow_strict"
 }
@@ -63,6 +63,23 @@ function evict_rule_single() {
   create_csv_file $TARGETS "evict_rule_single"
 }
 
+function udp_latency() {
+  source ${BASE_PATH}/scripts/udp_latency.sh
+  benchmark_udp_latency $ITERATIONS $TARGETS
+  create_csv_file $TARGETS "udp_latency"
+}
+
+function udp_throughput() {
+  source ${BASE_PATH}/scripts/udp_throughput.sh
+  benchmark_udp_throughput $ITERATIONS $TARGETS
+}
+
+function udp_latency_force_controller() {
+    source ${BASE_PATH}/scripts/udp_latency_force_controller.sh
+    benchmark_udp_latency_force_controller $ITERATIONS $TARGETS
+    create_csv_file $TARGETS "udp_latency_force_controller"
+}
+
 function print_help() {
   echo "usage: ./benchmark.sh [test-case] [iterations] [ovs-version]"
   echo "example: ./benchmark.sh add-flow 100 SGX"
@@ -102,6 +119,15 @@ case $BENCHMARK in
   evict-rule-single)
     evict_rule_single
     ;;
+  udp-throughput)
+    udp_throughput
+    ;;
+  udp-latency)
+    udp_latency
+    ;;
+  udp-latency-force-controller)
+    udp_latency_force_controller
+    ;;
   all)
     add_flow
     del_flow_strict
@@ -117,6 +143,6 @@ case $BENCHMARK in
     ;;
   *)
     echo "Unknown benchmark."
-    echo ${@:2} 
+    echo ${@:2}
   ;;
 esac

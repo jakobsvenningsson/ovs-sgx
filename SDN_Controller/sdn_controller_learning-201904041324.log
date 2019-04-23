@@ -1,4 +1,0 @@
-loading app /home/jakob/test_ovs/TLSonSGX/SDN_Controller/learning_switch.py
-loading app ryu.controller.ofp_handler
-instantiating app ryu.controller.ofp_handler of OFPHandler
-instantiating app /home/jakob/test_ovs/TLSonSGX/SDN_Controller/learning_switch.py of SimpleSwitch

@@ -808,6 +808,12 @@ SGX_remove_rules(int bridge_id, int *table_ids, struct cls_rule **rules, bool *i
     return n;
 }
 
+// 37. CLS_RULE_DEPENDENCIES
+void
+SGX_cls_rules_format(int bridge_id, const struct cls_rule *cls_rules, struct match *megamatches, size_t n){
+    ECALL(ecall_cls_rules_format, false, 3, CAST(bridge_id), cls_rules, megamatches, CAST(n));
+}
+
 /*size_t
 SGX_ofproto_evict_get_rest(uint32_t *rule_hashes, struct cls_rule ** cls_rules, size_t buf_size) {
     ECALL(ecall_ofproto_evict_get_rest, false, 3, rule_hashes, cls_rules, CAST(buf_size));

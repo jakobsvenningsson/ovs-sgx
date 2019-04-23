@@ -3,8 +3,8 @@
 #include "sgx_error.h"
 #include "sgx_eid.h"     /* sgx_enclave_id_t */
 
-#define TOKEN_FILENAME   "/home/jakob/test_ovs/ovs/tls_enclave.token"
-#define ENCLAVE_FILENAME "/home/jakob/test_ovs/ovs/tls_enclave.signed.so"
+#define TOKEN_FILENAME   "/home/jakob/ovs-sgx/ovs/tls_enclave.token"
+#define ENCLAVE_FILENAME "/home/jakob/ovs-sgx/ovs/tls_enclave.signed.so"
 
 
 void print_error_message(sgx_status_t ret);

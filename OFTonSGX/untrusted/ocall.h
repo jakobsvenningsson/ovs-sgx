@@ -1,5 +1,5 @@
-#ifndef _OCALL_H
-#define _OCALL_H
+#ifndef _OCALL_TLS_H
+#define _OCALL_TLS_H
 
 #include <stdlib.h>
 #include <assert.h>

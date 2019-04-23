@@ -51,10 +51,11 @@ getIMAmeasure(){
 
 /* Library initialization */
 
+static int nr_init = 0;
 
 int
 SSL_library_init(){
-    printf("Inside TLS ENCLAVE.\n");
+    printf("Inside TLS ENCLAVE %d.\n", nr_init++);
 
     PRINT_FUNC();
     if (enclave_status == 10) {
