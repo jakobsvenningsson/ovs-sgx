@@ -13,6 +13,8 @@
 #include "utils.h"
 #include "wrapper_ssl.h"
 
+#include "inttypes.h"
+
 static sgx_enclave_id_t eid = 0;
 static int enclave_status   = 10;
 
@@ -20,15 +22,15 @@ static int enclave_status   = 10;
 #define PRINT_FUNC()
 
 #ifdef HOTCALL_TLS
-# define ECALL(f, has_return, n_args, args ...) \
+# define ECALL(f, has_return, n_args, ...) \
     argument_list arg_list; \
     void * return_val; \
-    compile_arg_list(&return_val, &arg_list, has_return, n_args, args); \
+    compile_arg_list(&return_val, &arg_list, has_return, n_args, ## __VA_ARGS__); \
     make_hotcall(&ctx, hotcall_ ## f, &arg_list, return_val)
     # define CAST(X) &X
 #else
-# define ECALL(f, has_return, n_args, args ...) \
-    f(eid, args)
+# define ECALL(f, has_return, n_args, ...) \
+    f(eid, ## __VA_ARGS__)
 # define CAST(X) X
 #endif /* ifdef HOTCALL */
 
@@ -83,9 +85,58 @@ getIMAmeasure(){
 static int nr_init = 0;
 
 int
-SSL_library_init(){
-    printf("Inside TLS ENCLAVE %d.\n", nr_init++);
+read_ssl_resource(const char *path, SSL_resource *r) {
+    FILE *fp_sealed_data = fopen(path, "rb");
+    if(fp_sealed_data == NULL) {
+        r->exists = 0;
+        return -1;
+    }
+    r->exists = 1;
 
+    size_t sealed_data_size, n;
+
+    // Read resource type
+    n = fread(&r->type, 1, 1, fp_sealed_data);
+    assert(n == 1);
+
+    // Get length of resource
+    fseek(fp_sealed_data, 0, SEEK_END);
+    sealed_data_size = ftell(fp_sealed_data) - 1;
+    fseek(fp_sealed_data, 1, SEEK_SET);
+
+    r->len = fread(r->sealed_data, 1, sealed_data_size, fp_sealed_data);
+    fclose(fp_sealed_data);
+
+    return 0;
+}
+
+int
+read_ssl_resources(char *program_name, SSL_resource *rs) {
+    for(size_t i = 0; i < N_SSL_RESOURCES; ++i) {
+        char resource_path[32];
+        switch(i) {
+            case SSL_RESOURCE_CA_CERT:
+                strcpy(resource_path, "./.sealed_ca_cert_");
+                break;
+            case SSL_RESOURCE_CERT:
+                strcpy(resource_path, "./.sealed_cert_");
+                break;
+            case SSL_RESOURCE_PK:
+                strcpy(resource_path, "./.sealed_pk_");
+                break;
+            default:
+                printf("Unknown ssl resource type.\n");
+                return 0;
+        }
+        strcat(resource_path, program_name);
+        int ret;
+        ret = read_ssl_resource(resource_path, &rs[i]);
+    }
+    return 0;
+}
+
+int
+SSL_library_init(char *program_name){
     PRINT_FUNC();
     if (enclave_status == 10) {
         initialize_enclave(&eid);
@@ -106,10 +157,59 @@ SSL_library_init(){
     string lastMeasureString = getIMAmeasure();
     float key_gen_time       = 0;
     const char * lastMeasure = lastMeasureString.c_str();
-    printf("Before ecall_ssl_library_init\n");
     int mSize = 256;
-    ECALL(ecall_ssl_library_init, false, 2, lastMeasure, CAST(mSize));
-    printf("After ecall_ssl_library_init\n");
+
+
+    SSL_resource rs[N_SSL_RESOURCES];
+    int ret;
+    ret = read_ssl_resources(program_name, rs);
+
+    bool write_resources_to_disk = false;
+    ECALL(ecall_ssl_library_init, false, 4, lastMeasure, CAST(mSize), rs, &write_resources_to_disk);
+
+    if(!write_resources_to_disk) {
+        return 1;
+    }
+
+    for(size_t i = 0; i < N_SSL_RESOURCES; ++i) {
+        if(rs[i].sealed_data) {
+            FILE * sealed_file_out;
+            char output_name[32];
+            switch(rs[i].type) {
+                case SSL_RESOURCE_CERT:
+                    strcpy(output_name, "./.sealed_cert_");
+                    break;
+                case SSL_RESOURCE_CA_CERT:
+                    strcpy(output_name, "./.sealed_ca_cert_");
+                    break;
+                case SSL_RESOURCE_PK:
+                    strcpy(output_name, "./.sealed_pk_");
+                    break;
+                default:
+                    printf("Unknown ssl resource %d.\n", rs[i].type);
+                    return 1;
+            }
+            strcat(output_name, program_name);
+            if((sealed_file_out = fopen(output_name, "w")) != NULL) {
+                size_t n = fwrite(&rs[i].type, 1, 1, sealed_file_out);
+                if(n != 1) {
+                    printf("Error writing type.\n");
+                    break;
+                }
+                n = fwrite(rs[i].sealed_data, 1, rs[i].len, sealed_file_out);
+                if(n != rs[i].len) {
+                    printf("Error writing sealed bytes.\n");
+                    break;
+                }
+                fclose(sealed_file_out);
+            }
+        }
+        if(i == N_SSL_RESOURCES - 1) {
+            printf("Successfully wrote all resource to disk.\n");
+        }
+    }
+
+
     return 1;
 }
 
@@ -127,14 +227,14 @@ SSL_CTX *
 SSL_CTX_new(SSL_METHOD * ssl_method){
     PRINT_FUNC();
     SSL_CTX * ssl_ctx = (SSL_CTX *) calloc(1, sizeof(*ssl_ctx));
-    ECALL(ecall_ssl_ctx_new, false, 0, NULL);
+    ECALL(ecall_ssl_ctx_new, false, 0);
     return ssl_ctx;
 }
 
 void
 SSL_CTX_free(SSL_CTX * ssl_ctx){
     PRINT_FUNC();
-    ECALL(ecall_ssl_ctx_free, false, 0, NULL);
+    ECALL(ecall_ssl_ctx_free, false, 0);
     free(ssl_ctx);
 }
 
@@ -142,7 +242,7 @@ void
 SSL_CTX_set_verify(SSL_CTX * ssl_ctx, int mode, void * reserved){
     // SSL_VERIFY_REQUIRED is hardcoded
     PRINT_FUNC();
-    ECALL(ecall_ssl_ctx_set_verify, false, 0, NULL);
+    ECALL(ecall_ssl_ctx_set_verify, false, 0);
 }
 
 void
@@ -200,7 +300,7 @@ X509_NAME_oneline(X509_NAME * subject, char * buf, int size){
 void
 SSL_load_error_strings(){
     PRINT_FUNC();
-    ECALL(ecall_ssl_load_error_strings, false, 0, NULL);
+    ECALL(ecall_ssl_load_error_strings, false, 0);
 }
 
 void
@@ -215,7 +315,7 @@ SSL *
 SSL_new(SSL_CTX * ssl_ctx){
     PRINT_FUNC();
     SSL * ssl = (SSL *) calloc(1, sizeof(*ssl));
-    ECALL(ecall_ssl_new, false, 0, NULL);
+    ECALL(ecall_ssl_new, false, 0);
     printf("@@@SSL_new: After ecall\n");
     return ssl;
 }
@@ -223,7 +323,7 @@ SSL_new(SSL_CTX * ssl_ctx){
 void
 SSL_free(SSL * ssl){
     PRINT_FUNC();
-    ECALL(ecall_ssl_free, false, 0, NULL);
+    ECALL(ecall_ssl_free, false, 0);
     free(ssl);
 }
 
@@ -283,7 +383,7 @@ int
 SSL_connect(SSL * ssl){
     PRINT_FUNC();
     int ret = 0;
-    ECALL(ecall_ssl_connect, true, 0, &ret, NULL);
+    ECALL(ecall_ssl_connect, true, 0, &ret);
     return ret;
 }
 
@@ -291,7 +391,7 @@ int
 SSL_accept(SSL * ssl){
     PRINT_FUNC();
     int ret = 0;
-    ECALL(ecall_ssl_accept, true, 0, &ret, NULL);
+    ECALL(ecall_ssl_accept, true, 0, &ret);
     return ret;
 }
 
@@ -305,7 +405,7 @@ int
 SSL_get_state(SSL * ssl){
     PRINT_FUNC();
     int ret = 0;
-    ECALL(ecall_ssl_get_state, true, 0, &ret, NULL);
+    ECALL(ecall_ssl_get_state, true, 0, &ret);
     return ret;
 }
 
@@ -356,6 +456,6 @@ int
 SSL_shutdown(SSL * ssl){
     PRINT_FUNC();
     int ret = 0;
-    ECALL(ecall_ssl_shutdown, true, 0, &ret, NULL);
+    ECALL(ecall_ssl_shutdown, true, 0, &ret);
     return ret;
 }

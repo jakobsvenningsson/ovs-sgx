@@ -14,7 +14,7 @@ cd ..
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING TLSonSGX"
 cd TLSonSGX
 make clean
-make SGX_MODE=HW SGX_PRERELEASE=1 SGX_DEBUG=0
+make SGX_MODE=HW SGX_PRERELEASE=1 SGX_DEBUG=0 LFLAGS="$FLAGS"
 make wrapper_library
 cp tls_enclave.signed.so ../ovs
 cd ..

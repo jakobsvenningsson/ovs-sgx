@@ -3,6 +3,7 @@
 #include "enclave-utils.h"
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509.h"
+#include "common.h"
 
 void
 execute_function(int function, argument_list * args, void *ret){
@@ -14,7 +15,7 @@ execute_function(int function, argument_list * args, void *ret){
             *(int *) ret = ecall_ssl_read((char *) args->args[0], *(int *) args->args[1]);
             break;
         case hotcall_ecall_ssl_library_init:
-            ecall_ssl_library_init((char *) args->args[0], *(int *) args->args[1]);
+            ecall_ssl_library_init((char *) args->args[0], *(size_t *) args->args[1], (SSL_resource *) args->args[2], (bool *) args->args[3]);
             break;
         case hotcall_ecall_ssl_ctx_new:
             ecall_ssl_ctx_new();

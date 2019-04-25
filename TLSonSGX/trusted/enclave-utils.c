@@ -3,12 +3,14 @@
 #include "enclave-utils.h"
 #include <stdarg.h>
 #include <stdio.h>      /* vsnprintf */
+#include "mbedtls/error.h"
 
 /*
  * printf:
  *   Invokes OCALL to display the enclave buffer to the terminal.
  */
-void printf(const char *fmt, ...)
+void
+printf(const char *fmt, ...)
 {
     char buf[BUFSIZ] = {'\0'};
     va_list ap;
@@ -39,4 +41,10 @@ int ENCLAVE_LOG(char* buf, const char *fmt, ...) {
   va_end(ap);
   #endif
   return ret;
+}
+
+void print_mbedtls_error(int error_code) {
+    char err_buf[256];
+    mbedtls_strerror(error_code, err_buf, 256);
+    printf("Mbedtls error: %s.\n", err_buf);
 }

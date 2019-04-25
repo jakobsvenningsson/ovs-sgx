@@ -23,6 +23,23 @@
 #define hotcall_ecall_ssl_get_state 14
 #define hotcall_ecall_ssl_shutdown 15
 
+
+#define N_SSL_RESOURCES 3
+#define SSL_RESOURCE_CA_CERT 0
+#define SSL_RESOURCE_CERT 1
+#define SSL_RESOURCE_PK 2
+
+
+typedef struct {
+    //uint8_t *sealed_data;
+    uint8_t sealed_data[10000];
+    uint32_t len;
+    uint32_t unsealed_len;
+    uint8_t type;
+    uint8_t exists;
+} SSL_resource;
+
+
 typedef struct {
     int n_args;
     void *args[10];

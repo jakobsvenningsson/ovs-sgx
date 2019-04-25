@@ -103,7 +103,8 @@ InitCTX(void){
     SSL_CTX * ctx;
 
     SSL_load_error_strings(); /* Bring in and register error messages */
-    SSL_library_init();
+    char program_name[] = "mbedtls_client";
+    SSL_library_init(program_name);
     method = SSLv23_client_method(); /* Create new client-method instance */
     ctx    = SSL_CTX_new(method);    /* Create new context */
 
@@ -176,7 +177,7 @@ main(int count, char * strings[]){
     if (connectResult == FAIL) {
         printf("Error");
     } else { // char *msg = "Hello???";
-        char * msg = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
+        char msg[] = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
         ShowCerts(ssl);                   /* get any certs */
         SSL_write(ssl, msg, strlen(msg)); /* encrypt & send message */
         printf("**************SSL State is %d\n", SSL_get_state(ssl));

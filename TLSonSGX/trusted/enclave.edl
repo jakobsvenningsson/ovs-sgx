@@ -5,6 +5,8 @@ enclave {
     include "stdbool.h"
 	include "common.h"
 
+    from "sealing/sealing.edl" import *;
+
     trusted {
         include "call-table.h"
         include "hotcall.h"
@@ -15,7 +17,7 @@ enclave {
 		public int ecall_ssl_connect();
 		public int ecall_ssl_set_fd(int fd);
 		public int ecall_ssl_accept();
-		public void ecall_ssl_library_init([in, size=buf_len] const char* buf, size_t buf_len);
+		public void ecall_ssl_library_init([in, size=buf_len] const char* buf, size_t buf_len, [user_check] SSL_resource *r, [user_check] bool *write_resources_to_disk);
 		public void ecall_ssl_load_error_strings();
 		public void ecall_ssl_new();
 		public void ecall_ssl_free();
