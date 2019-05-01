@@ -82,31 +82,37 @@
 #define hotcall_ecall_ofproto_rule_send_removed 72
 #define hotcall_ecall_remove_rules 73
 #define hotcall_ecall_ofproto_evict_get_rest 74
-//#define hotcall_ecall_destroy_rule_if_overlaps 59
-//#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
-//#define hotcall_ecall_miniflow_expand_and_tag 61
-//#define hotcall_ecall_allocate_cls_rule_if_not_read_only 62
-//#define hotcall_ecall_classifier_replace_if_modifiable 63
-//#define hotcall_ecall_ofproto_configure_table 64
 
-//#define hotcall_ecall_table_dpif_init 65
+#define hotcall_ecall_cls_rules_format 75
 
+/* API untrusted functions to trusted inside the enclave */
+struct match;
+struct cls_rule;
+struct heap_node;
+struct match;
+struct mf_subfield;
+struct minimatch;
+struct flow;
+struct flow_wildcards;
 
-/*typedef struct {
-  int n_args;
-  void *arg1;
-  void *arg2;
-  void *arg3;
-  void *arg4;
-  void *arg5;
-  void *arg6;
-  void *arg7;
-  void *arg8;
-  void *arg9;
-  void *arg10;
+/* A hash map. */
+struct hmap {
+    struct hmap_node **buckets; /* Must point to 'one' iff 'mask' == 0. */
+    struct hmap_node *one;
+    size_t mask;
+    size_t n;
+};
 
-} argument_list;*/
+/* A hash map node, to be embedded inside the data structure being mapped. */
+struct hmap_node {
+    size_t hash;                /* Hash value. */
+    struct hmap_node *next;     /* Next in linked list. */
+};
 
+struct list {
+    struct list *prev;     /* Previous list element. */
+    struct list *next;     /* Next list element. */
+};
 
 typedef struct {
     int n_args;
@@ -118,6 +124,38 @@ typedef struct {
   size_t allocated_size;
   void *val;
 } return_value;
+
+
+typedef struct {
+    struct cls_rule * cr;
+    struct hmap_node hmap_node;
+    struct hmap_node hmap_node_ut_crs;
+    struct list list_node;
+} cls_cache_entry;
+
+typedef struct {
+    char **blocks;
+    size_t block_size;
+    size_t block_cap;
+    size_t n;
+    size_t mem_ptr;
+} shared_memory;
+
+typedef struct {
+    size_t cap;
+    // Mapping from Hash(flow + wc) to cls_cache_entry
+    struct hmap entries;
+    // When inserting a new entry in cache, kick out the entry in the beginning of this list.
+    struct list lru_list;
+    // Mapping from Hash(untrusted cr addr) to cls_cache_entry;
+    struct hmap ut_crs;
+    /*
+        Memory region which the enclave will allocate hmap buckets when inserting new cache entries in "entries".
+        It's neccasary to pass the enclave a region of memory in untrusted memory since the enclave cannot allocate memory in the untrusted part of memory.
+        hmap entries has to be allocated in untrusted memory because otherwise it will not be accessible by the untrusted part of the application.
+    */
+    shared_memory shared_memory;
+} flow_map_cache;
 
 typedef struct {
   sgx_thread_mutex_t mutex;
@@ -131,6 +169,15 @@ typedef struct {
   int function;
   argument_list *args;
   void *ret;
+  #ifdef HOTCALL
+  flow_map_cache flow_cache;
+  /*size_t lru_cache_capacity;
+  struct hmap lru_cache;
+  size_t data_ptr;
+  char data[10000];
+  cls_cache_entry *entries[10000];
+  struct list lru_list;*/
+  #endif
 } async_ecall;
 
 #endif

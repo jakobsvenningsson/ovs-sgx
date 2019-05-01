@@ -15,7 +15,7 @@ ecall_start_poller(async_ecall * ctx){
             #endif
             ENCLAVE_LOG(buf, "Running function %d\n", ctx->function);
             ctx->run = false;
-            execute_function(ctx->function, ctx->args, ctx->ret);
+            execute_function(ctx->function, ctx->args, ctx->ret, &ctx->flow_cache);
             ctx->is_done = true;
             sgx_spin_unlock(&ctx->spinlock);
             ENCLAVE_LOG(buf, "Running function %d done.\n", ctx->function);

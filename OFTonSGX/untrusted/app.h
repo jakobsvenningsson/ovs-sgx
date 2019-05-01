@@ -12,9 +12,6 @@ struct minimatch;
 struct flow;
 struct flow_wildcards;
 
-//for testing
-struct rul *out;
-///
 
 // Optimized calls
 

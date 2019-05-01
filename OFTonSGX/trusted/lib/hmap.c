@@ -68,8 +68,10 @@ hmap_moved(struct hmap *hmap)
 }
 
 static void
-resize(struct hmap *hmap, size_t new_mask)
+resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory)
 {
+    printf("resize\n");
+
     struct hmap tmp;
     size_t i;
 
@@ -78,7 +80,26 @@ resize(struct hmap *hmap, size_t new_mask)
 
     hmap_init(&tmp);
     if (new_mask) {
-        tmp.buckets = xmalloc(sizeof *tmp.buckets * (new_mask + 1));
+        printf("NEW MASK!\n");
+        if(shared_memory) {
+            printf("before\n");
+            printf("%p\n", shared_memory->blocks);
+            size_t size = sizeof *tmp.buckets * (new_mask + 1);
+            if(shared_memory->mem_ptr + size > shared_memory->block_size) {
+                ocall_increase_memory();
+            }
+            printf("SIZE %d %d\n", size, shared_memory->mem_ptr);
+            if(size > shared_memory->block_size) {
+                printf("LARGER THAN BLOCKSIZE");
+            }
+            printf("Be\n");
+            tmp.buckets = (struct hmap_node **) ((char *) shared_memory->blocks[shared_memory->n] + shared_memory->mem_ptr);
+            printf("Af\n");
+
+            shared_memory->mem_ptr += size;
+        } else {
+            tmp.buckets = xmalloc(sizeof *tmp.buckets * (new_mask + 1));
+        }
         tmp.mask = new_mask;
         for (i = 0; i <= tmp.mask; i++) {
             tmp.buckets[i] = NULL;
@@ -96,8 +117,13 @@ resize(struct hmap *hmap, size_t new_mask)
             //COVERAGE_INC(hmap_pathological);
         }
     }
+    printf("swap\n");
+
     hmap_swap(hmap, &tmp);
-    hmap_destroy(&tmp);
+    /*if(!shared_memory) {
+        hmap_destroy(&tmp);
+    }*/
+    printf("end\n");
 }
 
 
@@ -123,11 +149,11 @@ calc_mask(size_t capacity)
 }
 /* Expands 'hmap', if necessary, to optimize the performance of searches. */
 void
-hmap_expand(struct hmap *hmap)
+hmap_expand(struct hmap *hmap, shared_memory *shared_memory)
 {
     size_t new_mask = calc_mask(hmap->n);
     if (new_mask > hmap->mask) {
         //COVERAGE_INC(hmap_expand);
-        resize(hmap, new_mask);
+        resize(hmap, new_mask, shared_memory);
     }
 }

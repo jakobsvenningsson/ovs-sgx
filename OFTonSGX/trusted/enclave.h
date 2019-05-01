@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include "ofproto-provider.h"
+
 
 struct oftable *SGX_oftables[100];
 struct SGX_table_dpif * SGX_table_dpif[100];
@@ -26,6 +28,10 @@ extern "C" {
 #endif
 
 void printf(const char *fmt, ...);
+
+struct
+sgx_cls_rule *
+sgx_rule_from_ut_cr(int bridge_id, const struct cls_rule * out);
 
 #if defined(__cplusplus)
 }

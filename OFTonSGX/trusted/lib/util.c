@@ -210,4 +210,3 @@ bitwise_zero(void *dst_, unsigned int dst_len, unsigned dst_ofs,
         *dst &= ~((1 << n_bits) - 1);
     }
 }
-

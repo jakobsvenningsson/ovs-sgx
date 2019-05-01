@@ -13,15 +13,26 @@
 #include <pthread.h>
 
 #include "spinlock.h"
-#include "common.h"
 #include "hotcall-producer.h"
+#include "cache-untrusted.h"
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid        = 0;
 static bool enclave_is_initialized = false;
 static int bridge_counter = 0;
-//    printf("done %s\n", #f)
-//    printf("%s\n", #f);
+static async_ecall ctx;
+
+void
+ocall_increase_memory() {
+    ctx.flow_cache.shared_memory.mem_ptr = 0;
+    if(ctx.flow_cache.shared_memory.n + 1 ==  ctx.flow_cache.shared_memory.block_cap) {
+        ctx.flow_cache.shared_memory.block_cap *= 2;
+        ctx.flow_cache.shared_memory.blocks = realloc(ctx.flow_cache.shared_memory.blocks, ctx.flow_cache.shared_memory.block_cap);
+    }
+    size_t n = ++ctx.flow_cache.shared_memory.n;
+    ctx.flow_cache.shared_memory.blocks[n] = malloc(ctx.flow_cache.shared_memory.block_size);
+}
+
 #ifdef HOTCALL
 # define ECALL(f, has_return, n_args, args ...) \
     argument_list arg_list; \
@@ -61,6 +72,34 @@ sgx_ofproto_init_tables(int n_tables){
 
         #ifdef HOTCALL
         printf("HOTCALLS ENABLED STARTING THREAD.\n");
+
+        ctx.flow_cache.cap = 100;
+        hmap_init(&ctx.flow_cache.entries);
+        hmap_init(&ctx.flow_cache.ut_crs);
+
+        printf("INIT SHARED MEMORY\n");
+
+
+        ctx.flow_cache.shared_memory.block_size = 32;
+        ctx.flow_cache.shared_memory.n = ctx.flow_cache.shared_memory.mem_ptr = 0;
+        ctx.flow_cache.shared_memory.block_cap = 5;
+
+        ctx.flow_cache.shared_memory.blocks = (char **) malloc(ctx.flow_cache.shared_memory.block_cap * 8);
+        printf("%p\n", ctx.flow_cache.shared_memory.blocks);
+        ctx.flow_cache.shared_memory.blocks[ctx.flow_cache.shared_memory.n] = malloc(ctx.flow_cache.shared_memory.block_size);
+
+        printf("INIT SHARED MEMORY DONE\n");
+
+
+        list_init(&ctx.flow_cache.lru_list);
+        cls_cache_entry *cache_entry;
+        for(size_t i = 0; i < ctx.flow_cache.cap; ++i) {
+            cache_entry = malloc(sizeof(cls_cache_entry));
+            list_insert(&ctx.flow_cache.lru_list, &cache_entry->list_node);
+        }
+
+        printf("FLOW CACHE INITIALIZED\n");
+
         pthread_t thread_id;
 
         pthread_create(&thread_id, NULL, ecall_polling_thread, NULL);
@@ -378,9 +417,21 @@ SGX_fet_ccfe_r(int bridge_id, struct cls_rule ** buf, int elem){
 
 // 33 Classifier_lookup
 void
-SGX_cls_lookup(int bridge_id, struct cls_rule ** o_cls_rule, int table_id, const struct flow * flow,
+SGX_cls_lookup(int bridge_id, struct cls_rule ** ut_cr, int table_id, const struct flow *flow,
   struct flow_wildcards * wc){
-    ECALL(ecall_cls_lookup, false, 5, CAST(bridge_id), o_cls_rule, CAST(table_id), flow, wc);
+
+    // Check if mapping is in cache
+    cls_cache_entry *cache_entry;
+    cache_entry = flow_map_cache_get_entry(&ctx.flow_cache, flow, wc, bridge_id, table_id);
+    if(cache_entry) {
+        printf("CACHE HIT!!!!\n");
+        *ut_cr = cache_entry->cr;
+        return;
+    } else {
+        printf("NO CACHE HIT...\n");
+    }
+
+    ECALL(ecall_cls_lookup, false, 5, CAST(bridge_id), ut_cr, CAST(table_id), flow, wc);
 }
 
 // 34. CLS_RULE priority
@@ -737,6 +788,28 @@ SGX_delete_flows(int bridge_id,
 				 unsigned int *rule_priorities,
 				 struct match *match, size_t n)
  {
+
+     /*for(size_t i = 0; i < n; ++i) {
+         struct flow flow = match[i].flow;
+         struct flow_wildcards wc = match[i].wc;
+         flow_zero_wildcards(&flow, &wc);
+         size_t hash = flow_hash(&flow, 0);
+
+         cls_cache_entry *cache_entry;
+         HMAP_FOR_EACH_WITH_HASH(cache_entry, hmap_node, hash, &ctx.lru_cache) {
+             hmap_remove(&ctx.lru_cache, &cache_entry->hmap_node);
+             free(cache_entry);
+             break;
+         }
+     }*/
+
+     /*cls_cache_entry *cache_entry, *next;
+     HMAP_FOR_EACH_SAFE(cache_entry, next, hmap_node, &ctx.lru_cache) {
+         hmap_remove(&ctx.lru_cache, &cache_entry->hmap_node);
+         free(cache_entry);
+     }*/
+
+
      ECALL(
          ecall_delete_flows, false, 8, CAST(bridge_id), rule_table_ids, cls_rules, rule_is_hidden, rule_hashes, rule_priorities, match, CAST(n)
      );
@@ -803,6 +876,11 @@ SGX_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match *
 
 size_t
 SGX_remove_rules(int bridge_id, int *table_ids, struct cls_rule **rules, bool *is_hidden, size_t n_rules) {
+    /*cls_cache_entry *cache_entry, *next;
+    HMAP_FOR_EACH_SAFE(cache_entry, next, hmap_node, &ctx.lru_cache) {
+        hmap_remove(&ctx.lru_cache, &cache_entry->hmap_node);
+        free(cache_entry);
+    }*/
     size_t n;
     ECALL(ecall_remove_rules, true, 5, &n, CAST(bridge_id), table_ids, rules, is_hidden, CAST(n_rules));
     return n;

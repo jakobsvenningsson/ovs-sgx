@@ -35,7 +35,7 @@ sgx_table_cls_init(int bridge_id){
  */
 struct
 sgx_cls_rule *
-node_search(int bridge_id, const struct cls_rule * out){
+sgx_rule_from_ut_cr(int bridge_id, const struct cls_rule * out){
     struct sgx_cls_rule * rule;
 
     HMAP_FOR_EACH_WITH_HASH(rule, hmap_node, hash_pointer(out, 0), &SGX_hmap_table[bridge_id]->cls_rules){
@@ -52,7 +52,7 @@ node_insert(int bridge_id, uint32_t hash){
 
     memset(new, 0, sizeof(struct sgx_cls_rule));
     new->hmap_node.hash = hash;
-    hmap_insert(&SGX_hmap_table[bridge_id]->cls_rules, &new->hmap_node, new->hmap_node.hash);
+    hmap_insert(&SGX_hmap_table[bridge_id]->cls_rules, &new->hmap_node, new->hmap_node.hash, NULL);
     return new;
 }
 
@@ -61,7 +61,7 @@ void
 node_delete(int bridge_id, struct cls_rule * out){
     struct sgx_cls_rule * rule;
 
-    rule = node_search(bridge_id, out);
+    rule = sgx_rule_from_ut_cr(bridge_id, out);
     hmap_remove(&SGX_hmap_table[bridge_id]->cls_rules, &rule->hmap_node);
     free(rule);
 }
@@ -126,7 +126,7 @@ ecall_cls_rule_init_i(int bridge_id, struct cls_rule * cls_rule, const struct ma
 // 5. Classifier_rule_overlaps
 int
 ecall_cr_rule_overlaps(int bridge_id, int table_id, struct cls_rule * out){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, out);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, out);
     struct cls_rule * cls_rule         = &sgx_cls_rule->cls_rule;
     const struct classifier * cls      = &SGX_oftables[bridge_id][table_id].cls;
     const struct cls_rule * target     = cls_rule;
@@ -137,7 +137,7 @@ ecall_cr_rule_overlaps(int bridge_id, int table_id, struct cls_rule * out){
 // 6. cls_rule_destroy
 void
 ecall_cls_rule_destroy(int bridge_id, struct cls_rule * out){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, out);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, out);
     struct cls_rule * cls_rule         = &sgx_cls_rule->cls_rule;
 
     cls_rule_destroy(cls_rule);
@@ -149,7 +149,7 @@ ecall_cls_rule_destroy(int bridge_id, struct cls_rule * out){
 // 7. cls_rule_hash
 uint32_t
 ecall_cls_rule_hash(int bridge_id, const struct cls_rule * o_cls_rule, uint32_t basis){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     struct cls_rule * cls_rule         = &sgx_cls_rule->cls_rule;
 
     return cls_rule_hash(cls_rule, basis);
@@ -158,8 +158,8 @@ ecall_cls_rule_hash(int bridge_id, const struct cls_rule * o_cls_rule, uint32_t 
 // 8. cls_rule_equal
 int
 ecall_cls_rule_equal(int bridge_id, const struct cls_rule * out_a, const struct cls_rule * out_b){
-    struct sgx_cls_rule * sgx_cls_rule_a = node_search(bridge_id, out_a);
-    struct sgx_cls_rule * sgx_cls_rule_b = node_search(bridge_id, out_b);
+    struct sgx_cls_rule * sgx_cls_rule_a = sgx_rule_from_ut_cr(bridge_id, out_a);
+    struct sgx_cls_rule * sgx_cls_rule_b = sgx_rule_from_ut_cr(bridge_id, out_b);
     const struct cls_rule * a = &sgx_cls_rule_a->cls_rule;
     const struct cls_rule * b = &sgx_cls_rule_b->cls_rule;
 
@@ -168,8 +168,8 @@ ecall_cls_rule_equal(int bridge_id, const struct cls_rule * out_a, const struct 
 
 // 9. classifier_replace
 void
-ecall_classifier_replace(int bridge_id, int table_id, struct cls_rule * o_cls_rule, struct cls_rule ** cls_rule_rtrn){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+ecall_classifier_replace(int bridge_id, int table_id, struct cls_rule *ut_cr, struct cls_rule **cls_rule_rtrn){
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, ut_cr);
     struct cls_rule * cls_rule         = classifier_replace(&SGX_oftables[bridge_id][table_id].cls,
       &sgx_cls_rule->cls_rule);
 
@@ -209,7 +209,7 @@ ecall_evg_find(int bridge_id, int table_id, uint32_t evg_id, uint32_t priority){
         return evg;
     }
     evg = xmalloc(sizeof *evg);
-    hmap_insert(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node, evg_id);
+    hmap_insert(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node, evg_id, NULL);
     heap_insert_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size, &evg->size_node, priority);
     heap_init_ovs(&evg->rules);
     return evg;
@@ -251,7 +251,7 @@ size_t
 ecall_evg_add_rule(int bridge_id, int table_id, struct cls_rule * o_cls_rule, uint32_t priority,
   uint32_t rule_evict_prioriy,
   struct heap_node rule_evg_node){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     struct eviction_group * evg;
 
     evg = ecall_evg_find(bridge_id, table_id, eviction_group_hash_rule(bridge_id, table_id,
@@ -293,7 +293,7 @@ ecall_evg_destroy(int bridge_id, int table_id, struct eviction_group * evg){
 // 17. Eviction_grouP_remove_rule: Delete the eviction group of a rule if it is not NULL
 int
 ecall_evg_remove_rule(int bridge_id, int table_id, struct cls_rule * o_cls_rule){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
 
     if (!sgx_cls_rule->evict_group) {
         return 0;
@@ -317,7 +317,7 @@ ecall_evg_remove_rule(int bridge_id, int table_id, struct cls_rule * o_cls_rule)
 // 18. Classifier remove: removes a cls_rule from the classifier
 void
 ecall_cls_remove(int bridge_id, int table_id, struct cls_rule * o_cls_rule){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
 
     classifier_remove(&SGX_oftables[bridge_id][table_id].cls, &sgx_cls_rule->cls_rule);
 }
@@ -363,12 +363,9 @@ ecall_choose_rule_to_evict_2(int bridge_id, int table_id, struct cls_rule ** o_c
                         ex = true;
                     }
                 }
-
                 if(ex) {
                     continue;
                 }
-
-
                 *o_cls_rule = sgx_cls_rule->o_cls_rule;
                 return;
             }
@@ -417,7 +414,7 @@ choose_rule_to_evict(int bridge_id, int table_id, struct sgx_cls_rule ** o_cls_r
 // 20. choose and return a rule to evict from table, without including the rule itself
 struct cls_rule *
 ecall_choose_rule_to_evict_p(int bridge_id, int table_id, struct cls_rule ** o_cls_rule, struct cls_rule * replacer){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, replacer);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, replacer);
     bool was_evictable;
 
     was_evictable = sgx_cls_rule->evictable;
@@ -445,7 +442,7 @@ ecall_table_mflows_set(int bridge_id, int table_id, unsigned int value){
 // 22. Minimatch_expand inside the enclave
 void
 ecall_minimatch_expand(int bridge_id, struct cls_rule * o_cls_rule, struct match * dst){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
 
     minimatch_expand(&sgx_cls_rule->cls_rule.match, dst);
 }
@@ -453,7 +450,7 @@ ecall_minimatch_expand(int bridge_id, struct cls_rule * o_cls_rule, struct match
 // 23. cls_rule priority
 unsigned int
 ecall_cr_priority(int bridge_id, const struct cls_rule * o_cls_rule){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
 
     return sgx_cls_rule->cls_rule.priority;
 }
@@ -884,7 +881,7 @@ ecall_table_name(int bridge_id, int table_id, char * buf, size_t len){
 
 int
 ecall_cls_rule_is_loose_match(int bridge_id, struct cls_rule * o_cls_rule, const struct minimatch * criteria){
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
 
     if (cls_rule_is_loose_match(&sgx_cls_rule->cls_rule, criteria)) {
         return 100;
@@ -899,7 +896,7 @@ ecall_cls_rule_is_loose_match(int bridge_id, struct cls_rule * o_cls_rule, const
 
 // 1. Classifier_lookup
 void
-ecall_cls_lookup(int bridge_id, struct cls_rule ** o_cls_rule, int table_id, const struct flow * flow,
+ecall_cls_lookup(int bridge_id, struct cls_rule **ut_cr, int table_id, const struct flow *flow,
   struct flow_wildcards * wc){
     struct cls_rule * cls_rule;
     cls_rule = classifier_lookup(&SGX_oftables[bridge_id][table_id].cls, flow, wc);
@@ -907,9 +904,18 @@ ecall_cls_lookup(int bridge_id, struct cls_rule ** o_cls_rule, int table_id, con
         // Need to retrieve the sgx_cls_rule and return the pointer
         // to untrusted memory
         struct sgx_cls_rule * sgx_cls_rule = CONTAINER_OF(cls_rule, struct sgx_cls_rule, cls_rule);
-        *o_cls_rule = sgx_cls_rule->o_cls_rule;
+        *ut_cr = sgx_cls_rule->o_cls_rule;
+        /*struct sgx_cls_rule * sgx_cls_rule1 = CONTAINER_OF(&sgx_cls_rule->o_cls_rule, struct sgx_cls_rule, o_cls_rule);
+
+        struct cls_rule *cr = &sgx_cls_rule1->cls_rule;
+        struct flow insert_flow;
+        miniflow_expand(&cr->match.flow, &insert_flow);*/
+
+
+
+
     } else  {
-        *o_cls_rule = NULL;
+        *ut_cr = NULL;
     }
 }
 
@@ -919,7 +925,7 @@ ecall_cls_rule_priority(int bridge_id, struct cls_rule * o_cls_rule){
     // we need to find this rule using this pointer
     struct sgx_cls_rule * sgx_cls_rule;
 
-    sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     return sgx_cls_rule->cls_rule.priority;
 }
 
@@ -971,7 +977,7 @@ unsigned int
 ecall_cls_rule_format(int bridge_id, const struct cls_rule * o_cls_rule, struct match * megamatch){
     struct sgx_cls_rule * sgx_cls_rule;
 
-    sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     minimatch_expand(&sgx_cls_rule->cls_rule.match, megamatch);
     return sgx_cls_rule->cls_rule.priority;
 }
@@ -981,7 +987,7 @@ ecall_rule_calculate_tag(int bridge_id, struct cls_rule * o_cls_rule, const stru
     // Retrieve the cls_rule
     struct sgx_cls_rule * sgx_cls_rule;
 
-    sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     if (minimask_is_catchall(&sgx_cls_rule->cls_rule.match.mask)) {
         return 0;
     } else {
@@ -994,7 +1000,7 @@ ecall_rule_calculate_tag(int bridge_id, struct cls_rule * o_cls_rule, const stru
 void
 ecall_miniflow_expand(int bridge_id, struct cls_rule * o_cls_rule, struct flow * flow){
     // From untrusted the Pointer the sgx_cls_rule is retrieved.
-    struct sgx_cls_rule * sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
 
     // Need to call miniflow_expand to copy the information in the just passed flow struct.
     miniflow_expand(&sgx_cls_rule->cls_rule.match.flow, flow);
@@ -1099,7 +1105,7 @@ ecall_minimask_get_vid_mask(int bridge_id, struct cls_rule * o_cls_rule){
     // Retrieve the cls_rule
     struct sgx_cls_rule * sgx_cls_rule;
 
-    sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
 
     return minimask_get_vid_mask(&sgx_cls_rule->cls_rule.match.mask);
 }
@@ -1108,7 +1114,7 @@ uint16_t
 ecall_miniflow_get_vid(int bridge_id, struct cls_rule * o_cls_rule){
     struct sgx_cls_rule * sgx_cls_rule;
 
-    sgx_cls_rule = node_search(bridge_id, o_cls_rule);
+    sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     return miniflow_get_vid(&sgx_cls_rule->cls_rule.match.flow);
 }
 
@@ -1357,7 +1363,7 @@ ecall_ofproto_evict(int bridge_id,
             }
 
             struct sgx_cls_rule * sgx_cls_rule;
-            sgx_cls_rule = node_search(bridge_id, tmp);
+            sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, tmp);
             table_ids[n] = table_id;
             group_prios[n] = sgx_cls_rule->evict_group->size_node.priority;
             rule_prios[n] = sgx_cls_rule->rule_evg_node.priority;
@@ -1370,10 +1376,10 @@ ecall_ofproto_evict(int bridge_id,
     for(int i = 0; i < n; ++i) {
         struct sgx_cls_rule * sgx_cls_rule;
         if(i >= start_index) {
-            sgx_cls_rule = node_search(bridge_id, cls_rules[i - start_index]);
+            sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, cls_rules[i - start_index]);
             ecall_evg_add_rule(bridge_id, table_ids[i], cls_rules[i  - start_index], group_prios[i], rule_prios[i], sgx_cls_rule->rule_evg_node);
         } else {
-            sgx_cls_rule = node_search(bridge_id, skip_rules[i]);
+            sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, skip_rules[i]);
             ecall_evg_add_rule(bridge_id, table_ids[i], skip_rules[i], group_prios[i], rule_prios[i], sgx_cls_rule->rule_evg_node);
         }
     }
@@ -1556,7 +1562,7 @@ ecall_add_flow(int bridge_id,
 {
     for(int i = 0; i < n; ++i) {
         struct sgx_cls_rule * sgx_cls_rule;
-        sgx_cls_rule = node_search(bridge_id, cls_rules[i]);
+        sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, cls_rules[i]);
 
         rule_is_hidden[i] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule) > UINT16_MAX;
         ecall_minimatch_expand(bridge_id, sgx_cls_rule->o_cls_rule, &match[i]);

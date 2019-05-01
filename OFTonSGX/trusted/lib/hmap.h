@@ -11,12 +11,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "util.h"
+#include "common.h"
 
 /* A hash map node, to be embedded inside the data structure being mapped. */
-struct hmap_node {
-    size_t hash;                /* Hash value. */
-    struct hmap_node *next;     /* Next in linked list. */
-};
+/*struct hmap_node {
+    size_t hash;
+    struct hmap_node *next;
+};*/
 
 /* Returns the hash value embedded in 'node'. */
 static inline size_t hmap_node_hash(const struct hmap_node *node)
@@ -44,12 +45,12 @@ hmap_node_nullify(struct hmap_node *node)
 }
 
 /* A hash map. */
-struct hmap {
-    struct hmap_node **buckets; /* Must point to 'one' iff 'mask' == 0. */
+/*struct hmap {
+    struct hmap_node **buckets;
     struct hmap_node *one;
     size_t mask;
     size_t n;
-};
+};*/
 
 /* Initializer for an empty hash map. */
 #define HMAP_INITIALIZER(HMAP) { &(HMAP)->one, NULL, 0, 0 }
@@ -64,14 +65,14 @@ static inline size_t hmap_count(const struct hmap *);
 static inline bool hmap_is_empty(const struct hmap *);
 
 /* Adjusting capacity. */
-void hmap_expand(struct hmap *);
+void hmap_expand(struct hmap *, shared_memory *shared_memory);
 void hmap_shrink(struct hmap *);
 void hmap_reserve(struct hmap *, size_t capacity);
 
 /* Insertion and deletion. */
 static inline void hmap_insert_fast(struct hmap *,
                                     struct hmap_node *, size_t hash);
-static inline void hmap_insert(struct hmap *, struct hmap_node *, size_t hash);
+static inline void hmap_insert(struct hmap *, struct hmap_node *, size_t hash, shared_memory *shared_memory);
 static inline void hmap_remove(struct hmap *, struct hmap_node *);
 
 void hmap_node_moved(struct hmap *, struct hmap_node *, struct hmap_node *);
@@ -193,11 +194,11 @@ hmap_insert_fast(struct hmap *hmap, struct hmap_node *node, size_t hash)
 /* Inserts 'node', with the given 'hash', into 'hmap', and expands 'hmap' if
  * necessary to optimize search performance. */
 static inline void
-hmap_insert(struct hmap *hmap, struct hmap_node *node, size_t hash)
+hmap_insert(struct hmap *hmap, struct hmap_node *node, size_t hash, shared_memory *shared_memory)
 {
     hmap_insert_fast(hmap, node, hash);
     if (hmap->n / 2 > hmap->mask) {
-        hmap_expand(hmap);
+        hmap_expand(hmap, shared_memory);
     }
 }
 

@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "sgx-utils.h"
+#include <assert.h>
+#include "hotcall-producer.h"
 
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond   = PTHREAD_COND_INITIALIZER;
-static async_ecall ctx;
 
 void
 make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret){
@@ -56,54 +57,6 @@ void compile_arg_list(void **return_val, argument_list *arg_list, bool has_retur
     }
     va_end(args);
 }
-
-
-/* void cleanup_hotcall(char *fmt, argument_list * arg_list) {
-    int n_args = arg_list->n_args;
-    if(*fmt == 'r') {
-        fmt++;
-        n_args--;
-    }
-    for(int i = 0; i < n_args; ++i) {
-        switch(fmt[i]) {
-            case 'p':
-                 break;
-            case 'd':
-            {
-                free((int *) arg_list->args[i]);
-                break;
-            }
-            case 'u':
-            {
-                free((unsigned int *) arg_list->args[i]);
-                break;
-            }
-            case 't':
-            {
-                free((size_t *) arg_list->args[i]);
-                break;
-            }
-            case 'o':
-            {
-                free((uint32_t *) arg_list->args[i]);
-                break;
-            }
-            case 'b':
-            {
-                free((bool *) arg_list->args[i]);
-                break;
-            }
-            case 'q':
-            {
-                free((int *) arg_list->args[i]);
-                break;
-            }
-            default:
-                printf("Cleanup: unknown character in format string %c.\n", fmt[i]);
-        }
-    }
-} */
-
 
 void
 ocall_sleep(){

@@ -10,8 +10,6 @@
 #include <stdbool.h>
 #include "packets.h"
 
-
-//lines 641
 /* Perform a bitwise OR of miniflow 'src' flow data with the equivalent
  * fields in 'dst', storing the result in 'dst'. */
 static void
@@ -24,7 +22,6 @@ flow_union_with_miniflow(struct flow *dst, const struct miniflow *src)
     ofs = 0;
     for (i = 0; i < MINI_N_MAPS; i++) {
         uint32_t map;
-
         for (map = src->map[i]; map; map = zero_rightmost_1bit(map)) {
             dst_u32[raw_ctz(map) + i * 32] |= src->values[ofs++];
         }
@@ -38,12 +35,21 @@ flow_wildcards_fold_minimask(struct flow_wildcards *wc,
 {
     flow_union_with_miniflow(&wc->masks, &mask->masks);
 }
-//667
 
+/* For every bit of a field that is wildcarded in 'wildcards', sets the
+ * corresponding bit in 'flow' to zero. */
+void
+flow_zero_wildcards(struct flow *flow, const struct flow_wildcards *wildcards)
+{
+    uint32_t *flow_u32 = (uint32_t *) flow;
+    const uint32_t *wc_u32 = (const uint32_t *) &wildcards->masks;
+    size_t i;
 
+    for (i = 0; i < FLOW_U32S; i++) {
+        flow_u32[i] &= wc_u32[i];
+    }
+}
 
-
-//1039
 static int
 miniflow_n_values(const struct miniflow *flow)
 {

@@ -1,13 +1,30 @@
 #include "call-table.h"
 #include "ofproto-provider.h"
 #include "enclave_t.h"
+#include "common.h"
+#include "enclave.h"
+#include "cache-trusted.h"
+#include "flow.h"
 
 
-//#define CAD(VARIABLE, TYPE) \
-//    *((TYPE *) VARIABLE)
+/*void insert_in_cache(struct hmap *lru_cache, struct cls_rule *cr, struct cls_rule *o_cr, int bridge_id, int table_id) {
+    size_t hash;
+    hash = miniflow_hash_in_minimask(&cr->match.flow, &cr->match.mask, 0) + bridge_id + table_id;
+    //hash = calculate_cash_hash(flow, wc, bridge_id, table_id);
+    cls_cache_entry *cache_entry;
+    cache_entry = malloc(sizeof(cls_cache_entry));
+    cache_entry->cr = o_cr;
+    hmap_insert(lru_cache, &cache_entry->hmap_node, hash);
+}*/
+
+
 
 void
-execute_function(int function, argument_list * args, void *ret){
+execute_function(int function, argument_list * args, void *ret, flow_map_cache *flow_cache){
+    cls_cache_entry *cache_entry, *next;
+
+    //flow_map_cache_flush(lru_cache);
+
     switch (function) {
         case hotcall_ecall_istable_readonly:
             *((int *) ret) = ecall_istable_readonly(*((int *) args->args[0]), *((uint8_t *) args->args[1]));
@@ -17,8 +34,12 @@ execute_function(int function, argument_list * args, void *ret){
           (const struct match *) args->args[2], *((unsigned int *) args->args[3]));
             break;
         case hotcall_ecall_cls_rule_destroy:
-            ecall_cls_rule_destroy(*((int *) args->args[0]), (struct cls_rule *) args->args[1]);
-            break;
+            {
+                struct cls_rule *ut_cr = (struct cls_rule *) args->args[1];
+                ecall_cls_rule_destroy(*((int *) args->args[0]), ut_cr);
+                flow_map_cache_remove_ut_cr(flow_cache, ut_cr);
+                break;
+            }
         case hotcall_ecall_cr_rule_overlaps:
             *((int *) ret) = ecall_cr_rule_overlaps(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule *) args->args[2]);
             break;
@@ -147,13 +168,31 @@ execute_function(int function, argument_list * args, void *ret){
           *((int *) args->args[3]));
             break;
         case hotcall_ecall_cls_remove:
-            ecall_cls_remove(*((int *) args->args[0]), *((int *) args->args[1]), (struct cls_rule *) args->args[2]);
-            break;
+            {
+                int bridge_id = *((int *) args->args[0]);
+                int table_id = *((int *) args->args[1]);
+                struct cls_rule *ut_cr = (struct cls_rule *) args->args[2];
+
+                ecall_cls_remove(bridge_id, table_id, ut_cr);
+                flow_map_cache_remove_ut_cr(flow_cache, ut_cr);
+                break;
+            }
         case hotcall_ecall_classifier_replace:
-            ecall_classifier_replace(*((int *) args->args[0]), *((int *) args->args[1]),
-          (struct cls_rule *) args->args[2],
-          (struct cls_rule **) args->args[3]);
-            break;
+            {
+
+                int bridge_id = *((int *) args->args[0]);
+                int table_id = *((int *) args->args[1]);
+                struct cls_rule *ut_cr_insert = (struct cls_rule *) args->args[2];
+                struct cls_rule **ut_cr_remove = (struct cls_rule **) args->args[3];
+
+                ecall_classifier_replace(bridge_id, table_id, ut_cr_insert, ut_cr_remove);
+
+                if(!*ut_cr_remove) {
+                    return;
+                }
+                flow_map_cache_remove_ut_cr(flow_cache, *ut_cr_remove);
+                break;
+            }
         case hotcall_ecall_ofproto_get_vlan_c:
             *((int *) ret) = ecall_ofproto_get_vlan_c(*((int *) args->args[0]));
             break;
@@ -188,15 +227,78 @@ execute_function(int function, argument_list * args, void *ret){
             *((uint32_t *) ret) = ecall_rule_calculate_tag_s(*((int *) args->args[0]), *((int *) args->args[1]), (const struct flow *) args->args[2]);
             break;
         case hotcall_ecall_table_update_taggable:
-            *((int *) ret) = ecall_table_update_taggable(*((int *) args->args[0]), *((uint8_t *) args->args[1]));
+            {
+                int *ret_value = (int *) ret;
+                *ret_value = ecall_table_update_taggable(*((int *) args->args[0]), *((uint8_t *) args->args[1]));
+                if(*ret_value == 4) {
+                    flow_map_cache_flush(flow_cache);
+                }
+            }
             break;
         case hotcall_ecall_is_sgx_other_table:
             *((int *) ret) = ecall_is_sgx_other_table(*((int *) args->args[0]), *((int *) args->args[1]));
             break;
         case hotcall_ecall_cls_lookup:
-            ecall_cls_lookup(*((int *) args->args[0]), (struct cls_rule **) args->args[1], *((int *) args->args[2]), (const struct flow *) args->args[3],
-          (struct flow_wildcards *) args->args[4]);
+        {
+
+            const struct flow *flow = (const struct flow *) args->args[3];
+            struct flow_wildcards *wc = args->args[4];
+            int table_id = *((int *) args->args[2]);
+            int bridge_id = *((int *) args->args[0]);
+            struct cls_rule **ut_cr = (struct cls_rule **) args->args[1];
+
+
+            // Check if mapping is in cache
+            /*cls_cache_entry *cache_entry;
+            cache_entry = flow_map_cache_get_entry(lru_cache, flow, wc, bridge_id, table_id);
+
+            printf("Cache size %d\n", hmap_count(lru_cache));
+
+            if(cache_entry) {
+                printf("CACHE HIT!!!!\n");
+                *ut_cr = cache_entry->cr;
+                return;
+            } else {
+                printf("NO CACHE HIT...\n");
+            }*/
+
+            ecall_cls_lookup(bridge_id,
+                            ut_cr,
+                            table_id,
+                            flow,
+                            wc);
+
+            if(*ut_cr) {
+                //struct sgx_cls_rule *sgx_cr = sgx_rule_from_ut_cr(bridge_id, *ut_cr);
+
+                /*struct flow ff;
+                miniflow_expand(&sgx_cr->cls_rule.match.flow, &ff);
+                struct flow_wildcards ff_wc;
+                minimask_expand(&sgx_cr->cls_rule.match.mask, &ff_wc);
+
+
+
+                flow_zero_wildcards(&ff, &ff_wc);
+
+
+                struct flow zero_flow = *flow;
+                if(wc) {
+                    flow_zero_wildcards(&zero_flow, wc);
+                }
+
+                if (miniflow_equal_flow_in_minimask(&rule->match.flow, flow,
+                                                    &table->mask)
+
+
+                printf("Flow is %s!\n", flow_equal(&ff, &zero_flow) ? "equal" : "not equal");*/
+
+
+                //flow_map_cache_insert_rule(lru_cache, &sgx_cr->cls_rule, *ut_cr, bridge_id, table_id, entries);
+                flow_map_cache_insert(flow_cache, flow, wc, *ut_cr, bridge_id, table_id);
+            }
             break;
+        }
+
         case hotcall_ecall_evg_remove_rule:
             *((int *) ret) = ecall_evg_remove_rule(*((int *) args->args[0]), *((int *) args->args[1]),
           (struct cls_rule *) args->args[2]);
@@ -213,7 +315,7 @@ execute_function(int function, argument_list * args, void *ret){
         /*case hotcall_ecall_table_dpif_init:
             ecall_table_dpif_init(*((int *) args->args[0]));
             break;*/
-        case hotcall_ecall_get_cls_rules:
+    /*    case hotcall_ecall_get_cls_rules:
             *((size_t *) ret) = ecall_get_cls_rules(*((int *) args->args[0]),
                                                     *((int *) args->args[1]),
                                                     *((size_t *) args->args[2]),
@@ -383,7 +485,7 @@ execute_function(int function, argument_list * args, void *ret){
                 (bool *) args->args[3],
                 *((size_t *) args->args[4])
             );
-            break;
+            break;*/
         /*case hotcall_ecall_ofproto_evict_get_rest:
             ecall_ofproto_evict_get_rest(
                 (uint32_t *) args->args[0],
