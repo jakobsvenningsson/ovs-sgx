@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "enclave_u.h"
 
-#define DEFAULT_PAGE_SIZE 30
+#define DEFAULT_PAGE_SIZE 100000
 #define MAX_N_PAGES 100
 
 size_t flow_map_cache_calculate_hash(const struct flow *flow, const struct flow_wildcards *wc, int bridge_id, int table_id);

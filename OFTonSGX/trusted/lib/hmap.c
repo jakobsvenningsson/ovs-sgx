@@ -110,7 +110,8 @@ resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory, uint8_t
     if(!shared_memory) {
         hmap_destroy(&tmp);
     } else {
-        mark_page_for_deallocation(shared_memory, page_n, page_type);
+        //shared_memory_free_page(shared_memory, page_n, page_type);
+        //mark_page_for_deallocation(shared_memory, page_n, page_type);
         /*for(size_t i = 0; i < shared_memory->cap; ++i) {
             if(shared_memory->allocated[i] && i != page_n && shared_memory->page_type[i] == page_type) {
                 printf("marking page %zu for deallocation.\n", i);

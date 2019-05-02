@@ -52,7 +52,7 @@ Enclave_C_Files := trusted/enclave.c \
 										 trusted/lib/flow.c \
 										 trusted/lib/hash.c \
 										 trusted/lib/match.c \
-										 trusted/hotcall.c \
+										 trusted/hotcall-trusted.c \
 										 trusted/enclave-utils.c \
 										 trusted/call-table.c \
 										 trusted/cache-trusted.c \

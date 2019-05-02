@@ -35,6 +35,12 @@ allocate_page(shared_memory *shared_memory, size_t page_sz) {
             page_n = i;
             break;
         }
+        /*if(shared_memory->allocated[i] && shared_memory->page_type[i] == PAGE_TYPE_FREE) {
+            if(page_sz <= shared_memory->page_sz[i]) {
+                page_n = i;
+                break;
+            }
+        }*/
     }
     if(page_n == -1) {
         return -1;
@@ -96,7 +102,7 @@ deallocate_marked_pages(shared_memory *shared_memory) {
             shared_memory->page_sz[i] = 0;
             shared_memory->deallocate_page[i] = 0;
             shared_memory->allocated[i] = 0;
-            shared_memory->page_type[i] = 0;
+            shared_memory->page_type[i] = PAGE_TYPE_FREE;
             free(shared_memory->pages[i]);
         }
     }

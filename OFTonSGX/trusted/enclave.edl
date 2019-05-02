@@ -16,7 +16,7 @@ enclave {
 
 	trusted {
 		include "call-table.h"
-		include "hotcall.h"
+		include "hotcall-trusted.h"
 
 
 		// Hot-call e-calls

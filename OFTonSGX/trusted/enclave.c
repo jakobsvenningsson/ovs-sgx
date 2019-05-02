@@ -7,15 +7,9 @@
 #include "ofproto-provider.h"
 
 #include "call-table.h"
-#include "hotcall.h"
+#include "hotcall-trusted.h"
 #include "openflow-common.h"
 #include <sgx_spinlock.h>
-
-#ifdef TIMEOUT
-#define INIT_TIMER_VALUE 9999999;
-static unsigned int timeout_counter = INIT_TIMER_VALUE;
-#endif
-
 
 // Global data structures
 struct oftable * SGX_oftables[100];

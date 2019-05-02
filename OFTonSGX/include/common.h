@@ -134,7 +134,7 @@ typedef struct {
 } cls_cache_entry;
 
 
-#define PAGE_TYPE_FREE 1
+#define PAGE_TYPE_FREE 0
 #define PAGE_TYPE_CACHE 1
 #define PAGE_TYPE_UT_CRS 2
 
