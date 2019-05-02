@@ -7,6 +7,13 @@
 #include "hmap.h"
 #include "flow.h"
 
+
+void
+mark_page_for_deallocation(shared_memory *shared_memory, size_t exclude_page, uint8_t page_type);
+size_t
+shared_memory_get_page(shared_memory *shared_memory, size_t requested_size, uint8_t page_type);
+
+
 size_t
 flow_map_cache_hash(struct hmap *lru_cache);
 size_t

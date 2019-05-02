@@ -9,6 +9,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "util.h"
+#include "cache-trusted.h"
+
 
 /* Initializes 'hmap' as an empty hash table. */
 void
@@ -68,35 +70,21 @@ hmap_moved(struct hmap *hmap)
 }
 
 static void
-resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory)
+resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory, uint8_t page_type)
 {
-    printf("resize\n");
-
     struct hmap tmp;
     size_t i;
+    size_t page_n = -1;
 
     ovs_assert(!(new_mask & (new_mask + 1)));
     ovs_assert(new_mask != SIZE_MAX);
 
     hmap_init(&tmp);
     if (new_mask) {
-        printf("NEW MASK!\n");
         if(shared_memory) {
-            printf("before\n");
-            printf("%p\n", shared_memory->blocks);
-            size_t size = sizeof *tmp.buckets * (new_mask + 1);
-            if(shared_memory->mem_ptr + size > shared_memory->block_size) {
-                ocall_increase_memory();
-            }
-            printf("SIZE %d %d\n", size, shared_memory->mem_ptr);
-            if(size > shared_memory->block_size) {
-                printf("LARGER THAN BLOCKSIZE");
-            }
-            printf("Be\n");
-            tmp.buckets = (struct hmap_node **) ((char *) shared_memory->blocks[shared_memory->n] + shared_memory->mem_ptr);
-            printf("Af\n");
-
-            shared_memory->mem_ptr += size;
+            size_t requested_size = sizeof *tmp.buckets * (new_mask + 1);
+            page_n = shared_memory_get_page(shared_memory, requested_size, page_type);
+            tmp.buckets = (struct hmap_node **) shared_memory->pages[page_n];
         } else {
             tmp.buckets = xmalloc(sizeof *tmp.buckets * (new_mask + 1));
         }
@@ -117,13 +105,19 @@ resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory)
             //COVERAGE_INC(hmap_pathological);
         }
     }
-    printf("swap\n");
 
     hmap_swap(hmap, &tmp);
-    /*if(!shared_memory) {
+    if(!shared_memory) {
         hmap_destroy(&tmp);
-    }*/
-    printf("end\n");
+    } else {
+        mark_page_for_deallocation(shared_memory, page_n, page_type);
+        /*for(size_t i = 0; i < shared_memory->cap; ++i) {
+            if(shared_memory->allocated[i] && i != page_n && shared_memory->page_type[i] == page_type) {
+                printf("marking page %zu for deallocation.\n", i);
+                shared_memory->deallocate_page[i] = 1;
+            }
+        }*/
+    }
 }
 
 
@@ -149,11 +143,11 @@ calc_mask(size_t capacity)
 }
 /* Expands 'hmap', if necessary, to optimize the performance of searches. */
 void
-hmap_expand(struct hmap *hmap, shared_memory *shared_memory)
+hmap_expand(struct hmap *hmap, shared_memory *shared_memory, uint8_t page_type)
 {
     size_t new_mask = calc_mask(hmap->n);
     if (new_mask > hmap->mask) {
         //COVERAGE_INC(hmap_expand);
-        resize(hmap, new_mask, shared_memory);
+        resize(hmap, new_mask, shared_memory, page_type);
     }
 }

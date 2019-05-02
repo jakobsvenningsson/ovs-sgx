@@ -22,17 +22,6 @@ static bool enclave_is_initialized = false;
 static int bridge_counter = 0;
 static async_ecall ctx;
 
-void
-ocall_increase_memory() {
-    ctx.flow_cache.shared_memory.mem_ptr = 0;
-    if(ctx.flow_cache.shared_memory.n + 1 ==  ctx.flow_cache.shared_memory.block_cap) {
-        ctx.flow_cache.shared_memory.block_cap *= 2;
-        ctx.flow_cache.shared_memory.blocks = realloc(ctx.flow_cache.shared_memory.blocks, ctx.flow_cache.shared_memory.block_cap);
-    }
-    size_t n = ++ctx.flow_cache.shared_memory.n;
-    ctx.flow_cache.shared_memory.blocks[n] = malloc(ctx.flow_cache.shared_memory.block_size);
-}
-
 #ifdef HOTCALL
 # define ECALL(f, has_return, n_args, args ...) \
     argument_list arg_list; \
@@ -73,36 +62,11 @@ sgx_ofproto_init_tables(int n_tables){
         #ifdef HOTCALL
         printf("HOTCALLS ENABLED STARTING THREAD.\n");
 
-        ctx.flow_cache.cap = 100;
-        hmap_init(&ctx.flow_cache.entries);
-        hmap_init(&ctx.flow_cache.ut_crs);
-
-        printf("INIT SHARED MEMORY\n");
-
-
-        ctx.flow_cache.shared_memory.block_size = 32;
-        ctx.flow_cache.shared_memory.n = ctx.flow_cache.shared_memory.mem_ptr = 0;
-        ctx.flow_cache.shared_memory.block_cap = 5;
-
-        ctx.flow_cache.shared_memory.blocks = (char **) malloc(ctx.flow_cache.shared_memory.block_cap * 8);
-        printf("%p\n", ctx.flow_cache.shared_memory.blocks);
-        ctx.flow_cache.shared_memory.blocks[ctx.flow_cache.shared_memory.n] = malloc(ctx.flow_cache.shared_memory.block_size);
-
-        printf("INIT SHARED MEMORY DONE\n");
-
-
-        list_init(&ctx.flow_cache.lru_list);
-        cls_cache_entry *cache_entry;
-        for(size_t i = 0; i < ctx.flow_cache.cap; ++i) {
-            cache_entry = malloc(sizeof(cls_cache_entry));
-            list_insert(&ctx.flow_cache.lru_list, &cache_entry->list_node);
-        }
-
-        printf("FLOW CACHE INITIALIZED\n");
+        initialize_enclave_cache(&ctx.flow_cache);
 
         pthread_t thread_id;
-
         pthread_create(&thread_id, NULL, ecall_polling_thread, NULL);
+
         #else
         puts("NO HOTCALLS.");
         #endif
@@ -419,6 +383,11 @@ SGX_fet_ccfe_r(int bridge_id, struct cls_rule ** buf, int elem){
 void
 SGX_cls_lookup(int bridge_id, struct cls_rule ** ut_cr, int table_id, const struct flow *flow,
   struct flow_wildcards * wc){
+
+    // deallocate any marker pages from shared memory
+
+    //deallocate_marked_pages(&ctx.flow_cache.shared_memory);
+
 
     // Check if mapping is in cache
     cls_cache_entry *cache_entry;

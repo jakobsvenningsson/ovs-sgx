@@ -52,7 +52,7 @@ node_insert(int bridge_id, uint32_t hash){
 
     memset(new, 0, sizeof(struct sgx_cls_rule));
     new->hmap_node.hash = hash;
-    hmap_insert(&SGX_hmap_table[bridge_id]->cls_rules, &new->hmap_node, new->hmap_node.hash, NULL);
+    hmap_insert(&SGX_hmap_table[bridge_id]->cls_rules, &new->hmap_node, new->hmap_node.hash, NULL, 0);
     return new;
 }
 
@@ -209,7 +209,7 @@ ecall_evg_find(int bridge_id, int table_id, uint32_t evg_id, uint32_t priority){
         return evg;
     }
     evg = xmalloc(sizeof *evg);
-    hmap_insert(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node, evg_id, NULL);
+    hmap_insert(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node, evg_id, NULL, 0);
     heap_insert_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size, &evg->size_node, priority);
     heap_init_ovs(&evg->rules);
     return evg;

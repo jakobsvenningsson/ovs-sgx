@@ -65,14 +65,14 @@ static inline size_t hmap_count(const struct hmap *);
 static inline bool hmap_is_empty(const struct hmap *);
 
 /* Adjusting capacity. */
-void hmap_expand(struct hmap *, shared_memory *shared_memory);
+void hmap_expand(struct hmap *, shared_memory *shared_memory, uint8_t page_type);
 void hmap_shrink(struct hmap *);
 void hmap_reserve(struct hmap *, size_t capacity);
 
 /* Insertion and deletion. */
 static inline void hmap_insert_fast(struct hmap *,
                                     struct hmap_node *, size_t hash);
-static inline void hmap_insert(struct hmap *, struct hmap_node *, size_t hash, shared_memory *shared_memory);
+static inline void hmap_insert(struct hmap *, struct hmap_node *, size_t hash, shared_memory *shared_memory, uint8_t page_type);
 static inline void hmap_remove(struct hmap *, struct hmap_node *);
 
 void hmap_node_moved(struct hmap *, struct hmap_node *, struct hmap_node *);
@@ -194,11 +194,11 @@ hmap_insert_fast(struct hmap *hmap, struct hmap_node *node, size_t hash)
 /* Inserts 'node', with the given 'hash', into 'hmap', and expands 'hmap' if
  * necessary to optimize search performance. */
 static inline void
-hmap_insert(struct hmap *hmap, struct hmap_node *node, size_t hash, shared_memory *shared_memory)
+hmap_insert(struct hmap *hmap, struct hmap_node *node, size_t hash, shared_memory *shared_memory, uint8_t page_type)
 {
     hmap_insert_fast(hmap, node, hash);
     if (hmap->n / 2 > hmap->mask) {
-        hmap_expand(hmap, shared_memory);
+        hmap_expand(hmap, shared_memory, page_type);
     }
 }
 

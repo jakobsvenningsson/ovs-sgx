@@ -133,12 +133,19 @@ typedef struct {
     struct list list_node;
 } cls_cache_entry;
 
+
+#define PAGE_TYPE_FREE 1
+#define PAGE_TYPE_CACHE 1
+#define PAGE_TYPE_UT_CRS 2
+
 typedef struct {
-    char **blocks;
-    size_t block_size;
-    size_t block_cap;
-    size_t n;
-    size_t mem_ptr;
+    uint8_t **pages;
+    size_t *page_sz;
+    size_t  cap;
+    uint8_t *page_type;
+    uint8_t *allocated;
+    uint8_t *deallocate_page;
+    size_t default_page_sz;
 } shared_memory;
 
 typedef struct {
