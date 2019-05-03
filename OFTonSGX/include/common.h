@@ -55,7 +55,7 @@
 #define hotcall_ecall_cls_rule_format 46
 #define hotcall_ecall_miniflow_expand 47
 #define hotcall_ecall_rule_calculate_tag 48
-#define hotcall_ecall_sgx_table_dpif 49
+//#define hotcall_ecall_sgx_table_dpif 49
 #define hotcall_ecall_table_update_taggable 50
 #define hotcall_ecall_is_sgx_other_table 51
 #define hotcall_ecall_rule_calculate_tag_s 52
@@ -66,15 +66,30 @@
 #define hotcall_ecall_ofproto_get_vlan_c 57
 #define hotcall_ecall_ofproto_get_vlan_r 58
 
+#define hotcall_ecall_get_cls_rules 59
+#define hotcall_ecall_get_cls_rules_and_enable_eviction 60
+#define hotcall_ecall_eviction_group_add_rules 61
+#define hotcall_ecall_ofproto_get_vlan_usage 62
+#define hotcall_ecall_ofproto_flush 63
+#define hotcall_ecall_ofproto_evict 64
+#define hotcall_ecall_add_flow 65
+#define hotcall_ecall_collect_rules_loose 66
+#define hotcall_ecall_collect_rules_strict 67
+#define hotcall_ecall_delete_flows 68
+#define hotcall_ecall_configure_table 69
+#define hotcall_ecall_need_to_evict 70
+#define hotcall_ecall_collect_rules_loose_stats_request 71
+#define hotcall_ecall_ofproto_rule_send_removed 72
+#define hotcall_ecall_remove_rules 73
+#define hotcall_ecall_ofproto_evict_get_rest 74
+//#define hotcall_ecall_destroy_rule_if_overlaps 59
+//#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
+//#define hotcall_ecall_miniflow_expand_and_tag 61
+//#define hotcall_ecall_allocate_cls_rule_if_not_read_only 62
+//#define hotcall_ecall_classifier_replace_if_modifiable 63
+//#define hotcall_ecall_ofproto_configure_table 64
 
-#define hotcall_ecall_destroy_rule_if_overlaps 59
-#define hotcall_ecall_get_rule_to_evict_if_neccesary 60
-#define hotcall_ecall_miniflow_expand_and_tag 61
-#define hotcall_ecall_allocate_cls_rule_if_not_read_only 62
-#define hotcall_ecall_classifier_replace_if_modifiable 63
-#define hotcall_ecall_ofproto_configure_table 64
-
-#define hotcall_ecall_table_dpif_init 65
+//#define hotcall_ecall_table_dpif_init 65
 
 
 /*typedef struct {
@@ -95,7 +110,7 @@
 
 typedef struct {
     int n_args;
-    void *args[10];
+    void *args[22];
 } argument_list;
 
 

@@ -19,8 +19,8 @@ function mod_flow_loose() {
 }
 
 function benchmark_mod_flow_loose() {
-  local ITERATIONS=$2
-  local TARGETS=$(get_targets $1)
+  local ITERATIONS=$1
+  local TARGETS=$(get_targets ${@:2})
   for target in ${TARGETS[@]}; do
     echo "FLAGS = $target"
     prepare

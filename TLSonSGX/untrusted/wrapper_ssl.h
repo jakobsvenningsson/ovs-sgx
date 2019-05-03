@@ -103,7 +103,7 @@ int SSL_want(const SSL *ssl);
 int SSL_connect(SSL *ssl);
 int SSL_set_fd(SSL *ssl, int fd);
 int SSL_accept(SSL *ssl);
-int SSL_library_init();
+int SSL_library_init(char *program_name);
 void SSL_load_error_strings();
 SSL_METHOD* SSLv23_client_method();
 SSL_METHOD* SSLv23_server_method();

@@ -2,16 +2,22 @@ enclave {
     include "mbedtls/x509_crt.h"
     from "mbedtls_sgx.edl" import *;
 
+    include "stdbool.h"
+	include "common.h"
 
+    from "sealing/sealing.edl" import *;
 
     trusted {
+        include "call-table.h"
+        include "hotcall.h"
+
 		public int ecall_ssl_read([out, size=buf_len] char* buf, size_t buf_len);
 		public int ecall_ssl_write([in, size=buf_len] char* buf, size_t buf_len);
 		public int ecall_ssl_get_error(int ret);
 		public int ecall_ssl_connect();
 		public int ecall_ssl_set_fd(int fd);
 		public int ecall_ssl_accept();
-		public void ecall_ssl_library_init([in, size=buf_len] const char* buf, size_t buf_len);
+		public void ecall_ssl_library_init([in, size=buf_len] const char* buf, size_t buf_len, [user_check] SSL_resource *r, [user_check] bool *write_resources_to_disk);
 		public void ecall_ssl_load_error_strings();
 		public void ecall_ssl_new();
 		public void ecall_ssl_free();
@@ -22,11 +28,15 @@ enclave {
 
 		public int ecall_ssl_shutdown();
 		public int ecall_ssl_get_state();
+
+        public int ecall_start_poller_tls([user_check] async_ecall *data);
 	};
 
     untrusted {
+        include "ocall.h"
+        include "hotcall-producer.h"
         /* define OCALLs here. */
         //include "wrapper_ssl.h"
-        //void ocall_print_str([in, string] const char *str);
+        void ocall_print([in, string] const char *str);
     };
 };

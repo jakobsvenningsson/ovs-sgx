@@ -3,6 +3,9 @@
 #include "enclave_t.h"
 
 
+//#define CAD(VARIABLE, TYPE) \
+//    *((TYPE *) VARIABLE)
+
 void
 execute_function(int function, argument_list * args, void *ret){
     switch (function) {
@@ -194,9 +197,6 @@ execute_function(int function, argument_list * args, void *ret){
             ecall_cls_lookup(*((int *) args->args[0]), (struct cls_rule **) args->args[1], *((int *) args->args[2]), (const struct flow *) args->args[3],
           (struct flow_wildcards *) args->args[4]);
             break;
-        case hotcall_ecall_sgx_table_dpif:
-            ecall_sgx_table_dpif(*((int *) args->args[0]), *((int *) args->args[1]));
-            break;
         case hotcall_ecall_evg_remove_rule:
             *((int *) ret) = ecall_evg_remove_rule(*((int *) args->args[0]), *((int *) args->args[1]),
           (struct cls_rule *) args->args[2]);
@@ -210,9 +210,189 @@ execute_function(int function, argument_list * args, void *ret){
         case hotcall_ecall_desfet_ccfes_r:
             ecall_desfet_ccfes_r(*((int *) args->args[0]), (struct cls_rule **) args->args[1], *((int *) args->args[2]));
             break;
-        case hotcall_ecall_table_dpif_init:
+        /*case hotcall_ecall_table_dpif_init:
             ecall_table_dpif_init(*((int *) args->args[0]));
+            break;*/
+        case hotcall_ecall_get_cls_rules:
+            *((size_t *) ret) = ecall_get_cls_rules(*((int *) args->args[0]),
+                                                    *((int *) args->args[1]),
+                                                    *((size_t *) args->args[2]),
+                                                    *((size_t *) args->args[3]),
+                                                    (struct cls_rule **) args->args[4],
+                                                    *((size_t *) args->args[5]),
+                                                    (size_t *) args->args[6]);
             break;
+        case hotcall_ecall_get_cls_rules_and_enable_eviction:
+            *((size_t *) ret) = ecall_get_cls_rules_and_enable_eviction(*((int *) args->args[0]),
+                                                                        *((int *) args->args[1]),
+                                                                        *((size_t *) args->args[2]),
+                                                                        *((size_t *) args->args[3]),
+                                                                        (struct cls_rule **) args->args[4],
+                                                                        *((size_t *) args->args[5]),
+                                                                        (size_t *) args->args[6],
+                                                                        (const struct mf_subfield *) args->args[7],
+                                                                        *((size_t *) args->args[8]),
+                                                                        *((uint32_t *) args->args[9]),
+                                                                        (bool *) args->args[10],
+                                                                        (bool *) args->args[11]);
+            break;
+        case hotcall_ecall_eviction_group_add_rules:
+            ecall_eviction_group_add_rules(*((int *) args->args[0]),
+                                           *((int *) args->args[1]),
+                                           *((size_t *) args->args[2]),
+                                           (struct cls_rule **) args->args[3],
+                                           (struct heap_node *) args->args[4],
+                                           (uint32_t *) args->args[5],
+                                           *((uint32_t *) args->args[6]));
+            break;
+        case hotcall_ecall_ofproto_get_vlan_usage:
+            *((size_t *) ret) = ecall_ofproto_get_vlan_usage(*((int *) args->args[0]),
+                                                             *((size_t *) args->args[1]),
+                                                             (uint16_t *) args->args[2],
+                                                             *((size_t *) args->args[3]),
+                                                             *((size_t *) args->args[4]),
+                                                             (size_t *) args->args[5]);
+            break;
+        case hotcall_ecall_ofproto_flush:
+            *((size_t *) ret) = ecall_ofproto_flush(*((int *) args->args[0]),
+                                                        (struct cls_rule **) args->args[1],
+                                                        (uint32_t *) args->args[2],
+                                                        *((size_t *) args->args[3]),
+                                                        *((size_t *) args->args[4]),
+                                                        *((size_t *) args->args[5]),
+                                                        (size_t *) args->args[6]);
+            break;
+        case hotcall_ecall_ofproto_evict:
+            *((size_t *) ret) = ecall_ofproto_evict(*((int *) args->args[0]),
+                                                    *((int *) args->args[1]),
+                                                    *((size_t *) args->args[2]),
+                                                    (uint32_t *) args->args[3],
+                                                    (struct cls_rule **) args->args[4],
+                                                    *((size_t *) args->args[5]),
+                                                    (size_t *) args->args[6]);
+            break;
+        case hotcall_ecall_add_flow:
+            ecall_add_flow(*((int *) args->args[0]),
+                           *((int *) args->args[1]),
+                            (struct cls_rule *) args->args[2],
+                            (struct cls_rule **) args->args[3],
+                            (struct cls_rule **) args->args[4],
+                            (struct match *) args->args[5],
+                            (uint32_t *) args->args[6],
+                            (uint16_t *) args->args[7],
+                            (uint16_t *) args->args[8],
+                            *((unsigned int *) args->args[9]),
+                            *((uint16_t *) args->args[10]),
+                            *((uint32_t *) args->args[11]),
+                            *((uint32_t *) args->args[12]),
+                            *((struct heap_node *) args->args[13]),
+                            (struct cls_rule **) args->args[14],
+                            *((int *) args->args[15]),
+                            *((bool *) args->args[16]),
+                            (bool *) args->args[17],
+                            (bool *) args->args[18],
+                            (bool *) args->args[19],
+                            (bool *) args->args[20],
+                            (bool *) args->args[21]);
+            break;
+        case hotcall_ecall_collect_rules_loose:
+            *((size_t *) ret) = ecall_collect_rules_loose(
+                *((int *) args->args[0]),
+                *((int *) args->args[1]),
+                *((int *) args->args[2]),
+                *((size_t *) args->args[3]),
+                (struct match *) args->args[4],
+                (bool *) args->args[5],
+                (struct cls_rule **) args->args[6],
+                *((size_t *) args->args[7]),
+                (bool *) args->args[8],
+                (size_t *) args->args[9]
+            );
+            break;
+        case hotcall_ecall_collect_rules_strict:
+            *((size_t *) ret) = ecall_collect_rules_strict(
+                *((int *) args->args[0]),
+                *((int *) args->args[1]),
+                *((int *) args->args[2]),
+                (struct match *) args->args[3],
+                *((unsigned int *) args->args[4]),
+                (bool *) args->args[5],
+                (struct cls_rule **) args->args[6],
+                (bool *) args->args[7],
+                *((size_t *) args->args[8])
+            );
+            break;
+        case hotcall_ecall_delete_flows:
+            ecall_delete_flows(
+                *((int *) args->args[0]),
+                (int *) args->args[1],
+                (struct cls_rule **) args->args[2],
+                (bool *) args->args[3],
+                (uint32_t *) args->args[4],
+                (unsigned int *) args->args[5],
+                (struct match *) args->args[6],
+                *((size_t *) args->args[7])
+            );
+            break;
+        case hotcall_ecall_configure_table:
+            ecall_configure_table(
+                *((int *) args->args[0]),
+                *((int *) args->args[1]),
+                (char *) args->args[2],
+                *((unsigned int *) args->args[3]),
+                (struct mf_subfield *) args->args[4],
+                *((size_t *) args->args[5]),
+                (bool *) args->args[6],
+                (bool *) args->args[7]
+            );
+            break;
+        case hotcall_ecall_need_to_evict:
+            *((bool *) ret) = ecall_need_to_evict(
+                *((int *) args->args[0]),
+                *((int *) args->args[1])
+            );
+            break;
+        case hotcall_ecall_collect_rules_loose_stats_request:
+            *((size_t *) ret) = ecall_collect_rules_loose_stats_request(
+                *((int *) args->args[0]),
+                *((int *) args->args[1]),
+                *((int *) args->args[2]),
+                *((size_t *) args->args[3]),
+                *((size_t *) args->args[4]),
+                (struct match *) args->args[5],
+                (struct cls_rule **) args->args[6],
+                (struct match *) args->args[7],
+                (unsigned int *) args->args[8],
+                (size_t *) args->args[9]
+            );
+            break;
+        case hotcall_ecall_ofproto_rule_send_removed:
+            ecall_ofproto_rule_send_removed(
+                *((int *) args->args[0]),
+                (struct cls_rule *) args->args[1],
+                (struct match *) args->args[2],
+                (unsigned int *) args->args[3],
+                (bool *) args->args[4]
+            );
+            break;
+        case hotcall_ecall_remove_rules:
+            *((size_t *) ret) = ecall_remove_rules(
+                *((int *) args->args[0]),
+                (int *) args->args[1],
+                (struct cls_rule **) args->args[2],
+                (bool *) args->args[3],
+                *((size_t *) args->args[4])
+            );
+            break;
+        /*case hotcall_ecall_ofproto_evict_get_rest:
+            ecall_ofproto_evict_get_rest(
+                (uint32_t *) args->args[0],
+                (struct cls_rule **) args->args[1],
+                *((size_t *) args->args[2])
+            );
+            break;*/
+
+
         /*case ecall_destroy_rule_if_overlaps:
             ecall_destroy_rule_if_overlaps(*((int *) args->args[1]), (struct cls_rule *) args->args[2]);
             break;

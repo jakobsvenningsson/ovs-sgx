@@ -41,6 +41,7 @@ class SimpleSwitch(app_manager.RyuApp):
 
         match = datapath.ofproto_parser.OFPMatch(
             in_port=in_port, dl_dst=haddr_to_bin(dst))
+
 	self.logger.info("Flow added")
 
         mod = datapath.ofproto_parser.OFPFlowMod(
@@ -69,6 +70,8 @@ class SimpleSwitch(app_manager.RyuApp):
         self.mac_to_port.setdefault(dpid, {})
 
         #self.logger.info("packet in %s %s %s %s %s %s", dpid, src, dst, msg.in_port, msg.total_len, msg.msg_len)
+        print("packet in {} {} {} {} {}".format(dpid, src, dst, msg.in_port, len(msg.data)))
+        
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = msg.in_port

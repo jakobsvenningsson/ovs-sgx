@@ -21,6 +21,166 @@ enclave {
 		// Hot-call e-calls
 		public int ecall_start_poller([user_check] async_ecall *data);
 
+		// Optimized ecalls
+
+		public size_t ecall_get_cls_rules(int bridge_id,
+										  int table_id,
+										  size_t start_index,
+										  size_t end_index,
+										  [user_check] struct cls_rule ** buf,
+										  size_t buf_size,
+										  [user_check] size_t *n_rules);
+
+	    public size_t ecall_get_cls_rules_and_enable_eviction(int bridge_id,
+										  int table_id,
+										  size_t start_index,
+										  size_t end_index,
+										  [user_check] struct cls_rule ** buf,
+										  size_t buf_size,
+										  [user_check] size_t *n_rules,
+										  [user_check] const struct mf_subfield *fields,
+										  size_t n_fields,
+										  uint32_t random_v,
+										  [user_check] bool *no_change,
+										  [user_check] bool *is_eviction_fields_enabled);
+
+		public void ecall_eviction_group_add_rules(int bridge_id,
+										  		   int table_id,
+												   size_t n,
+												   [user_check] struct cls_rule **cls_rules,
+										  		   [user_check] struct heap_node *evg_nodes,
+										  		   [user_check] uint32_t *rule_priorities,
+										   		   uint32_t group_priority);
+
+		public size_t ecall_ofproto_get_vlan_usage(int bridge_id,
+						                           size_t default_buffer_size,
+						                           [user_check] uint16_t *vlan_buffer,
+						                           size_t start_index,
+						                           size_t end_index,
+						                           [user_check] size_t *n_vlan);
+
+		public size_t ecall_ofproto_flush(int bridge_id,
+										  [user_check] struct cls_rule **cls_rules,
+										  [user_check] uint32_t *hashes,
+										  size_t default_buffer_size,
+										  size_t start_index,
+										  size_t end_index,
+										  [user_check] size_t *n_rules);
+
+		public size_t
+		ecall_ofproto_evict(int bridge_id,
+							int ofproto_n_tables,
+							size_t start_index,
+							[user_check] uint32_t *hashes,
+							[user_check] struct cls_rule ** cls_rules,
+							size_t buf_size,
+							[user_check] size_t *n_evictions);
+
+		public void
+		ecall_add_flow(int bridge_id,
+					 int table_id,
+					 [user_check] struct cls_rule *cr,
+					 [user_check] struct cls_rule **victim,
+					 [user_check] struct cls_rule **evict,
+					 [user_check] struct match *match,
+					 [user_check] uint32_t *evict_rule_hash,
+					 [user_check] uint16_t *vid,
+					 [user_check] uint16_t *vid_mask,
+					 unsigned int priority,
+					 uint16_t flags,
+					 uint32_t group_eviction_priority,
+					 uint32_t rule_eviction_priority,
+					 struct heap_node eviction_node,
+					 [user_check] struct  cls_rule **pending_deletions,
+					 int n_pending,
+					 bool has_timeout,
+					 [user_check] bool *table_overflow,
+					 [user_check] bool *is_rule_modifiable,
+					 [user_check] bool *is_deletion_pending,
+					 [user_check] bool *is_rule_overlapping,
+					 [user_check] bool *is_read_only);
+
+		public size_t
+		ecall_collect_rules_strict(int bridge_id,
+								 int table_id,
+								 int n_tables,
+								 [user_check] struct match *match,
+								 unsigned int priority,
+			                     [user_check] bool *rule_is_hidden_buffer,
+			                     [user_check] struct cls_rule **cls_rule_buffer,
+								 [user_check] bool *rule_is_modifiable,
+			                     size_t buffer_size);
+
+		public size_t
+		ecall_collect_rules_loose(int bridge_id,
+		                       int table_id,
+		                       int ofproto_n_tables,
+							   size_t start_index,
+		                       [user_check] struct match *match,
+		                       [user_check] bool *rule_is_hidden_buffer,
+		                       [user_check] struct cls_rule **cls_rule_buffer,
+		                       size_t buffer_size,
+							   [user_check] bool *rule_is_modifiable,
+		                       [user_check] size_t *n_rules);
+
+
+		public void
+		ecall_delete_flows(int bridge_id,
+						 [user_check] int *rule_table_ids,
+						 [user_check] struct cls_rule **cls_rules,
+						 [user_check] bool *rule_is_hidden,
+						 [user_check] uint32_t *rule_hashes,
+						 [user_check] unsigned int *rule_priorities,
+						 [user_check] struct match *match, size_t n);
+
+
+
+	 public void
+	 ecall_configure_table(int bridge_id,
+	                      int table_id,
+	                      [user_check] char *name,
+	                      unsigned int max_flows,
+	                      [user_check] struct mf_subfield *groups,
+	                      size_t n_groups,
+	                      [user_check] bool *need_to_evict,
+	                      [user_check] bool *is_read_only);
+
+	  public bool
+	  ecall_need_to_evict(int bridge_id, int table_id);
+
+
+
+	  public size_t
+	  ecall_collect_rules_loose_stats_request(int bridge_id,
+	                                        int table_id,
+	                                        int n_tables,
+	                                        size_t start_index,
+											size_t buffer_size,
+	                                        [user_check] struct match *match,
+	                                        [user_check] struct cls_rule **cls_rules,
+	                                        [user_check] struct match *matches,
+	                                        [user_check] unsigned int *priorities,
+	                                        [user_check] size_t *n_rules);
+
+
+		public void
+		ecall_ofproto_rule_send_removed(int bridge_id,
+										[user_check] struct cls_rule *cr,
+										[user_check] struct match *match,
+										[user_check] unsigned int *priority,
+										[user_check] bool *rule_is_hidden);
+
+
+		public size_t
+		ecall_remove_rules(int bridge_id, [user_check] int *table_ids, [user_check] struct cls_rule **rules, [user_check] bool *is_hidden, size_t n_rules);
+
+
+		//public void
+		//ecall_ofproto_evict_get_rest([user_check] uint32_t *rule_hashes, [user_check] struct cls_rule ** cls_rules, size_t buf_size);
+
+		public void
+		ecall_cls_rules_format(int bridge_id, [user_check] const struct cls_rule *cls_rules, [user_check] struct match *megamatches, size_t n);
+
 		public void ecall_ofproto_init_tables(int bridge_id, int n_tables);
 		public void ecall_readonly_set(int bridge_id, int table_id);
 		public int ecall_istable_readonly(int bridge_id, uint8_t table_id);
@@ -69,7 +229,6 @@ enclave {
 		public unsigned int ecall_cls_rule_format(int bridge_id, [user_check]const struct cls_rule *o_cls_rule,[user_check]struct match *megamatch);
 		public void ecall_miniflow_expand(int bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]struct flow *flow);
 		public uint32_t ecall_rule_calculate_tag(int bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]const struct flow *flow,int table_id);
-		public void ecall_sgx_table_dpif(int bridge_id, int n_tables);
 		public int ecall_table_update_taggable(int bridge_id, uint8_t table_id);
 		public int ecall_is_sgx_other_table(int bridge_id, int id);
 		public uint32_t ecall_rule_calculate_tag_s(int bridge_id, int id, [user_check]const struct flow *flow);

@@ -77,10 +77,16 @@ else
 	Urts_Library_Name := sgx_urts
 endif
 
-App_Cpp_Files :=  untrusted/utils.cpp untrusted/wrapper_sgx.cpp untrusted/mbedtls_client.cpp
-App_Include_Paths := -Iuntrusted -I$(SGX_SDK)/include -Iinclude  -I$(MBEDTLS_SGX_PATH)/src/mbedtls-2.2.1/include
+App_Cpp_Files :=  untrusted/utils.cpp \
+				  untrusted/wrapper_sgx.cpp \
+				  untrusted/mbedtls_client.cpp \
+				  untrusted/ocall.cpp \
+				  untrusted/spinlock.cpp \
+				  untrusted/hotcall-producer.cpp
 
-App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
+App_Include_Paths := -Iuntrusted -Iinclude -I$(SGX_SDK)/include -Iinclude  -I$(MBEDTLS_SGX_PATH)/src/mbedtls-2.2.1/include
+
+App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths) $(LFLAGS)
 
 # Three configuration modes - Debug, prerelease, release
 #   Debug - Macro DEBUG enabled.
@@ -120,11 +126,18 @@ endif
 Crypto_Library_Name := sgx_tcrypto
 
 #Enclave_Cpp_Files := Enclave/Enclave.cpp
-Enclave_C_Files := trusted/enclave.c trusted/Log.c
+Enclave_C_Files := trusted/enclave.c \
+				   trusted/Log.c \
+				   trusted/call-table.c \
+				   trusted/hotcall.c \
+				   trusted/enclave-utils.c \
+				   trusted/sealing/seal-ssl-resource.c \
+				   trusted/sealing/sealing.c
+				   
 Enclave_Include_Paths := -Iinclude -Itrusted -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/stlport -I$(MBEDTLS_SGX_PATH)/src/mbedtls-2.2.1/include
 
 Enclave_C_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(Enclave_Include_Paths)
-Enclave_Cpp_Flags := $(Enclave_C_Flags) -std=c++03 -nostdinc++ -fpermissive
+Enclave_Cpp_Flags := $(Enclave_C_Flags) $(LFLAGS) -std=c++03 -nostdinc++ -fpermissive
 
 # To generate a proper enclave, it is recommended to follow below guideline to link the trusted libraries:
 #    1. Link sgx_trts with the `--whole-archive' and `--no-whole-archive' options,
@@ -135,7 +148,7 @@ Enclave_Cpp_Flags := $(Enclave_C_Flags) -std=c++03 -nostdinc++ -fpermissive
 # Otherwise, you may get some undesirable errors.
 Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
+	-Wl,--start-group -lsgx_tstdc -lsgx_tservice -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
@@ -240,7 +253,16 @@ clean:
 	@rm -f $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) untrusted/enclave_u.* $(Enclave_C_Objects) $(Enclave_Cpp_Objects) trusted/enclave_t.*
 
 wrapper_library_sim:
-	@ar rcsv libTLSonSGX.a untrusted/wrapper_sgx.o untrusted/utils.o untrusted/enclave_u.o /opt/intel/sgxsdk/lib64/libsgx_urts_sim.so $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o /opt/intel/sgxsdk/lib64/libsgx_uae_service_sim.so
+	@ar rcsv libTLSonSGX.a untrusted/wrapper_sgx.o untrusted/utils.o untrusted/enclave_u.o untrusted/ocall.o untrusted/spinlock.o untrusted/hotcall-producer.o  /opt/intel/sgxsdk/lib64/libsgx_urts_sim.so $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o /opt/intel/sgxsdk/lib64/libsgx_uae_service_sim.so
 
 wrapper_library:
-	@ar rcsv libTLSonSGX.a untrusted/wrapper_sgx.o untrusted/utils.o untrusted/enclave_u.o /opt/intel/sgxsdk/lib64/libsgx_urts.so $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o /opt/intel/sgxsdk/lib64/libsgx_uae_service.so
+	@ar rcsv libTLSonSGX.a \
+			 untrusted/wrapper_sgx.o \
+			 untrusted/utils.o \
+			 untrusted/enclave_u.o \
+			 untrusted/ocall.o \
+			 untrusted/spinlock.o \
+			 untrusted/hotcall-producer.o \
+			 /opt/intel/sgxsdk/lib64/libsgx_urts.so \
+			 $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o \
+			 /opt/intel/sgxsdk/lib64/libsgx_uae_service.so

@@ -3,8 +3,8 @@
 #include "sgx_error.h"
 #include "sgx_eid.h"     /* sgx_enclave_id_t */
 
-#define TOKEN_FILENAME   "/home/jakob/test_ovs/ovs/tls_enclave.token"
-#define ENCLAVE_FILENAME "/home/jakob/test_ovs/ovs/tls_enclave.signed.so"
+#define TOKEN_FILENAME   "/home/jakob/ovs-sgx/ovs/tls_enclave.token"
+#define ENCLAVE_FILENAME "/home/jakob/ovs-sgx/ovs/tls_enclave.signed.so"
 
 
 void print_error_message(sgx_status_t ret);
@@ -15,6 +15,24 @@ extern "C" {
 #endif
 
 //extern sgx_enclave_id_t global_eid;    /* global enclave id */
+
+#define MAKE_ECALL_ARGS(FUNC, ecall_ret, global_eid, args...) \
+  do { \
+    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret, args); \
+    if( sgx_ret != SGX_SUCCESS) { \
+      print_error_message(sgx_ret); \
+      printf("ecall failed in ecall_%s\n", #FUNC); \
+    } \
+  } while(0)
+
+#define MAKE_ECALL(FUNC, ecall_ret, global_eid) \
+  do { \
+    sgx_status_t sgx_ret = ecall_ ## FUNC(global_eid, ecall_ret); \
+    if( sgx_ret != SGX_SUCCESS) { \
+      print_error_message(sgx_ret); \
+      printf("ecall failed in ecall_%s\n", #FUNC); \
+    } \
+  } while(0)
 
 
 typedef struct _sgx_errlist_t {

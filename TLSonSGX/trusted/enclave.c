@@ -1,5 +1,8 @@
 #include "enclave_t.h"
 #include "sgx_trts.h"
+#include "sgx_tseal.h"
+#include "sgx_tprotected_fs.h"
+
 #include "mbedtls/entropy.h"
 #include "mbedtls/md5.h"
 #include "mbedtls/ssl.h"
@@ -10,6 +13,7 @@
 #include "mbedtls/compat-1.3.h"
 #include "mbedtls/net_v.h"
 #include "mbedtls/net_f.h"
+#include "mbedtls/error.h"
 #include "mbedtls/platform.h"
 
 #ifdef __cplusplus
@@ -18,11 +22,17 @@ extern "C" {
 
 #include "enclave.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
+
+#include "hotcall.h"
+#include "enclave-utils.h"
+#include "sealing/seal-ssl-resource.h"
+
+
+
 
 #define SSL_ERROR_WANT_READ POLARSSL_ERR_NET_WANT_READ
 #define SSL_ERROR_WANT_WRITE POLARSSL_ERR_NET_WANT_WRITE
@@ -43,17 +53,6 @@ extern "C" {
 //CA Server
 #define SERVER_PORT "4433"
 #define SERVER_NAME "127.0.0.1"
-
-
-int sprintf(char* buf, const char *fmt, ...)
-{
-        va_list ap;
-        int ret;
-        va_start(ap, fmt);
-        ret = vsnprintf(buf, BUFSIZ, fmt, ap);
-        va_end(ap);
-        return ret;
-}
 
 static SSL *ssl;
 static SSL_CTX *ctx;
@@ -101,46 +100,98 @@ send_recv(mbedtls_ssl_context ssl, char* send_buf, char recv_buf1[6000]) {
 }
 
 void
-generate_keys(char *currMeasure) {
-        int temp=10;
+load_sealed_ssl_resources(SSL_resource *rs) {
+    for(size_t i = 0; i < N_SSL_RESOURCES; ++i) {
+        uint32_t sealed_len = rs[i].len;
+        uint8_t sealed_data[sealed_len];
+        memcpy(sealed_data, rs[i].sealed_data, sealed_len);
+        switch(rs[i].type) {
+            case SSL_RESOURCE_CA_CERT:
+                cacert = unseal_certificate(sealed_data, sealed_len);
+                break;
+            case SSL_RESOURCE_CERT:
+                cert = unseal_certificate(sealed_data, sealed_len);
+                break;
+            case SSL_RESOURCE_PK:
+                unseal_key(sealed_data, sealed_len, &key);
+                break;
+            default:
+                printf("Unknown ssl resource %d.\n", rs[i].type);
+                assert(false);
+        }
+    }
+}
+
+void
+generate_keys(const char *currMeasure, SSL_resource *rs, bool *write_resources_to_disk) {
+
         mbedtls_pk_init(&key);
+
+
+        // Check if sealed ssl context exist.
+        if(all_ssl_resources_exist(rs)) {
+            // Load from file and exit
+            load_sealed_ssl_resources(rs);
+            return;
+        }
+
+        // No sealed context exist, request resources from CA authority.
+
         int ret;
-        if((ret = mbedtls_pk_setup( &key, mbedtls_pk_info_from_type(MBEDTLS_PK_RSA))) != 0) {
+        int temp=10;
+        if((ret = mbedtls_pk_setup(&key, mbedtls_pk_info_from_type(MBEDTLS_PK_RSA))) != 0) {
                 ocall_print_string(&temp,"###Enclave:generate_keys:failed\n  !  mbedtls_pk_setup returned");
                 return;
         } else {
                 ocall_print_string(&temp,"###Enclave:generate_keys:mbedtls_pk_setup success\n");
         }
-        ret = mbedtls_rsa_gen_key( mbedtls_pk_rsa( key ), mbedtls_ctr_drbg_random, &g_ctr_drbg_context,2048, 65537 );
+
+
+        size_t pk_length = 2048;
+        ret = mbedtls_rsa_gen_key( mbedtls_pk_rsa(key), mbedtls_ctr_drbg_random, &g_ctr_drbg_context, pk_length, 65537 );
         if(ret != 0) {
                 ocall_print_string(&temp,"###Enclave:generate_keys:failed\n  !  mbedtls_rsa_gen_key");
                 return;
         } else {
                 ocall_print_string(&temp,"###Enclave:generate_keys:Keys generated successfully \n");
         }
+
+
         //Private Key
-        unsigned char prk_buf[6000];
-        size_t len = 0;
-        memset(prk_buf, 0, 6000);
-        mbedtls_pk_write_key_pem(&key, prk_buf, 6000);
+        unsigned char prk_buf[pk_length];
+        memset(prk_buf, 0, pk_length);
+        if((ret = mbedtls_pk_write_key_pem(&key, prk_buf, pk_length)) != 0) {
+            printf("Failed to generate private key.\n");
+        }
+
+        sgx_status_t sgx_res;
+        sgx_res = seal_ssl_resource(prk_buf, strlen(prk_buf), &rs[2]);
+        if(sgx_res != SGX_SUCCESS) {
+            printf("Failed to seal private key.\n");
+        }
+        rs[2].type = SSL_RESOURCE_PK;
+
 
         //Public Key
-        unsigned char puk_buf[6000];
-        memset(puk_buf, 0, 6000);
-        mbedtls_pk_write_pubkey_pem( &key, puk_buf, 6000 );
-        //ocall_print_string(&temp,puk_buf);
+        unsigned char puk_buf[pk_length];
+        memset(puk_buf, 0, pk_length);
+        if((ret = mbedtls_pk_write_pubkey_pem(&key, puk_buf, pk_length)) != 0) {
+            printf("Failed to generate public key.\n");
+        }
 
         mbedtls_x509write_csr req;
         mbedtls_x509write_csr_init(&req);
         mbedtls_x509write_csr_set_md_alg(&req, MBEDTLS_MD_SHA256);
-        mbedtls_x509write_csr_set_subject_name(&req, "CN=openvswitch,O=RISE,OU=5GEnsure,C=SE,L=Kista,ST=Stockholm,R=ovs@rise.se");
-        mbedtls_x509write_csr_set_subject_name(&req, "CN=openvswitch");
+        if((ret = mbedtls_x509write_csr_set_subject_name(&req, "CN=openvswitch")) != 0) {
+            printf("Failed to set subject name.\n");
+        }
         mbedtls_x509write_csr_set_key(&req, &key);
 
-        unsigned char csr_buf[6000];
-        memset(csr_buf, 0, 6000);
-        mbedtls_x509write_csr_pem( &req, csr_buf, 4096, mbedtls_ctr_drbg_random, &g_ctr_drbg_context);
-        //ocall_print_string(&temp,csr_buf);
+        unsigned char csr_buf[pk_length];
+        memset(csr_buf, 0, pk_length);
+        if((ret = mbedtls_x509write_csr_pem(&req, csr_buf, pk_length, mbedtls_ctr_drbg_random, &g_ctr_drbg_context)) != 0) {
+            printf("Failed to create csr request.\n");
+        }
 
         mbedtls_net_context server_fd;
         mbedtls_ssl_context ssl;
@@ -151,7 +202,7 @@ generate_keys(char *currMeasure) {
         mbedtls_net_connect( &server_fd, SERVER_NAME,SERVER_PORT, MBEDTLS_NET_PROTO_TCP );
         mbedtls_ssl_config_defaults( &conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT );
         mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_NONE );
-        mbedtls_ssl_conf_rng( &conf, mbedtls_ctr_drbg_random, &g_ctr_drbg_context );
+        mbedtls_ssl_conf_rng( &conf, mbedtls_ctr_drbg_random, &g_ctr_drbg_context);
         mbedtls_ssl_setup( &ssl, &conf );
         mbedtls_ssl_set_bio( &ssl, &server_fd, mbedtls_net_send, mbedtls_net_recv, NULL );
 
@@ -165,7 +216,7 @@ generate_keys(char *currMeasure) {
         size_t cer_len = 0;
 
         char ima_res[128];
-        send_recv(ssl, currMeasure, ima_res);
+        send_recv(ssl, (char *) currMeasure, ima_res);
         ocall_print_string(&temp,"###Enclave:generate_keys:IMA Measurement validation result by CA is ");
         ocall_print_string(&temp,ima_res);
         ocall_print_string(&temp,"____\n");
@@ -177,7 +228,7 @@ generate_keys(char *currMeasure) {
         ocall_print_string(&temp,"###Enclave:generate_keys:IMA is OK\n");
         char cer_buf[6000];
         cer_len= send_recv(ssl, csr_buf, cer_buf);
-        cert= malloc(1024);
+        cert = malloc(2048);
         mbedtls_x509_crt_init(cert);
 
         // Find start index of certificate part of PEM file
@@ -197,7 +248,30 @@ generate_keys(char *currMeasure) {
         }
         ocall_print_string(&temp,"###Enclave:generate_keys:Switch certificate is parsed successfully\n");
 
+        // Seal certificate
+        sgx_res = seal_ssl_resource(cer_buf1, cert_length + 1, &rs[1]);
+        if(sgx_res != SGX_SUCCESS) {
+            printf("Failed to store certificate in sealed storage.\n");
+        }
+        rs[1].type = SSL_RESOURCE_CERT;
+
         cacert = ( mbedtls_x509_crt *) mbedtls_ssl_get_peer_cert(&ssl);
+        if(cacert == NULL) {
+            printf("Failed to get server certificate.\n");
+        }
+
+        // Seal CA certificate
+        sgx_res = seal_ssl_resource(cacert->raw.p, cacert->raw.len, &rs[0]);
+        if(sgx_res != SGX_SUCCESS) {
+            printf("Failed to store ca certificate in sealed storage.\n");
+        }
+        rs[0].type = SSL_RESOURCE_CA_CERT;
+
+        printf("sealing of ca_cert ok\n");
+
+        *write_resources_to_disk = true;
+
+
         mbedtls_ssl_close_notify(&ssl);
         mbedtls_net_free(&server_fd);
         mbedtls_ssl_free(&ssl);
@@ -260,7 +334,7 @@ ecall_ssl_accept() {
 }
 
 void
-ecall_ssl_library_init(const char *buf, size_t buf_len) {
+ecall_ssl_library_init(const char *ima_buf, size_t ima_buf_len, SSL_resource *r, bool *write_resources_to_disk) {
         mbedtls_entropy_init(&g_entropy_context);
         mbedtls_ctr_drbg_init(&g_ctr_drbg_context);
         int ret=0;
@@ -279,7 +353,7 @@ ecall_ssl_library_init(const char *buf, size_t buf_len) {
         /* SSL_library_init() always returns "1" */
         if(!keys_generated) {
                 ocall_print_string(&temp, "###Enclave: ecall_ssl_library_init: Generating Keys\n");
-                generate_keys(buf);
+                generate_keys(ima_buf, r, write_resources_to_disk);
                 keys_generated=true;
         } else {
                 ocall_print_string(&temp, "###Enclave: ecall_ssl_library_init: Keys are already generated\n");
@@ -359,7 +433,7 @@ void
 ecall_ssl_ctx_new() {
         /*hardcoded for an ssl client*/
         static SSL_METHOD ssl_method = {SSL_IS_CLIENT,
-                                        SSL_MAJOR_VERSION_3,
+                                        2,
                                         SSL_MINOR_VERSION_0};
         ctx = (SSL_CTX*)calloc(1, sizeof(*ctx));
         ctx->ssl_method = &ssl_method;

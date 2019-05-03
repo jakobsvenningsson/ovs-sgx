@@ -47,6 +47,8 @@ struct ofproto {
 
     /* Id which maps an ofproto structure to flow tables inside of the enclave */
     int bridge_id;
+    // Holds addresses to all struct rules beloning to this bridge
+    struct list rules;
 
     /* Settings. */
     uint64_t fallback_dpid;     /* Datapath ID if no better choice found. */
@@ -234,6 +236,10 @@ struct rule {
     /* Optimisation for flow expiry. */
     struct list expirable;      /* In ofproto's 'expirable' list if this rule
                                  * is expirable, otherwise empty. */
+
+    struct list element;
+    uint16_t tmp_storage_vid;
+    uint16_t tmp_storage_vid_mask;
 };
 
 static inline struct rule *

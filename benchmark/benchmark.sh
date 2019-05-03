@@ -8,21 +8,21 @@ BASE_PATH=$HOME/ovs-sgx/benchmark
 
 function add_flow() {
   source ${BASE_PATH}/scripts/add_flow.sh
-  benchmark_add_flow $TARGETS $ITERATIONS
+  benchmark_add_flow $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "add_flow"
 }
 
 function del_flow_strict() {
   source ${BASE_PATH}/scripts/del_flow_strict.sh
-  benchmark_del_flow_strict $TARGETS $ITERATIONS
+  benchmark_del_flow_strict $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "del_flow_strict"
 }
 
 function del_flow_loose() {
   source ${BASE_PATH}/scripts/del_flow_loose.sh
-  benchmark_del_flow_loose $TARGETS $ITERATIONS
+  benchmark_del_flow_loose $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "del_flow_loose"
 }
@@ -30,16 +30,54 @@ function del_flow_loose() {
 
 function mod_flow_strict() {
   source ${BASE_PATH}/scripts/mod_flow_strict.sh
-  benchmark_mod_flow_strict $TARGETS $ITERATIONS
+  benchmark_mod_flow_strict $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "mod_flow_strict"
 }
 
 function mod_flow_loose() {
   source ${BASE_PATH}/scripts/mod_flow_loose.sh
-  benchmark_mod_flow_loose $TARGETS $ITERATIONS
+  benchmark_mod_flow_loose $ITERATIONS $TARGETS
   echo $?
   create_csv_file $TARGETS "mod_flow_loose"
+}
+
+function dump_flows() {
+  source ${BASE_PATH}/scripts/dump_flows.sh
+  benchmark_dump_flows $ITERATIONS $TARGETS
+  echo $?
+  create_csv_file $TARGETS "dump_flows"
+}
+
+function evict_rule_batch() {
+  source ${BASE_PATH}/scripts/evict_rule_batch.sh
+  benchmark_evict_rule_batch $ITERATIONS $TARGETS
+  echo $?
+  create_csv_file $TARGETS "evict_rule_batch"
+}
+
+function evict_rule_single() {
+  source ${BASE_PATH}/scripts/evict_rule_single.sh
+  benchmark_evict_rule_single $ITERATIONS $TARGETS
+  echo $?
+  create_csv_file $TARGETS "evict_rule_single"
+}
+
+function udp_latency() {
+  source ${BASE_PATH}/scripts/udp_latency.sh
+  benchmark_udp_latency $ITERATIONS $TARGETS
+  create_csv_file $TARGETS "udp_latency"
+}
+
+function udp_throughput() {
+  source ${BASE_PATH}/scripts/udp_throughput.sh
+  benchmark_udp_throughput $ITERATIONS $TARGETS
+}
+
+function udp_latency_force_controller() {
+    source ${BASE_PATH}/scripts/udp_latency_force_controller.sh
+    benchmark_udp_latency_force_controller $ITERATIONS $TARGETS
+    create_csv_file $TARGETS "udp_latency_force_controller"
 }
 
 function print_help() {
@@ -72,18 +110,39 @@ case $BENCHMARK in
   mod-flow-loose)
     mod_flow_loose
     ;;
+  dump-flows)
+    dump_flows
+    ;;
+  evict-rule-batch)
+    evict_rule_batch
+    ;;
+  evict-rule-single)
+    evict_rule_single
+    ;;
+  udp-throughput)
+    udp_throughput
+    ;;
+  udp-latency)
+    udp_latency
+    ;;
+  udp-latency-force-controller)
+    udp_latency_force_controller
+    ;;
   all)
     add_flow
     del_flow_strict
     del_flow_loose
     mod_flow_strict
     mod_flow_loose
+    dump_flows
+    evict_rule_single
+    evict_rule_batch
     ;;
   help)
     print_help
     ;;
   *)
     echo "Unknown benchmark."
-    echo ${@:2} 
+    echo ${@:2}
   ;;
 esac

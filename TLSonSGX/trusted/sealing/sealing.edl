@@ -1,0 +1,13 @@
+enclave {
+    include "sgx_tseal.h"
+	include "common.h"
+
+    trusted {
+
+        public
+        sgx_status_t ecall_seal([in, size=text_len] uint8_t *text, size_t text_len, [out, size=sealed_len] sgx_sealed_data_t *sealed, size_t sealed_len);
+
+        public
+        sgx_status_t ecall_unseal([out, size=sealed_len] sgx_sealed_data_t *sealed, size_t sealed_len, [in, size=text_len] uint8_t *text, uint32_t text_len);
+    };
+};

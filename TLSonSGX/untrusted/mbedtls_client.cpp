@@ -103,7 +103,8 @@ InitCTX(void){
     SSL_CTX * ctx;
 
     SSL_load_error_strings(); /* Bring in and register error messages */
-    SSL_library_init();
+    char program_name[] = "mbedtls_client";
+    SSL_library_init(program_name);
     method = SSLv23_client_method(); /* Create new client-method instance */
     ctx    = SSL_CTX_new(method);    /* Create new context */
 
@@ -128,13 +129,13 @@ ShowCerts(SSL * ssl){
     X509 * cert;
     char * line;
 
-    cert = SSL_get_peer_certificate(ssl); /* get the server's certificate */
+    cert = SSL_get_peer_certificate(ssl);
     if (cert != NULL) {
         printf("Server certificates:\n");
         line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
         printf("Subject: %s\n", line);
-        free(line);      /* free the malloc'ed string */
-        X509_free(cert); /* free the malloc'ed certificate copy */
+        free(line);
+        X509_free(cert);
     } else   {
         printf("No certificates.\n");
     }
@@ -145,11 +146,6 @@ ShowCerts(SSL * ssl){
 /*--- main - create SSL context and connect                         ---*/
 /*---------------------------------------------------------------------*/
 
-
-void
-ocall_print_str(const char * str){
-    printf("%s", str);
-}
 
 int
 main(int count, char * strings[]){
@@ -181,7 +177,7 @@ main(int count, char * strings[]){
     if (connectResult == FAIL) {
         printf("Error");
     } else { // char *msg = "Hello???";
-        char * msg = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
+        char msg[] = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
         ShowCerts(ssl);                   /* get any certs */
         SSL_write(ssl, msg, strlen(msg)); /* encrypt & send message */
         printf("**************SSL State is %d\n", SSL_get_state(ssl));

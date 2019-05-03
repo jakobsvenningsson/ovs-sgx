@@ -1,5 +1,5 @@
-#ifndef _H_HOTCALL_
-#define _H_HOTCALL_
+#ifndef _H_TLS_HOTCALL_
+#define _H_TLS_HOTCALL_
 
 #include "common.h"
 

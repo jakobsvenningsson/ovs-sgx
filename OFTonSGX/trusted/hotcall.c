@@ -40,9 +40,6 @@ ecall_start_poller(async_ecall * ctx){
             ctx->sleeping   = true;
             ocall_sleep();
             ctx->sleeping = false;
-            // sgx_thread_mutex_lock(&ctx->mutex);
-            // sgx_thread_cond_wait(&ctx->cond, &ctx->mutex
-            // sgx_thread_mutex_unlock(&ctx->mutex);
         }
         #endif /* ifdef TIMEOUT */
     }

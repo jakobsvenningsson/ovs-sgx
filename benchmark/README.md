@@ -24,7 +24,9 @@
 1. Handing of cache miss when rule exists in flow table.
 2. Handling of cache miss when no rule exists in flow table and controller has to be consulted.
 3. Check different traffic patterns. Should check both longer and shorter flows. Longer flows should cause more misses which requires more interaction with flow tables and controller.
+4. Throughput, use iPerf. Server run iperf -s -u to start a server and listen to udp packets. Client run iperf -u -c localhost -b 1000m (max bandwidth) to start sending traffic.
 
+ncat -l 2000 -k -c 'xargs -n1 echo'
 
 ## Startup time
 
