@@ -3,6 +3,7 @@
 source $HOME/ovs-sgx/benchmark/scripts/common.sh
 
 function udp_latency_force_controller() {
+  echo "inside udp"
 
   local NETWORK_INTERFACE="wlp4s0"
   local CLIENT_IP="192.168.1.20"
@@ -10,6 +11,8 @@ function udp_latency_force_controller() {
   local TARGET=$2
 
   setup_testbed $NETWORK_INTERFACE $CLIENT_IP $SERVER_IP $TARGET
+
+  echo "testbed setup"
 
   # Force each flow miss to be handled by controller
   # ovs-ofctl add-flow br0 "priority=65535, actions=controller"

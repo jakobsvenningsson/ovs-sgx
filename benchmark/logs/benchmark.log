@@ -1,120 +1,50 @@
 tcs_num 10, tcs_max_num 10, tcs_min_pool 3
-The required memory is 19779584B.
+The required memory is 19783680B.
 Succeed.
-untrusted/wrapper_sgx.cpp: In function ‘SSL_CTX* SSL_CTX_new(SSL_METHOD*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_ctx_new(sgx_enclave_id_t)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:130:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_ctx_new, false, 0, NULL);
+In file included from trusted/enclave.c:13:0:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls-SGX/src/mbedtls-2.2.1/include/mbedtls/compat-1.3.h:2456:0: warning: "ssl_set_bio" redefined
+ #define ssl_set_bio mbedtls_ssl_set_bio_timeout
+ ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls-SGX/src/mbedtls-2.2.1/include/mbedtls/compat-1.3.h:2455:0: note: this is the location of the previous definition
+ #define ssl_set_bio mbedtls_ssl_set_bio
+ ^
+In file included from trusted/enclave.c:31:0:
+trusted/enclave-utils.h:5:6: warning: conflicting types for built-in function ‘printf’
+ void printf(const char *fmt, ...);
+      ^
+trusted/enclave.c: In function ‘send_recv’:
+trusted/enclave.c:82:44: warning: ‘sizeof’ on array function parameter ‘recv_buf1’ will return size of ‘char *’ [-Wsizeof-array-argument]
+                 memset(recv_buf1, 0, sizeof(recv_buf1));
+                                            ^
+trusted/enclave.c:68:57: note: declared here
+ send_recv(mbedtls_ssl_context ssl, char* send_buf, char recv_buf1[6000]) {
+                                                         ^
+trusted/enclave.c: In function ‘ecall_ssl_new’:
+trusted/enclave.c:389:37: warning: passing argument 1 of ‘mbedtls_ssl_setup’ from incompatible pointer type [-Wincompatible-pointer-types]
+         if((res = mbedtls_ssl_setup(ssl, ssl->cntx.conf)) != 0) {
+                                     ^
+In file included from /home/jakob/ovs-sgx/TLSonSGX/mbedtls-SGX/src/mbedtls-2.2.1/include/mbedtls/net_v.h:32:0,
+                 from trusted/enclave_t.h:12,
+                 from trusted/enclave.c:1:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls-SGX/src/mbedtls-2.2.1/include/mbedtls/ssl.h:860:5: note: expected ‘mbedtls_ssl_context * {aka struct mbedtls_ssl_context *}’ but argument is of type ‘SSL * {aka struct ps_ssl *}’
+ int mbedtls_ssl_setup( mbedtls_ssl_context *ssl,
      ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:87:14: note: declared here
- sgx_status_t ecall_ssl_ctx_new(sgx_enclave_id_t eid);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘void SSL_CTX_free(SSL_CTX*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_ctx_free(sgx_enclave_id_t)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:137:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_ctx_free, false, 0, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:85:14: note: declared here
- sgx_status_t ecall_ssl_ctx_free(sgx_enclave_id_t eid);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘void SSL_CTX_set_verify(SSL_CTX*, int, void*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_ctx_set_verify(sgx_enclave_id_t)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:145:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_ctx_set_verify, false, 0, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:86:14: note: declared here
- sgx_status_t ecall_ssl_ctx_set_verify(sgx_enclave_id_t eid);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘void SSL_load_error_strings()’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_load_error_strings(sgx_enclave_id_t)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:203:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_load_error_strings, false, 0, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:82:14: note: declared here
- sgx_status_t ecall_ssl_load_error_strings(sgx_enclave_id_t eid);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘SSL* SSL_new(SSL_CTX*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_new(sgx_enclave_id_t)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:218:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_new, false, 0, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:83:14: note: declared here
- sgx_status_t ecall_ssl_new(sgx_enclave_id_t eid);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘void SSL_free(SSL*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_free(sgx_enclave_id_t)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:226:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_free, false, 0, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:84:14: note: declared here
- sgx_status_t ecall_ssl_free(sgx_enclave_id_t eid);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘int SSL_connect(SSL*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_connect(sgx_enclave_id_t, int*)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:286:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_connect, true, 0, &ret, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:78:14: note: declared here
- sgx_status_t ecall_ssl_connect(sgx_enclave_id_t eid, int* retval);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘int SSL_accept(SSL*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_accept(sgx_enclave_id_t, int*)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:294:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_accept, true, 0, &ret, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:80:14: note: declared here
- sgx_status_t ecall_ssl_accept(sgx_enclave_id_t eid, int* retval);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘int SSL_get_state(SSL*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_get_state(sgx_enclave_id_t, int*)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:308:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_get_state, true, 0, &ret, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:90:14: note: declared here
- sgx_status_t ecall_ssl_get_state(sgx_enclave_id_t eid, int* retval);
-              ^
-untrusted/wrapper_sgx.cpp: In function ‘int SSL_shutdown(SSL*)’:
-untrusted/wrapper_sgx.cpp:31:16: error: too many arguments to function ‘sgx_status_t ecall_ssl_shutdown(sgx_enclave_id_t, int*)’
-     f(eid, args)
-                ^
-untrusted/wrapper_sgx.cpp:359:5: note: in expansion of macro ‘ECALL’
-     ECALL(ecall_ssl_shutdown, true, 0, &ret, NULL);
-     ^
-In file included from untrusted/wrapper_sgx.cpp:12:0:
-untrusted/enclave_u.h:89:14: note: declared here
- sgx_status_t ecall_ssl_shutdown(sgx_enclave_id_t eid, int* retval);
-              ^
-make: *** [untrusted/wrapper_sgx.o] Error 1
-ar: untrusted/wrapper_sgx.o: No such file or directory
-make: *** [wrapper_library] Error 1
-cp: cannot stat 'tls_enclave.signed.so': No such file or directory
+In file included from trusted/call-table.c:3:0:
+trusted/enclave-utils.h:5:6: warning: conflicting types for built-in function ‘printf’
+ void printf(const char *fmt, ...);
+      ^
+In file included from trusted/enclave-utils.c:3:0:
+trusted/enclave-utils.h:5:6: warning: conflicting types for built-in function ‘printf’
+ void printf(const char *fmt, ...);
+      ^
+In file included from trusted/sealing/seal-ssl-resource.h:12:0,
+                 from trusted/sealing/seal-ssl-resource.c:1:
+trusted/enclave-utils.h:5:6: warning: conflicting types for built-in function ‘printf’
+ void printf(const char *fmt, ...);
+      ^
+tcs_num 1, tcs_max_num 1, tcs_min_pool 1
+The required memory is 2019328B.
+Succeed.
 In file included from lib/hash.h:23:0,
                  from lib/flow.h:26,
                  from lib/packets.h:26,
@@ -3828,6 +3758,299 @@ lib/hmap.h:146:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
 lib/route-table.c:489:5: note: in expansion of macro ‘HMAP_FOR_EACH_SAFE’
      HMAP_FOR_EACH_SAFE(nn, nn_next, node, &name_map) {
      ^
+In file included from /home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl.h:36:0,
+                 from /home/jakob/ovs-sgx/TLSonSGX/untrusted/wrapper_ssl.h:24,
+                 from lib/stream-ssl.c:48:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h: In function ‘mbedtls_ssl_ciphersuite_has_pfs’:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:423:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_NONE’ not handled in switch [-Wswitch-enum]
+     switch( info->key_exchange )
+     ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:423:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:423:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:423:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:423:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDH_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:423:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h: In function ‘mbedtls_ssl_ciphersuite_no_pfs’:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:442:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_NONE’ not handled in switch [-Wswitch-enum]
+     switch( info->key_exchange )
+     ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:442:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:442:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:442:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:442:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:442:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:442:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECJPAKE’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h: In function ‘mbedtls_ssl_ciphersuite_uses_ecdh’:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_NONE’ not handled in switch [-Wswitch-enum]
+     switch( info->key_exchange )
+     ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:460:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECJPAKE’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h: In function ‘mbedtls_ssl_ciphersuite_cert_req_allowed’:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:474:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_NONE’ not handled in switch [-Wswitch-enum]
+     switch( info->key_exchange )
+     ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:474:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:474:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:474:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:474:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:474:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECJPAKE’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h: In function ‘mbedtls_ssl_ciphersuite_uses_srv_cert’:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:491:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_NONE’ not handled in switch [-Wswitch-enum]
+     switch( info->key_exchange )
+     ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:491:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:491:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:491:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:491:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECJPAKE’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h: In function ‘mbedtls_ssl_ciphersuite_uses_dhe’:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_NONE’ not handled in switch [-Wswitch-enum]
+     switch( info->key_exchange )
+     ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDH_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:510:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECJPAKE’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h: In function ‘mbedtls_ssl_ciphersuite_uses_ecdhe’:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_NONE’ not handled in switch [-Wswitch-enum]
+     switch( info->key_exchange )
+     ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDH_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:525:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECJPAKE’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h: In function ‘mbedtls_ssl_ciphersuite_uses_server_signature’:
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_NONE’ not handled in switch [-Wswitch-enum]
+     switch( info->key_exchange )
+     ^
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_DHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_RSA_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDHE_PSK’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDH_RSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA’ not handled in switch [-Wswitch-enum]
+/home/jakob/ovs-sgx/TLSonSGX/mbedtls/include/mbedtls/ssl_ciphersuites.h:541:5: warning: enumeration value ‘MBEDTLS_KEY_EXCHANGE_ECJPAKE’ not handled in switch [-Wswitch-enum]
+In file included from lib/stream-ssl.c:48:0:
+/home/jakob/ovs-sgx/TLSonSGX/untrusted/wrapper_ssl.h: At top level:
+/home/jakob/ovs-sgx/TLSonSGX/untrusted/wrapper_ssl.h:107:1: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
+ void SSL_load_error_strings();
+ ^
+/home/jakob/ovs-sgx/TLSonSGX/untrusted/wrapper_ssl.h:108:1: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
+ SSL_METHOD* SSLv23_client_method();
+ ^
+/home/jakob/ovs-sgx/TLSonSGX/untrusted/wrapper_ssl.h:109:1: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
+ SSL_METHOD* SSLv23_server_method();
+ ^
+In file included from lib/coverage.h:30:0,
+                 from lib/stream-ssl.c:30:
+lib/stream-ssl.c: In function ‘new_ssl_stream’:
+lib/stream-ssl.c:242:18: warning: implicit declaration of function ‘ERR_error_string’ [-Wimplicit-function-declaration]
+                  ERR_error_string(ERR_get_error(), NULL));
+                  ^
+lib/vlog.h:223:40: note: in definition of macro ‘VLOG’
+             vlog(THIS_MODULE, level__, __VA_ARGS__);    \
+                                        ^
+lib/stream-ssl.c:241:9: note: in expansion of macro ‘VLOG_ERR’
+         VLOG_ERR("Private key does not match certificate public key: %s",
+         ^
+lib/stream-ssl.c:242:35: warning: implicit declaration of function ‘ERR_get_error’ [-Wimplicit-function-declaration]
+                  ERR_error_string(ERR_get_error(), NULL));
+                                   ^
+lib/vlog.h:223:40: note: in definition of macro ‘VLOG’
+             vlog(THIS_MODULE, level__, __VA_ARGS__);    \
+                                        ^
+lib/stream-ssl.c:241:9: note: in expansion of macro ‘VLOG_ERR’
+         VLOG_ERR("Private key does not match certificate public key: %s",
+         ^
+lib/stream-ssl.c:241:18: warning: format ‘%s’ expects argument of type ‘char *’, but argument 4 has type ‘int’ [-Wformat=]
+         VLOG_ERR("Private key does not match certificate public key: %s",
+                  ^
+lib/vlog.h:223:40: note: in definition of macro ‘VLOG’
+             vlog(THIS_MODULE, level__, __VA_ARGS__);    \
+                                        ^
+lib/stream-ssl.c:241:9: note: in expansion of macro ‘VLOG_ERR’
+         VLOG_ERR("Private key does not match certificate public key: %s",
+         ^
+lib/stream-ssl.c:266:18: warning: format ‘%s’ expects argument of type ‘char *’, but argument 4 has type ‘int’ [-Wformat=]
+         VLOG_ERR("SSL_new: %s", ERR_error_string(ERR_get_error(), NULL));
+                  ^
+lib/vlog.h:223:40: note: in definition of macro ‘VLOG’
+             vlog(THIS_MODULE, level__, __VA_ARGS__);    \
+                                        ^
+lib/stream-ssl.c:266:9: note: in expansion of macro ‘VLOG_ERR’
+         VLOG_ERR("SSL_new: %s", ERR_error_string(ERR_get_error(), NULL));
+         ^
+lib/stream-ssl.c:271:18: warning: format ‘%s’ expects argument of type ‘char *’, but argument 4 has type ‘int’ [-Wformat=]
+         VLOG_ERR("SSL_set_fd: %s", ERR_error_string(ERR_get_error(), NULL));
+                  ^
+lib/vlog.h:223:40: note: in definition of macro ‘VLOG’
+             vlog(THIS_MODULE, level__, __VA_ARGS__);    \
+                                        ^
+lib/stream-ssl.c:271:9: note: in expansion of macro ‘VLOG_ERR’
+         VLOG_ERR("SSL_set_fd: %s", ERR_error_string(ERR_get_error(), NULL));
+         ^
+lib/stream-ssl.c:276:9: warning: implicit declaration of function ‘SSL_set_verify’ [-Wimplicit-function-declaration]
+         SSL_set_verify(ssl, SSL_VERIFY_NONE, NULL);
+         ^
+lib/stream-ssl.c:296:30: warning: passing argument 1 of ‘SSL_set_msg_callback’ from incompatible pointer type [-Wincompatible-pointer-types]
+         SSL_set_msg_callback(ssl, ssl_protocol_cb);
+                              ^
+In file included from lib/stream-ssl.c:48:0:
+/home/jakob/ovs-sgx/TLSonSGX/untrusted/wrapper_ssl.h:131:6: note: expected ‘SSL_CTX * {aka struct ps_ssl_ctx *}’ but argument is of type ‘SSL * {aka struct ps_ssl *}’
+ void SSL_set_msg_callback(SSL_CTX *ctx, void* reserved_for_cb);
+      ^
+lib/stream-ssl.c:297:34: warning: passing argument 1 of ‘SSL_set_msg_callback_arg’ from incompatible pointer type [-Wincompatible-pointer-types]
+         SSL_set_msg_callback_arg(ssl, sslv);
+                                  ^
+In file included from lib/stream-ssl.c:48:0:
+/home/jakob/ovs-sgx/TLSonSGX/untrusted/wrapper_ssl.h:132:6: note: expected ‘SSL_CTX * {aka struct ps_ssl_ctx *}’ but argument is of type ‘SSL * {aka struct ps_ssl *}’
+ void SSL_set_msg_callback_arg(SSL_CTX *ctx, void *arg);
+      ^
+lib/stream-ssl.c: In function ‘ssl_close’:
+lib/stream-ssl.c:521:5: warning: implicit declaration of function ‘ERR_clear_error’ [-Wimplicit-function-declaration]
+     ERR_clear_error();
+     ^
+In file included from lib/coverage.h:30:0,
+                 from lib/stream-ssl.c:30:
+lib/stream-ssl.c: In function ‘interpret_queued_ssl_error’:
+lib/stream-ssl.c:533:27: warning: format ‘%s’ expects argument of type ‘char *’, but argument 6 has type ‘int’ [-Wformat=]
+         VLOG_WARN_RL(&rl, "%s: %s",
+                           ^
+lib/vlog.h:230:55: note: in definition of macro ‘VLOG_RL’
+             vlog_rate_limit(THIS_MODULE, level__, RL, __VA_ARGS__); \
+                                                       ^
+lib/stream-ssl.c:533:9: note: in expansion of macro ‘VLOG_WARN_RL’
+         VLOG_WARN_RL(&rl, "%s: %s",
+         ^
+lib/stream-ssl.c: In function ‘interpret_ssl_error’:
+lib/stream-ssl.c:590:31: warning: format ‘%s’ expects argument of type ‘char *’, but argument 6 has type ‘int’ [-Wformat=]
+             VLOG_WARN_RL(&rl, "%s: %s",
+                               ^
+lib/vlog.h:230:55: note: in definition of macro ‘VLOG_RL’
+             vlog_rate_limit(THIS_MODULE, level__, RL, __VA_ARGS__); \
+                                                       ^
+lib/stream-ssl.c:590:13: note: in expansion of macro ‘VLOG_WARN_RL’
+             VLOG_WARN_RL(&rl, "%s: %s",
+             ^
+lib/stream-ssl.c: In function ‘do_ssl_init’:
+lib/stream-ssl.c:924:22: warning: passing argument 1 of ‘SSL_library_init’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+     SSL_library_init(program_name);
+                      ^
+In file included from lib/stream-ssl.c:48:0:
+/home/jakob/ovs-sgx/TLSonSGX/untrusted/wrapper_ssl.h:106:5: note: expected ‘char *’ but argument is of type ‘const char *’
+ int SSL_library_init(char *program_name);
+     ^
+lib/stream-ssl.c:930:10: warning: implicit declaration of function ‘RAND_status’ [-Wimplicit-function-declaration]
+     if (!RAND_status()) {
+          ^
+lib/stream-ssl.c:957:9: warning: implicit declaration of function ‘RAND_seed’ [-Wimplicit-function-declaration]
+         RAND_seed(seed, sizeof seed);
+         ^
+In file included from lib/vlog.h:27:0,
+                 from lib/coverage.h:30,
+                 from lib/stream-ssl.c:30:
+lib/stream-ssl.c:970:39: warning: implicit declaration of function ‘SSLv23_method’ [-Wimplicit-function-declaration]
+     method = CONST_CAST(SSL_METHOD *, SSLv23_method());
+                                       ^
+lib/util.h:83:29: note: in definition of macro ‘CONST_CAST’
+     ((void) sizeof ((int) ((POINTER) == (TYPE) (POINTER))),     \
+                             ^
+lib/util.h:83:41: warning: cast from function call of type ‘int’ to non-matching type ‘SSL_METHOD * {aka struct ssl_method *}’ [-Wbad-function-cast]
+     ((void) sizeof ((int) ((POINTER) == (TYPE) (POINTER))),     \
+                                         ^
+lib/stream-ssl.c:970:14: note: in expansion of macro ‘CONST_CAST’
+     method = CONST_CAST(SSL_METHOD *, SSLv23_method());
+              ^
+lib/util.h:83:41: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+     ((void) sizeof ((int) ((POINTER) == (TYPE) (POINTER))),     \
+                                         ^
+lib/stream-ssl.c:970:14: note: in expansion of macro ‘CONST_CAST’
+     method = CONST_CAST(SSL_METHOD *, SSLv23_method());
+              ^
+lib/util.h:83:38: warning: comparison between pointer and integer
+     ((void) sizeof ((int) ((POINTER) == (TYPE) (POINTER))),     \
+                                      ^
+lib/stream-ssl.c:970:14: note: in expansion of macro ‘CONST_CAST’
+     method = CONST_CAST(SSL_METHOD *, SSLv23_method());
+              ^
+lib/util.h:84:6: warning: cast from function call of type ‘int’ to non-matching type ‘SSL_METHOD * {aka struct ssl_method *}’ [-Wbad-function-cast]
+      (TYPE) (POINTER))
+      ^
+lib/stream-ssl.c:970:14: note: in expansion of macro ‘CONST_CAST’
+     method = CONST_CAST(SSL_METHOD *, SSLv23_method());
+              ^
+lib/util.h:84:6: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+      (TYPE) (POINTER))
+      ^
+lib/stream-ssl.c:970:14: note: in expansion of macro ‘CONST_CAST’
+     method = CONST_CAST(SSL_METHOD *, SSLv23_method());
+              ^
+In file included from lib/coverage.h:30:0,
+                 from lib/stream-ssl.c:30:
+lib/stream-ssl.c:972:18: warning: format ‘%s’ expects argument of type ‘char *’, but argument 4 has type ‘int’ [-Wformat=]
+         VLOG_ERR("TLSv1_method: %s", ERR_error_string(ERR_get_error(), NULL));
+                  ^
+lib/vlog.h:223:40: note: in definition of macro ‘VLOG’
+             vlog(THIS_MODULE, level__, __VA_ARGS__);    \
+                                        ^
+lib/stream-ssl.c:972:9: note: in expansion of macro ‘VLOG_ERR’
+         VLOG_ERR("TLSv1_method: %s", ERR_error_string(ERR_get_error(), NULL));
+         ^
+lib/stream-ssl.c:978:18: warning: format ‘%s’ expects argument of type ‘char *’, but argument 4 has type ‘int’ [-Wformat=]
+         VLOG_ERR("SSL_CTX_new: %s", ERR_error_string(ERR_get_error(), NULL));
+                  ^
+lib/vlog.h:223:40: note: in definition of macro ‘VLOG’
+             vlog(THIS_MODULE, level__, __VA_ARGS__);    \
+                                        ^
+lib/stream-ssl.c:978:9: note: in expansion of macro ‘VLOG_ERR’
+         VLOG_ERR("SSL_CTX_new: %s", ERR_error_string(ERR_get_error(), NULL));
+         ^
+lib/stream-ssl.c: In function ‘stream_ssl_set_private_key_file__’:
+lib/stream-ssl.c:1068:47: warning: unused parameter ‘file_name’ [-Wunused-parameter]
+ stream_ssl_set_private_key_file__(const char *file_name)
+                                               ^
+lib/stream-ssl.c: In function ‘stream_ssl_set_certificate_file__’:
+lib/stream-ssl.c:1092:47: warning: unused parameter ‘file_name’ [-Wunused-parameter]
+ stream_ssl_set_certificate_file__(const char *file_name)
+                                               ^
+lib/stream-ssl.c: In function ‘stream_ssl_set_peer_ca_cert_file’:
+lib/stream-ssl.c:1217:46: warning: unused parameter ‘file_name’ [-Wunused-parameter]
+ stream_ssl_set_peer_ca_cert_file(const char *file_name)
+                                              ^
+lib/stream-ssl.c: In function ‘stream_ssl_set_ca_cert_file__’:
+lib/stream-ssl.c:1279:17: warning: unused variable ‘s’ [-Wunused-variable]
+     struct stat s;
+                 ^
+lib/stream-ssl.c:1278:12: warning: unused variable ‘n_certs’ [-Wunused-variable]
+     size_t n_certs;
+            ^
+lib/stream-ssl.c:1277:12: warning: unused variable ‘certs’ [-Wunused-variable]
+     X509 **certs;
+            ^
+lib/stream-ssl.c:1275:36: warning: unused parameter ‘bootstrap’ [-Wunused-parameter]
+                               bool bootstrap, bool force)
+                                    ^
+lib/stream-ssl.c: At top level:
+lib/stream-ssl.c:189:13: warning: ‘log_ca_cert’ declared ‘static’ but never defined [-Wunused-function]
+ static void log_ca_cert(const char *file_name, X509 *cert);
+             ^
 ar: `u' modifier ignored since `D' is the default (see `U')
 ar: `u' modifier ignored since `D' is the default (see `U')
 In file included from ./lib/hash.h:23:0,
@@ -4527,31 +4750,26 @@ ofproto/ofproto.c:278:5: note: in expansion of macro ‘SHASH_FOR_EACH’
 ofproto/ofproto.c:278:5: note: in expansion of macro ‘SHASH_FOR_EACH’
      SHASH_FOR_EACH(node, iface_hints) {
      ^
+ofproto/ofproto.c: In function ‘ofproto_create’:
+ofproto/ofproto.c:409:9: warning: unused variable ‘i’ [-Wunused-variable]
+     int i;
+         ^
 ofproto/ofproto.c: In function ‘ofproto_init_tables’:
-ofproto/ofproto.c:520:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table;
-     ^
-ofproto/ofproto.c: In function ‘ofproto_configure_table’:
-ofproto/ofproto.c:1003:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table;
+ofproto/ofproto.c:528:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     int bridge_id = sgx_ofproto_init_tables(n_tables);
      ^
 ofproto/ofproto.c: In function ‘ofproto_flush__’:
-ofproto/ofproto.c:1085:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table;
+ofproto/ofproto.c:1137:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     int buf_size;
      ^
+ofproto/ofproto.c: In function ‘ofproto_destroy__’:
+ofproto/ofproto.c:1162:21: warning: unused variable ‘table’ [-Wunused-variable]
+     struct oftable *table;
+                     ^
 In file included from ./lib/hmap.h:22:0,
                  from ./lib/cfm.h:21,
                  from ofproto/ofproto.h:25,
                  from ofproto/ofproto.c:19:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:132:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
-          ^
-ofproto/ofproto.c:1095:9: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH_SAFE’
-         CLS_CURSOR_FOR_EACH_SAFE (rule, next_rule, cr, &cursor) {
-         ^
 ofproto/ofproto.c: In function ‘ofproto_destroy’:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
@@ -4600,14 +4818,7 @@ ofproto/ofproto.c:1435:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ofproto/ofproto.c:1435:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofport, hmap_node, &p->ports) {
      ^
-ofproto/ofproto.c: In function ‘ofproto_get_memory_usage’:
-ofproto/ofproto.c:1475:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     const struct oftable *table;
-     ^
 ofproto/ofproto.c: In function ‘ofproto_add_flow’:
-ofproto/ofproto.c:1709:22: warning: unused variable ‘sin’ [-Wunused-variable]
-     struct cls_rule *sin;
-                      ^
 ofproto/ofproto.c:1708:29: warning: unused variable ‘temp’ [-Wunused-variable]
      const struct cls_rule * temp;
                              ^
@@ -4723,6 +4934,14 @@ ofproto/ofproto.c:2439:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ofproto/ofproto.c:2439:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (port, hmap_node, &ofproto->ports) {
      ^
+ofproto/ofproto.c: In function ‘handle_table_stats_request’:
+ofproto/ofproto.c:2727:9: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+         char buf[100]="";
+         ^
+In file included from ./lib/hmap.h:22:0,
+                 from ./lib/cfm.h:21,
+                 from ofproto/ofproto.h:25,
+                 from ofproto/ofproto.c:19:
 ofproto/ofproto.c: In function ‘handle_port_stats_request’:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
@@ -4762,31 +4981,9 @@ ofproto/ofproto.c:2803:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (port, hmap_node, &p->ports) {
      ^
 ofproto/ofproto.c: In function ‘collect_rules_loose’:
-ofproto/ofproto.c:2917:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table;
+ofproto/ofproto.c:3011:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     int buf_size=SGX_femt_ccfe_c(ofproto->bridge_id, ofproto->n_tables,table_id,match);
      ^
-In file included from ./lib/hmap.h:22:0,
-                 from ./lib/cfm.h:21,
-                 from ofproto/ofproto.h:25,
-                 from ofproto/ofproto.c:19:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:126:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
-          ^
-ofproto/ofproto.c:2925:9: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
-         CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
-         ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:128:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-          ASSIGN_CONTAINER(RULE, cls_cursor_next(CURSOR, &(RULE)->MEMBER), \
-          ^
-ofproto/ofproto.c:2925:9: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
-         CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
-         ^
 ofproto/ofproto.c:2903:67: warning: unused parameter ‘modifiable’ [-Wunused-parameter]
                      uint16_t out_port, struct list *rules, bool **modifiable, size_t *nr_rules)
                                                                    ^
@@ -4797,16 +4994,30 @@ ofproto/ofproto.c: In function ‘collect_rules_loose_stats_request’:
 ofproto/ofproto.c:3062:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      size_t buffer_size = 2, total_rules = 0;
      ^
-ofproto/ofproto.c:3068:16: warning: implicit declaration of function ‘SGX_collect_rules_loose_stats_request’ [-Wimplicit-function-declaration]
-     size_t n = SGX_collect_rules_loose_stats_request(ofproto->bridge_id,
-                ^
+ofproto/ofproto.c:3073:42: warning: passing argument 6 of ‘SGX_collect_rules_loose_stats_request’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+                                          match,
+                                          ^
+In file included from ofproto/ofproto.c:59:0:
+/home/jakob/ovs-sgx/OFTonSGX/untrusted/app.h:149:2: note: expected ‘struct match *’ but argument is of type ‘const struct match *’
+  SGX_collect_rules_loose_stats_request(int bridge_id,
+  ^
+ofproto/ofproto.c:3090:38: warning: passing argument 6 of ‘SGX_collect_rules_loose_stats_request’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+                                      match,
+                                      ^
+In file included from ofproto/ofproto.c:59:0:
+/home/jakob/ovs-sgx/OFTonSGX/untrusted/app.h:149:2: note: expected ‘struct match *’ but argument is of type ‘const struct match *’
+  SGX_collect_rules_loose_stats_request(int bridge_id,
+  ^
 ofproto/ofproto.c:3052:119: warning: unused parameter ‘nr_rules’ [-Wunused-parameter]
                      uint16_t out_port, struct list *rules, unsigned int **priorities, struct match **matches, size_t *nr_rules)
                                                                                                                        ^
 ofproto/ofproto.c: In function ‘collect_rules_strict’:
-ofproto/ofproto.c:3146:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table;
+ofproto/ofproto.c:3214:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     int buf_size;
      ^
+ofproto/ofproto.c:3221:9: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+         int lp;
+         ^
 ofproto/ofproto.c:3133:68: warning: unused parameter ‘modifiable’ [-Wunused-parameter]
                       uint16_t out_port, struct list *rules, bool **modifiable)
                                                                     ^
@@ -4833,25 +5044,14 @@ ofproto/ofproto.c:3297:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ofproto/ofproto.c:3297:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, &rules) {
      ^
-ofproto/ofproto.c: In function ‘ofproto_get_all_flows’:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:126:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
-          ^
-ofproto/ofproto.c:3389:9: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
-         CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
-         ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:128:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-          ASSIGN_CONTAINER(RULE, cls_cursor_next(CURSOR, &(RULE)->MEMBER), \
-          ^
-ofproto/ofproto.c:3389:9: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
-         CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
-         ^
+ofproto/ofproto.c: In function ‘flow_stats_ds’:
+ofproto/ofproto.c:3368:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     struct match megamatch;
+     ^
+In file included from ./lib/hmap.h:22:0,
+                 from ./lib/cfm.h:21,
+                 from ofproto/ofproto.h:25,
+                 from ofproto/ofproto.c:19:
 ofproto/ofproto.c: In function ‘handle_aggregate_stats_request’:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
@@ -4897,7 +5097,7 @@ ofproto/ofproto.c: In function ‘is_flow_deletion_pending’:
 ./lib/hmap.h:117:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first_with_hash(HMAP, HASH), MEMBER); \
           ^
-ofproto/ofproto.c:3599:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto.c:3604:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
          HMAP_FOR_EACH_WITH_HASH (op, hmap_node,
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -4906,16 +5106,13 @@ ofproto/ofproto.c:3599:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH
 ./lib/hmap.h:119:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next_with_hash(&(NODE)->MEMBER),   \
           ^
-ofproto/ofproto.c:3599:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto.c:3604:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
          HMAP_FOR_EACH_WITH_HASH (op, hmap_node,
          ^
 ofproto/ofproto.c: In function ‘add_flow’:
 ofproto/ofproto.c:3644:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   struct ofopgroup *group;
   ^
-ofproto/ofproto.c:3674:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table;
-     ^
 ofproto/ofproto.c:3640:18: warning: unused variable ‘et1’ [-Wunused-variable]
   struct timespec et1;
                   ^
@@ -4968,6 +5165,18 @@ ofproto/ofproto.c: In function ‘delete_flows__’:
 ofproto/ofproto.c:4207:5: note: in expansion of macro ‘LIST_FOR_EACH_SAFE’
      LIST_FOR_EACH_SAFE (rule, next, ofproto_node, rules) {
      ^
+ofproto/ofproto.c: In function ‘ofproto_compose_flow_refresh_update’:
+ofproto/ofproto.c:4642:52: warning: passing argument 2 of ‘SGX_minimatch_expand’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+     SGX_minimatch_expand(rule->ofproto->bridge_id, &rule->cr,&match);
+                                                    ^
+In file included from ofproto/ofproto.c:59:0:
+/home/jakob/ovs-sgx/OFTonSGX/untrusted/app.h:198:6: note: expected ‘struct cls_rule *’ but argument is of type ‘const struct cls_rule *’
+ void SGX_minimatch_expand(int bridge_id, struct cls_rule *o_cls_rule,struct match *dst);
+      ^
+In file included from ./lib/hmap.h:22:0,
+                 from ./lib/cfm.h:21,
+                 from ofproto/ofproto.h:25,
+                 from ofproto/ofproto.c:19:
 ofproto/ofproto.c: In function ‘ofmonitor_compose_refresh_updates’:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
@@ -4988,24 +5197,13 @@ ofproto/ofproto.c:4694:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (rule, ofproto_node, rules) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_collect_ofmonitor_refresh_rules’:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:126:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
-          ^
-ofproto/ofproto.c:4759:9: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
-         CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
-         ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:128:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-          ASSIGN_CONTAINER(RULE, cls_cursor_next(CURSOR, &(RULE)->MEMBER), \
-          ^
-ofproto/ofproto.c:4759:9: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
-         CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
-         ^
+ofproto/ofproto.c:4774:6: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+      int lp;
+      ^
+In file included from ./lib/hmap.h:22:0,
+                 from ./lib/cfm.h:21,
+                 from ofproto/ofproto.h:25,
+                 from ofproto/ofproto.c:19:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
                                                            ^
@@ -5077,86 +5275,46 @@ In file included from ./lib/hmap.h:22:0,
 ofproto/ofproto.c:5176:5: note: in expansion of macro ‘LIST_FOR_EACH_SAFE’
      LIST_FOR_EACH_SAFE (op, next_op, group_node, &group->ops) {
      ^
-ofproto/ofproto.c:5131:55: warning: unused parameter ‘_vid’ [-Wunused-parameter]
- ofopgroup_complete(struct ofopgroup *group, uint16_t *_vid, uint16_t *_vid_mask, bool *is_hidden)
-                                                       ^
 ofproto/ofproto.c:5131:71: warning: unused parameter ‘_vid_mask’ [-Wunused-parameter]
  ofopgroup_complete(struct ofopgroup *group, uint16_t *_vid, uint16_t *_vid_mask, bool *is_hidden)
                                                                        ^
-ofproto/ofproto.c: In function ‘ofoperation_create’:
-ofproto/ofproto.c:5325:67: warning: unused parameter ‘hashes’ [-Wunused-parameter]
-                    enum ofp_flow_removed_reason reason, uint32_t *hashes)
-                                                                   ^
 ofproto/ofproto.c: At top level:
 ofproto/ofproto.c:5538:2: warning: no previous prototype for ‘operation_is_pending’ [-Wmissing-prototypes]
   operation_is_pending(bool *pendings, struct cls_rule **all_cls_rules, size_t n, struct cls_rule *r) {
   ^
 ofproto/ofproto.c: In function ‘ofproto_evict’:
-ofproto/ofproto.c:5555:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table;
-     ^
-In file included from ./lib/hmap.h:22:0,
-                 from ./lib/cfm.h:21,
-                 from ofproto/ofproto.h:25,
-                 from ofproto/ofproto.c:19:
-ofproto/ofproto.c: In function ‘eviction_group_find’:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:117:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(NODE, hmap_first_with_hash(HMAP, HASH), MEMBER); \
-          ^
-ofproto/ofproto.c:5780:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
-     HMAP_FOR_EACH_WITH_HASH (evg, id_node, id, &table->eviction_groups_by_id) {
-     ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:119:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-          ASSIGN_CONTAINER(NODE, hmap_next_with_hash(&(NODE)->MEMBER),   \
-          ^
-ofproto/ofproto.c:5780:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
-     HMAP_FOR_EACH_WITH_HASH (evg, id_node, id, &table->eviction_groups_by_id) {
-     ^
-ofproto/ofproto.c: In function ‘oftable_disable_eviction’:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:146:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
-          ^
-ofproto/ofproto.c:5918:9: note: in expansion of macro ‘HMAP_FOR_EACH_SAFE’
-         HMAP_FOR_EACH_SAFE (evg, next, id_node,
-         ^
+ofproto/ofproto.c:5638:6: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+      int i;
+      ^
+ofproto/ofproto.c:5644:19: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+                   struct rule *rule =rule_from_cls_rule(cls_rule_t);
+                   ^
+ofproto/ofproto.c: In function ‘eviction_group_add_rule’:
+ofproto/ofproto.c:5851:13: warning: unused variable ‘result’ [-Wunused-variable]
+      size_t result=SGX_evg_add_rule(rule->ofproto->bridge_id, rule->table_id, &rule->cr, eviction_group_priority(0),
+             ^
+ofproto/ofproto.c:5836:21: warning: unused variable ‘ofproto’ [-Wunused-variable]
+     struct ofproto *ofproto = rule->ofproto;
+                     ^
+ofproto/ofproto.c: At top level:
+ofproto/ofproto.c:5944:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fields, size_t n_fields)
+ ^
+ofproto/ofproto.c:5944:1: warning: conflicting types for ‘oftable_enable_eviction’
+ofproto/ofproto.c:174:13: note: previous declaration of ‘oftable_enable_eviction’ was here
+ static void oftable_enable_eviction(int bridge_id, int table_id,
+             ^
 ofproto/ofproto.c: In function ‘oftable_enable_eviction’:
-ofproto/ofproto.c:5967:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct cls_cursor cursor;
+ofproto/ofproto.c:6025:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     int buf_size;
      ^
-In file included from ./lib/hmap.h:22:0,
-                 from ./lib/cfm.h:21,
-                 from ofproto/ofproto.h:25,
-                 from ofproto/ofproto.c:19:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:126:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
-          ^
-ofproto/ofproto.c:5970:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
-     CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
-     ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:128:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-          ASSIGN_CONTAINER(RULE, cls_cursor_next(CURSOR, &(RULE)->MEMBER), \
-          ^
-ofproto/ofproto.c:5970:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
-     CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
-     ^
+ofproto/ofproto.c: In function ‘oftable_remove_rule’:
+ofproto/ofproto.c:6043:21: warning: unused variable ‘ofproto’ [-Wunused-variable]
+     struct ofproto *ofproto = rule->ofproto;
+                     ^
 ofproto/ofproto.c: In function ‘oftable_replace_rule’:
-ofproto/ofproto.c:6076:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table = &ofproto->tables[rule->table_id];
+ofproto/ofproto.c:6098:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     struct cls_rule *sgx_cls_rule; //An auxiliary cls_rule....
      ^
 In file included from ./lib/hmap.h:22:0,
                  from ./lib/cfm.h:21,
@@ -5201,50 +5359,16 @@ ofproto/ofproto.c:6151:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, hmap_node, &all_ofprotos) {
      ^
 ofproto/ofproto.c: In function ‘ofproto_get_vlan_usage’:
-ofproto/ofproto.c:6190:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     const struct oftable *oftable;
+ofproto/ofproto.c:6225:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     int buf_size=SGX_ofproto_get_vlan_usage_c(ofproto->bridge_id);
      ^
-In file included from ./lib/hmap.h:22:0,
-                 from ./lib/cfm.h:21,
-                 from ofproto/ofproto.h:25,
-                 from ofproto/ofproto.c:19:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
-          ^
-ofproto/ofproto.c:6194:9: note: in expansion of macro ‘HMAP_FOR_EACH’
-         HMAP_FOR_EACH (table, hmap_node, &oftable->cls.tables) {
-         ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-          ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
-          ^
-ofproto/ofproto.c:6194:9: note: in expansion of macro ‘HMAP_FOR_EACH’
-         HMAP_FOR_EACH (table, hmap_node, &oftable->cls.tables) {
-         ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
-          ^
-ofproto/ofproto.c:6198:17: note: in expansion of macro ‘HMAP_FOR_EACH’
-                 HMAP_FOR_EACH (rule, hmap_node, &table->rules) {
-                 ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-          ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
-          ^
-ofproto/ofproto.c:6198:17: note: in expansion of macro ‘HMAP_FOR_EACH’
-                 HMAP_FOR_EACH (rule, hmap_node, &table->rules) {
-                 ^
 ofproto/ofproto.c: At top level:
+ofproto/ofproto.c:2848:1: warning: ‘first_matching_table’ defined but not used [-Wunused-function]
+ first_matching_table(const struct ofproto *ofproto, uint8_t table_id)
+ ^
+ofproto/ofproto.c:2860:1: warning: ‘next_matching_table’ defined but not used [-Wunused-function]
+ next_matching_table(const struct ofproto *ofproto,
+ ^
 ofproto/ofproto.c:3049:1: warning: ‘collect_rules_loose_stats_request’ defined but not used [-Wunused-function]
  collect_rules_loose_stats_request(struct ofproto *ofproto, uint8_t table_id,
  ^
@@ -5538,23 +5662,20 @@ ofproto/ofproto-dpif.c:1566:5: note: in expansion of macro ‘LIST_FOR_EACH_SAFE
      LIST_FOR_EACH_SAFE (c, next, list_node, &ofproto->completions) {
      ^
 ofproto/ofproto-dpif.c: In function ‘destruct’:
-ofproto/ofproto-dpif.c:1585:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct oftable *table;
-     ^
+ofproto/ofproto-dpif.c:1599:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+   int buf_size;
+   ^
+ofproto/ofproto-dpif.c:1577:30: warning: unused variable ‘next_rule’ [-Wunused-variable]
+     struct rule_dpif *rule, *next_rule;
+                              ^
+ofproto/ofproto-dpif.c:1577:23: warning: unused variable ‘rule’ [-Wunused-variable]
+     struct rule_dpif *rule, *next_rule;
+                       ^
 In file included from ./lib/hmap.h:22:0,
                  from ./lib/cfm.h:21,
                  from ./ofproto/ofproto.h:25,
                  from ./ofproto/ofproto-provider.h:22,
                  from ofproto/ofproto-dpif.c:19:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/classifier.h:132:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
-          ^
-ofproto/ofproto-dpif.c:1590:9: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH_SAFE’
-         CLS_CURSOR_FOR_EACH_SAFE (rule, next_rule, up.cr, &cursor) {
-         ^
 ofproto/ofproto-dpif.c: In function ‘run_fast’:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
@@ -6199,6 +6320,18 @@ ofproto/ofproto-dpif.c:5030:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ofproto/ofproto-dpif.c:5030:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (subfacet, list_node, &facet->subfacets) {
      ^
+ofproto/ofproto-dpif.c: In function ‘facet_check_consistency’:
+ofproto/ofproto-dpif.c:5129:13: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+             struct match megamatch;
+             ^
+ofproto/ofproto-dpif.c:5134:13: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+             struct match megamatch1;
+             ^
+In file included from ./lib/hmap.h:22:0,
+                 from ./lib/cfm.h:21,
+                 from ./ofproto/ofproto.h:25,
+                 from ./ofproto/ofproto-provider.h:22,
+                 from ofproto/ofproto-dpif.c:19:
 ofproto/ofproto-dpif.c: In function ‘facet_revalidate’:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
@@ -6293,9 +6426,6 @@ ofproto/ofproto-dpif.c:5394:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH
      HMAP_FOR_EACH_WITH_HASH (subfacet, hmap_node, key_hash,
      ^
 ofproto/ofproto-dpif.c: In function ‘rule_dpif_lookup__’:
-ofproto/ofproto-dpif.c:5688:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     struct classifier *cls;
-     ^
 ofproto/ofproto-dpif.c:5675:26: warning: unused variable ‘et1’ [-Wunused-variable]
      struct timespec st1, et1;
                           ^
@@ -6329,6 +6459,12 @@ ofproto/ofproto-dpif.c:5783:9: note: in expansion of macro ‘LIST_FOR_EACH’
 ofproto/ofproto-dpif.c:5806:9: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
          struct flow flow;
          ^
+ofproto/ofproto-dpif.c:5815:9: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+         uint32_t hash;
+         ^
+ofproto/ofproto-dpif.c:5768:26: warning: unused variable ‘ofproto’ [-Wunused-variable]
+     struct ofproto_dpif *ofproto = ofproto_dpif_cast(rule->up.ofproto);
+                          ^
 In file included from ./lib/hmap.h:22:0,
                  from ./lib/cfm.h:21,
                  from ./ofproto/ofproto.h:25,
@@ -6401,25 +6537,6 @@ ofproto/ofproto-dpif.c:8095:9: note: in expansion of macro ‘HMAP_FOR_EACH’
 ofproto/ofproto-dpif.c:8095:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (bundle, hmap_node, &ctx->ofproto->bundles) {
          ^
-ofproto/ofproto-dpif.c: In function ‘table_update_taggable’:
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-     for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
-          ^
-ofproto/ofproto-dpif.c:8174:9: note: in expansion of macro ‘HMAP_FOR_EACH’
-         HMAP_FOR_EACH (t, hmap_node, &oftable->cls.tables) {
-         ^
-./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
-     ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
-                                                           ^
-./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
-          ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
-          ^
-ofproto/ofproto-dpif.c:8174:9: note: in expansion of macro ‘HMAP_FOR_EACH’
-         HMAP_FOR_EACH (t, hmap_node, &oftable->cls.tables) {
-         ^
 ofproto/ofproto-dpif.c: In function ‘send_active_timeout’:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
@@ -6427,7 +6544,7 @@ ofproto/ofproto-dpif.c: In function ‘send_active_timeout’:
 ./lib/list.h:60:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
           ^
-ofproto/ofproto-dpif.c:8329:9: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto-dpif.c:8325:9: note: in expansion of macro ‘LIST_FOR_EACH’
          LIST_FOR_EACH (subfacet, list_node, &facet->subfacets) {
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6436,7 +6553,7 @@ ofproto/ofproto-dpif.c:8329:9: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:62:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(ITER, (ITER)->MEMBER.next, MEMBER))
           ^
-ofproto/ofproto-dpif.c:8329:9: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto-dpif.c:8325:9: note: in expansion of macro ‘LIST_FOR_EACH’
          LIST_FOR_EACH (subfacet, list_node, &facet->subfacets) {
          ^
 ofproto/ofproto-dpif.c: In function ‘send_netflow_active_timeouts’:
@@ -6446,7 +6563,7 @@ ofproto/ofproto-dpif.c: In function ‘send_netflow_active_timeouts’:
 ./lib/classifier.h:126:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
           ^
-ofproto/ofproto-dpif.c:8354:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
+ofproto/ofproto-dpif.c:8350:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
      CLS_CURSOR_FOR_EACH (facet, cr, &cursor) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6455,7 +6572,7 @@ ofproto/ofproto-dpif.c:8354:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EAC
 ./lib/classifier.h:128:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(RULE, cls_cursor_next(CURSOR, &(RULE)->MEMBER), \
           ^
-ofproto/ofproto-dpif.c:8354:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
+ofproto/ofproto-dpif.c:8350:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
      CLS_CURSOR_FOR_EACH (facet, cr, &cursor) {
      ^
 ofproto/ofproto-dpif.c: In function ‘ofproto_dpif_lookup’:
@@ -6465,7 +6582,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_dpif_lookup’:
 ./lib/hmap.h:117:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first_with_hash(HMAP, HASH), MEMBER); \
           ^
-ofproto/ofproto-dpif.c:8364:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto-dpif.c:8360:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
      HMAP_FOR_EACH_WITH_HASH (ofproto, all_ofproto_dpifs_node,
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6474,7 +6591,7 @@ ofproto/ofproto-dpif.c:8364:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH
 ./lib/hmap.h:119:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next_with_hash(&(NODE)->MEMBER),   \
           ^
-ofproto/ofproto-dpif.c:8364:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto-dpif.c:8360:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
      HMAP_FOR_EACH_WITH_HASH (ofproto, all_ofproto_dpifs_node,
      ^
 ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_fdb_flush’:
@@ -6484,7 +6601,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_fdb_flush’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto-dpif.c:8387:9: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:8383:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6493,7 +6610,7 @@ ofproto/ofproto-dpif.c:8387:9: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto-dpif.c:8387:9: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:8383:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
          ^
 ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_fdb_show’:
@@ -6503,7 +6620,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_fdb_show’:
 ./lib/list.h:60:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
           ^
-ofproto/ofproto-dpif.c:8410:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto-dpif.c:8406:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (e, lru_node, &ofproto->ml->lrus) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6512,9 +6629,18 @@ ofproto/ofproto-dpif.c:8410:5: note: in expansion of macro ‘LIST_FOR_EACH’
 ./lib/list.h:62:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(ITER, (ITER)->MEMBER.next, MEMBER))
           ^
-ofproto/ofproto-dpif.c:8410:5: note: in expansion of macro ‘LIST_FOR_EACH’
+ofproto/ofproto-dpif.c:8406:5: note: in expansion of macro ‘LIST_FOR_EACH’
      LIST_FOR_EACH (e, lru_node, &ofproto->ml->lrus) {
      ^
+ofproto/ofproto-dpif.c: In function ‘trace_format_rule’:
+ofproto/ofproto-dpif.c:8441:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     struct match megamatch;
+     ^
+In file included from ./lib/hmap.h:22:0,
+                 from ./lib/cfm.h:21,
+                 from ./ofproto/ofproto.h:25,
+                 from ./ofproto/ofproto-provider.h:22,
+                 from ofproto/ofproto-dpif.c:19:
 ofproto/ofproto-dpif.c: In function ‘ofproto_dpif_self_check__’:
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
      ((OBJECT) = OBJECT_CONTAINING(POINTER, OBJECT, MEMBER), 1)
@@ -6522,7 +6648,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_dpif_self_check__’:
 ./lib/classifier.h:126:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
           ^
-ofproto/ofproto-dpif.c:8754:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
+ofproto/ofproto-dpif.c:8750:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
      CLS_CURSOR_FOR_EACH (facet, cr, &cursor) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6531,7 +6657,7 @@ ofproto/ofproto-dpif.c:8754:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EAC
 ./lib/classifier.h:128:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(RULE, cls_cursor_next(CURSOR, &(RULE)->MEMBER), \
           ^
-ofproto/ofproto-dpif.c:8754:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
+ofproto/ofproto-dpif.c:8750:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
      CLS_CURSOR_FOR_EACH (facet, cr, &cursor) {
      ^
 ofproto/ofproto-dpif.c: In function ‘ofproto_dpif_self_check’:
@@ -6541,7 +6667,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_dpif_self_check’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto-dpif.c:8787:9: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:8783:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6550,7 +6676,7 @@ ofproto/ofproto-dpif.c:8787:9: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto-dpif.c:8787:9: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:8783:9: note: in expansion of macro ‘HMAP_FOR_EACH’
          HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
          ^
 ofproto/ofproto-dpif.c: In function ‘get_ofprotos’:
@@ -6560,7 +6686,7 @@ ofproto/ofproto-dpif.c: In function ‘get_ofprotos’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto-dpif.c:8804:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:8800:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6569,7 +6695,7 @@ ofproto/ofproto-dpif.c:8804:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto-dpif.c:8804:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:8800:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
      ^
 ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_dpif_dump_megaflows’:
@@ -6579,7 +6705,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_dpif_dump_megaflows’:
 ./lib/classifier.h:126:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(RULE, cls_cursor_first(CURSOR), MEMBER);      \
           ^
-ofproto/ofproto-dpif.c:8994:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
+ofproto/ofproto-dpif.c:8990:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
      CLS_CURSOR_FOR_EACH (facet, cr, &cursor) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6588,7 +6714,7 @@ ofproto/ofproto-dpif.c:8994:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EAC
 ./lib/classifier.h:128:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(RULE, cls_cursor_next(CURSOR, &(RULE)->MEMBER), \
           ^
-ofproto/ofproto-dpif.c:8994:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
+ofproto/ofproto-dpif.c:8990:5: note: in expansion of macro ‘CLS_CURSOR_FOR_EACH’
      CLS_CURSOR_FOR_EACH (facet, cr, &cursor) {
      ^
 ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_dpif_disable_megaflows’:
@@ -6598,7 +6724,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_dpif_disable_megaflows’
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto-dpif.c:9035:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:9031:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6607,7 +6733,7 @@ ofproto/ofproto-dpif.c:9035:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto-dpif.c:9035:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:9031:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
      ^
 ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_dpif_enable_megaflows’:
@@ -6617,7 +6743,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_dpif_enable_megaflows’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto-dpif.c:9056:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:9052:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6626,7 +6752,7 @@ ofproto/ofproto-dpif.c:9056:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto-dpif.c:9056:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:9052:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (ofproto, all_ofproto_dpifs_node, &all_ofproto_dpifs) {
      ^
 ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_dpif_dump_flows’:
@@ -6636,7 +6762,7 @@ ofproto/ofproto-dpif.c: In function ‘ofproto_unixctl_dpif_dump_flows’:
 ./lib/hmap.h:139:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first(HMAP), MEMBER);              \
           ^
-ofproto/ofproto-dpif.c:9080:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:9076:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (subfacet, hmap_node, &ofproto->subfacets) {
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6645,7 +6771,7 @@ ofproto/ofproto-dpif.c:9080:5: note: in expansion of macro ‘HMAP_FOR_EACH’
 ./lib/hmap.h:141:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next(HMAP, &(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto-dpif.c:9080:5: note: in expansion of macro ‘HMAP_FOR_EACH’
+ofproto/ofproto-dpif.c:9076:5: note: in expansion of macro ‘HMAP_FOR_EACH’
      HMAP_FOR_EACH (subfacet, hmap_node, &ofproto->subfacets) {
      ^
 ofproto/ofproto-dpif.c: In function ‘vsp_realdev_to_vlandev’:
@@ -6655,7 +6781,7 @@ ofproto/ofproto-dpif.c: In function ‘vsp_realdev_to_vlandev’:
 ./lib/hmap.h:117:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first_with_hash(HMAP, HASH), MEMBER); \
           ^
-ofproto/ofproto-dpif.c:9248:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto-dpif.c:9244:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
          HMAP_FOR_EACH_WITH_HASH (vsp, realdev_vid_node,
          ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6664,7 +6790,7 @@ ofproto/ofproto-dpif.c:9248:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH
 ./lib/hmap.h:119:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next_with_hash(&(NODE)->MEMBER),   \
           ^
-ofproto/ofproto-dpif.c:9248:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto-dpif.c:9244:9: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
          HMAP_FOR_EACH_WITH_HASH (vsp, realdev_vid_node,
          ^
 ofproto/ofproto-dpif.c: In function ‘vlandev_find’:
@@ -6674,7 +6800,7 @@ ofproto/ofproto-dpif.c: In function ‘vlandev_find’:
 ./lib/hmap.h:117:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first_with_hash(HMAP, HASH), MEMBER); \
           ^
-ofproto/ofproto-dpif.c:9265:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto-dpif.c:9261:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
      HMAP_FOR_EACH_WITH_HASH (vsp, vlandev_node, hash_int(vlandev_ofp_port, 0),
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6683,7 +6809,7 @@ ofproto/ofproto-dpif.c:9265:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH
 ./lib/hmap.h:119:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next_with_hash(&(NODE)->MEMBER),   \
           ^
-ofproto/ofproto-dpif.c:9265:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
+ofproto/ofproto-dpif.c:9261:5: note: in expansion of macro ‘HMAP_FOR_EACH_WITH_HASH’
      HMAP_FOR_EACH_WITH_HASH (vsp, vlandev_node, hash_int(vlandev_ofp_port, 0),
      ^
 ofproto/ofproto-dpif.c: In function ‘odp_port_to_ofport’:
@@ -6693,7 +6819,7 @@ ofproto/ofproto-dpif.c: In function ‘odp_port_to_ofport’:
 ./lib/hmap.h:122:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
      for (ASSIGN_CONTAINER(NODE, hmap_first_in_bucket(HMAP, HASH), MEMBER); \
           ^
-ofproto/ofproto-dpif.c:9381:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET’
+ofproto/ofproto-dpif.c:9377:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET’
      HMAP_FOR_EACH_IN_BUCKET (port, odp_port_node,
      ^
 ./lib/util.h:174:59: warning: right-hand operand of comma expression has no effect [-Wunused-value]
@@ -6702,7 +6828,7 @@ ofproto/ofproto-dpif.c:9381:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_B
 ./lib/hmap.h:124:10: note: in expansion of macro ‘ASSIGN_CONTAINER’
           ASSIGN_CONTAINER(NODE, hmap_next_in_bucket(&(NODE)->MEMBER), MEMBER))
           ^
-ofproto/ofproto-dpif.c:9381:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET’
+ofproto/ofproto-dpif.c:9377:5: note: in expansion of macro ‘HMAP_FOR_EACH_IN_BUCKET’
      HMAP_FOR_EACH_IN_BUCKET (port, odp_port_node,
      ^
 In file included from ./lib/hash.h:23:0,
