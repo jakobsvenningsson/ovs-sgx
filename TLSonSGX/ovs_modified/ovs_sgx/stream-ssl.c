@@ -921,7 +921,12 @@ do_ssl_init(void)
 {
     SSL_METHOD *method;
 
+    #ifndef SGX_TLS
     SSL_library_init();
+    #else
+    SSL_library_init(program_name);
+    #endif
+
     SSL_load_error_strings();
 
     if (!RAND_status()) {

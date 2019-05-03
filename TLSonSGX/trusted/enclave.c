@@ -27,7 +27,7 @@ extern "C" {
 #include <unistd.h>
 #include <stdbool.h>
 
-#include "hotcall.h"
+#include "hotcall-trusted.h"
 #include "enclave-utils.h"
 #include "sealing/seal-ssl-resource.h"
 

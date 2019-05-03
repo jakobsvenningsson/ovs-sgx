@@ -84,6 +84,8 @@
 #define hotcall_ecall_ofproto_evict_get_rest 74
 
 #define hotcall_ecall_cls_rules_format 75
+#define hotcall_ecall_minimatch_expand_and_get_priority 76
+#define hotcall_ecall_miniflow_expand_and_tag 77
 
 /* API untrusted functions to trusted inside the enclave */
 struct match;

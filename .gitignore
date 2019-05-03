@@ -76,3 +76,13 @@ dkms.conf
 
 
 .log
+log/
+logs/
+.pyc
+tmp/
+
+# OVS
+ovs/
+TLSonSGX/mbedtls
+TLSonSGX/mbedtls-SGX
+app

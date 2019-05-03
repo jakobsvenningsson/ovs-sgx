@@ -182,6 +182,14 @@ enclave {
 		public void
 		ecall_cls_rules_format(int bridge_id, [user_check] const struct cls_rule *cls_rules, [user_check] struct match *megamatches, size_t n);
 
+		public void
+		ecall_minimatch_expand_and_get_priority(int bridge_id, [user_check] struct cls_rule *ut_cr, [user_check] struct match *match, [user_check] unsigned int *priority);
+
+
+		public uint32_t
+		ecall_miniflow_expand_and_tag(int bridge_id, [user_check] struct cls_rule *ut_cr, [user_check] struct flow *flow, uint8_t table_id);
+
+
 		public void ecall_ofproto_init_tables(int bridge_id, int n_tables);
 		public void ecall_readonly_set(int bridge_id, int table_id);
 		public int ecall_istable_readonly(int bridge_id, uint8_t table_id);

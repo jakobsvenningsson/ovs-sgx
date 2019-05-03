@@ -237,7 +237,7 @@ struct rule {
     struct list expirable;      /* In ofproto's 'expirable' list if this rule
                                  * is expirable, otherwise empty. */
 
-    struct list element;
+    struct list list_node;
     uint16_t tmp_storage_vid;
     uint16_t tmp_storage_vid_mask;
 };

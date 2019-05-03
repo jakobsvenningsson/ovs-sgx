@@ -1,13 +1,10 @@
-#include "hotcall-producer.h"
+#include "hotcall-untrusted.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-//#include "sgx-utils.h"
-
 
 pthread_mutex_t mutex_tls = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_tls   = PTHREAD_COND_INITIALIZER;
-//static async_ecall ctx;
 
 void
 make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret){

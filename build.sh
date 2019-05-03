@@ -5,23 +5,17 @@ FLAGS=$1
 source /opt/intel/sgxsdk/environment
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OFTonSGX"
-cd OFTonSGX
-make clean
-make SGX_MODE=HW SGX_PRERELEASE=1 SGX_DEBUG=0 LFLAGS="$FLAGS"
-cp enclave.signed.so ../ovs
-cd ..
+make -C OFTonSGX/ clean
+make -C OFTonSGX/ SGX_MODE=HW SGX_PRERELEASE=1 SGX_DEBUG=0 LFLAGS="$FLAGS"
+cp OFTonSGX/enclave.signed.so ./ovs
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING TLSonSGX"
-cd TLSonSGX
-make clean
-make SGX_MODE=HW SGX_PRERELEASE=1 SGX_DEBUG=0 LFLAGS="$FLAGS"
-make wrapper_library
-cp tls_enclave.signed.so ../ovs
-cd ..
+make -C TLSonSGX/ clean
+make -C TLSonSGX/ SGX_MODE=HW SGX_PRERELEASE=1 SGX_DEBUG=0 LFLAGS="$FLAGS"
+make -C TLSonSGX/ wrapper_library
+cp TLSonSGX/tls_enclave.signed.so ./ovs
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OvS"
-# -I${ROOT_FOLDER}/TLSonSGX/mbedtls-SGX/build/mbedtls_SGX-2.6.0/include
-# -L${ROOT_FOLDER}/TLSonSGX/mbedtls-SGX/build/mbedtls_SGX-2.6.0/lib
 cd ovs
 ./boot.sh
 ./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted -I${ROOT_FOLDER}/TLSonSGX/App  -I${ROOT_FOLDER}/OFTonSGX/untrusted -I${ROOT_FOLDER}/benchmark/include -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
