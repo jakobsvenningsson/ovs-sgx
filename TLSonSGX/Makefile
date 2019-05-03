@@ -35,7 +35,6 @@ SGX_SDK ?= /opt/intel/sgxsdk
 SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 SGX_DEBUG ?= 1
-
 MBEDTLS_SGX_PATH ?= $(CURDIR)/mbedtls-SGX
 MBEDTLS_PATH ?= $(CURDIR)/mbedtls
 
@@ -82,7 +81,7 @@ App_Cpp_Files :=  untrusted/utils.cpp \
 				  untrusted/mbedtls_client.cpp \
 				  untrusted/ocall.cpp \
 				  untrusted/spinlock.cpp \
-				  untrusted/hotcall-producer.cpp
+				  untrusted/hotcall-untrusted.cpp
 
 App_Include_Paths := -Iuntrusted -Iinclude -I$(SGX_SDK)/include -Iinclude  -I$(MBEDTLS_SGX_PATH)/src/mbedtls-2.2.1/include
 
@@ -129,11 +128,11 @@ Crypto_Library_Name := sgx_tcrypto
 Enclave_C_Files := trusted/enclave.c \
 				   trusted/Log.c \
 				   trusted/call-table.c \
-				   trusted/hotcall.c \
+				   trusted/hotcall-trusted.c \
 				   trusted/enclave-utils.c \
 				   trusted/sealing/seal-ssl-resource.c \
 				   trusted/sealing/sealing.c
-				   
+
 Enclave_Include_Paths := -Iinclude -Itrusted -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/stlport -I$(MBEDTLS_SGX_PATH)/src/mbedtls-2.2.1/include
 
 Enclave_C_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(Enclave_Include_Paths)
@@ -194,6 +193,7 @@ endif
 ######## App Objects ########
 
 libmbedtls_sgx_u.a:
+	echo "$(CURDIR)/mbedtls-SGX"
 	@make -C $(MBEDTLS_SGX_PATH)
 	@mv $(MBEDTLS_SGX_PATH)/lib/libmbedtls_sgx_u.a .
 
@@ -253,7 +253,16 @@ clean:
 	@rm -f $(App_Name) $(Enclave_Name) $(Signed_Enclave_Name) $(App_Cpp_Objects) untrusted/enclave_u.* $(Enclave_C_Objects) $(Enclave_Cpp_Objects) trusted/enclave_t.*
 
 wrapper_library_sim:
-	@ar rcsv libTLSonSGX.a untrusted/wrapper_sgx.o untrusted/utils.o untrusted/enclave_u.o untrusted/ocall.o untrusted/spinlock.o untrusted/hotcall-producer.o  /opt/intel/sgxsdk/lib64/libsgx_urts_sim.so $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o /opt/intel/sgxsdk/lib64/libsgx_uae_service_sim.so
+	@ar rcsv libTLSonSGX.a \
+			 untrusted/wrapper_sgx.o \
+			 untrusted/utils.o \
+			 untrusted/enclave_u.o \
+			 untrusted/ocall.o \
+			 untrusted/spinlock.o \
+			 untrusted/hotcall-untrusted.o  \
+			 /opt/intel/sgxsdk/lib64/libsgx_urts_sim.so \
+			 $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o \
+			 /opt/intel/sgxsdk/lib64/libsgx_uae_service_sim.so
 
 wrapper_library:
 	@ar rcsv libTLSonSGX.a \
@@ -262,7 +271,7 @@ wrapper_library:
 			 untrusted/enclave_u.o \
 			 untrusted/ocall.o \
 			 untrusted/spinlock.o \
-			 untrusted/hotcall-producer.o \
+			 untrusted/hotcall-untrusted.o \
 			 /opt/intel/sgxsdk/lib64/libsgx_urts.so \
 			 $(MBEDTLS_SGX_PATH)/src/libmbedtls_sgx_u.o \
 			 /opt/intel/sgxsdk/lib64/libsgx_uae_service.so

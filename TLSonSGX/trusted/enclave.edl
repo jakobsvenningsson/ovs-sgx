@@ -9,7 +9,7 @@ enclave {
 
     trusted {
         include "call-table.h"
-        include "hotcall.h"
+        include "hotcall-trusted.h"
 
 		public int ecall_ssl_read([out, size=buf_len] char* buf, size_t buf_len);
 		public int ecall_ssl_write([in, size=buf_len] char* buf, size_t buf_len);
@@ -34,9 +34,8 @@ enclave {
 
     untrusted {
         include "ocall.h"
-        include "hotcall-producer.h"
-        /* define OCALLs here. */
-        //include "wrapper_ssl.h"
+        include "hotcall-untrusted.h"
+
         void ocall_print([in, string] const char *str);
     };
 };

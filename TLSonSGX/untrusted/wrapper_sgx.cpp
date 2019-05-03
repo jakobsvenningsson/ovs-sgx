@@ -7,7 +7,7 @@
 
 #include "spinlock.h"
 #include "common.h"
-#include "hotcall-producer.h"
+#include "hotcall-untrusted.h"
 
 #include "enclave_u.h"
 #include "utils.h"

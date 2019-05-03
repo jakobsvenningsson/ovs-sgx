@@ -1,4 +1,4 @@
-#include "hotcall.h"
+#include "hotcall-trusted.h"
 #include "call-table.h"
 
 int

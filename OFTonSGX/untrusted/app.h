@@ -168,6 +168,14 @@ SGX_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match *
 void
 SGX_cls_rules_format(int bridge_id, const struct cls_rule *cls_rules, struct match *megamatches, size_t n);
 
+
+void
+SGX_minimatch_expand_and_get_priority(int bridge_id, struct cls_rule *ut_cr, struct match *match, unsigned int *priority);
+
+uint32_t
+SGX_miniflow_expand_and_tag(int bridge_id, struct cls_rule *ut_cr, struct flow *flow, uint8_t table_id);
+
+
 //size_t
 //SGX_ofproto_evict_get_rest(uint32_t *rule_hashes, struct cls_rule ** cls_rules, size_t buf_size);
 

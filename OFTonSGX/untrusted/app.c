@@ -838,7 +838,18 @@ SGX_cls_rules_format(int bridge_id, const struct cls_rule *cls_rules, struct mat
     ECALL(ecall_cls_rules_format, false, 3, CAST(bridge_id), cls_rules, megamatches, CAST(n));
 }
 
-/*size_t
-SGX_ofproto_evict_get_rest(uint32_t *rule_hashes, struct cls_rule ** cls_rules, size_t buf_size) {
-    ECALL(ecall_ofproto_evict_get_rest, false, 3, rule_hashes, cls_rules, CAST(buf_size));
-}*/
+void
+SGX_minimatch_expand_and_get_priority(int bridge_id, struct cls_rule *ut_cr, struct match *match, unsigned int *priority) {
+    ECALL(
+        ecall_minimatch_expand_and_get_priority, false, 4, CAST(bridge_id), ut_cr, match, priority
+    );
+}
+
+uint32_t
+SGX_miniflow_expand_and_tag(int bridge_id, struct cls_rule *ut_cr, struct flow *flow, uint8_t table_id) {
+    uint32_t res;
+    ECALL(
+        ecall_miniflow_expand_and_tag, true, 4, &res, CAST(bridge_id), ut_cr, flow, CAST(table_id)
+    );
+    return res;
+}

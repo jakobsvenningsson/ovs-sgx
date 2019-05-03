@@ -1671,3 +1671,15 @@ ecall_cls_rules_format(int bridge_id, const struct cls_rule *cls_rules, struct m
         ecall_cls_rule_format(bridge_id, &cls_rules[i], &megamatches[i]);
     }
 }
+
+void
+ecall_minimatch_expand_and_get_priority(int bridge_id, struct cls_rule *ut_cr, struct match *match, unsigned int *priority) {
+    ecall_minimatch_expand(bridge_id, ut_cr, match);
+    *priority = ecall_cr_priority(bridge_id, ut_cr);
+}
+
+uint32_t
+ecall_miniflow_expand_and_tag(int bridge_id, struct cls_rule *ut_cr, struct flow *flow, uint8_t table_id) {
+    ecall_miniflow_expand(bridge_id, ut_cr, flow);
+    return ecall_rule_calculate_tag(bridge_id, ut_cr, flow, table_id);
+}

@@ -5662,10 +5662,8 @@ static struct rule_dpif *
 rule_dpif_lookup__(struct ofproto_dpif *ofproto, const struct flow *flow,
                    struct flow_wildcards *wc, uint8_t table_id)
 {
-    //VLOG_ERR("rule_dpif_lookup__");
-    struct cls_rule *cls_rule;
-    struct timespec st1, et1;
     bool frag;
+    struct cls_rule *cls_rule;
 
     if (table_id >= N_TABLES) {
         return NULL;
@@ -5689,11 +5687,7 @@ rule_dpif_lookup__(struct ofproto_dpif *ofproto, const struct flow *flow,
 #ifndef SGX
         cls_rule = classifier_lookup(cls, &ofpc_normal_flow, wc);
 #else
-        clock_gettime(CLOCK_REALTIME,&st1);
-        SGX_cls_lookup(ofproto->up.bridge_id, &cls_rule,table_id,&ofpc_normal_flow,wc);
-        clock_gettime(CLOCK_REALTIME,&et1);
-        //float elapsed1 = ((et1.tv_sec - st1.tv_sec) * 1000000L) + (et1.tv_usec - st1.tv_usec);
-        //VLOG_INFO("JORGE: The lookup 1: %lu %lu",(et1.tv_sec - st1.tv_sec),(et1.tv_nsec - st1.tv_nsec));
+        SGX_cls_lookup(ofproto->up.bridge_id, &cls_rule,table_id, &ofpc_normal_flow, wc);
 #endif
     } else if (frag && ofproto->up.frag_handling == OFPC_FRAG_DROP) {
         cls_rule = &ofproto->drop_frags_rule->up.cr;
@@ -5704,16 +5698,9 @@ rule_dpif_lookup__(struct ofproto_dpif *ofproto, const struct flow *flow,
 #ifndef SGX
     	cls_rule = classifier_lookup(cls, flow, wc);
 #else
-    	struct timespec st2, et2;
-    	clock_gettime(CLOCK_REALTIME,&st2);
     	SGX_cls_lookup(ofproto->up.bridge_id, &cls_rule,table_id,flow,wc);
-    	clock_gettime(CLOCK_REALTIME,&et2);
-        //float elapsed2 = ((et2.tv_sec - st2.tv_sec) * 1000000) + (et2.tv_usec - st2.tv_usec);
-    	//VLOG_INFO("JORGE: The lookup 2: %lu %lu",(et2.tv_sec - st2.tv_sec),(et2.tv_nsec - st2.tv_nsec));
 #endif
     }
-    //VLOG_ERR("end rule_dpif_lookup__");
-
     return rule_dpif_cast(rule_from_cls_rule(cls_rule));
 }
 
@@ -5807,14 +5794,21 @@ rule_construct(struct rule *rule_)
         struct flow flow;
 
 #ifndef SGX
-
         miniflow_expand(&rule->up.cr.match.flow, &flow);
         rule->tag = rule_calculate_tag(&flow, &rule->up.cr.match.mask,
                                        ofproto->tables[table_id].basis);
+#elif OPTIMIZED
+        uint32_t hash;
+        hash = SGX_miniflow_expand_and_tag(rule->up.ofproto->bridge_id, &rule->up.cr, &flow, table_id);
+        if(hash){
+			rule->tag=tag_create_deterministic(hash);
+		}else{
+			rule->tag=0;
+		}
 #else
         SGX_miniflow_expand(rule->up.ofproto->bridge_id, &rule->up.cr,&flow);
         uint32_t hash;
-		hash=SGX_rule_calculate_tag(rule->up.ofproto->bridge_id,  &rule->up.cr,&flow,table_id);
+		hash=SGX_rule_calculate_tag(rule->up.ofproto->bridge_id, &rule->up.cr, &flow, table_id);
 		if(hash){
 			rule->tag=tag_create_deterministic(hash);
 		}else{
@@ -6383,10 +6377,7 @@ tag_the_flow(struct xlate_ctx *ctx, struct rule_dpif *rule)
     		rule_tag=rule->tag;
     	}else{
     		uint32_t hash;
-        //VLOG_ERR("tag_the_flow inside");
     		hash = SGX_rule_calculate_tag_s(bridge_id, table_id, &ctx->xin->flow);
-        //VLOG_ERR("tag_the_flow inside");
-
     		if(hash){
     			rule_tag=tag_create_deterministic(hash);
     		}else{
@@ -8213,26 +8204,19 @@ rule_invalidate(const struct rule_dpif *rule)
     table_update_taggable(ofproto, rule->up.table_id);
 #else
     int todo;
-    //printf("%d\n", rule->up.ofproto->bridge_id);
-    //VLOG_ERR("SGX_table_update_taggable");
-    todo=SGX_table_update_taggable(rule->up.ofproto->bridge_id, rule->up.table_id);
-
-    if(todo){//Needs revalidatation
+    todo = SGX_table_update_taggable(rule->up.ofproto->bridge_id, rule->up.table_id);
+    if(todo){
     	ofproto->backer->need_revalidate=REV_FLOW_TABLE;
     }
 #endif
     if (!ofproto->backer->need_revalidate) {
 
 #ifndef SGX
-
         struct table_dpif *table = &ofproto->tables[rule->up.table_id];
         if (table->other_table && rule->tag) {
 
 #else
-//VLOG_ERR("SGX_is_sgx_other_table");
-
-      if(SGX_is_sgx_other_table(rule->up.ofproto->bridge_id, rule->up.table_id)&& rule->tag){
-
+      if(SGX_is_sgx_other_table(rule->up.ofproto->bridge_id, rule->up.table_id) && rule->tag){
 #endif
         	tag_set_add(&ofproto->backer->revalidate_set, rule->tag);
         } else {
@@ -8444,7 +8428,7 @@ trace_format_rule(struct ds *result, uint8_t table_id, int level,
     //1. we create a struct match structure
     //VLOG_ERR("SGX_is_sgx_other_table");
     struct match megamatch;
-    unsigned int priority_sgx= SGX_cls_rule_format(rule->up.ofproto->bridge_id, &rule->up.cr,&megamatch);
+    unsigned int priority_sgx = SGX_cls_rule_format(rule->up.ofproto->bridge_id, &rule->up.cr,&megamatch);
     match_format(&megamatch,result,priority_sgx);
 #endif
     ds_put_char(result, '\n');

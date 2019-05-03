@@ -449,6 +449,22 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
                 }
                 break;
             }
+        case hotcall_ecall_minimatch_expand_and_get_priority:
+            ecall_minimatch_expand_and_get_priority(
+                *((int *) args->args[0]),
+                (struct cls_rule *) args->args[1],
+                (struct match *) args->args[2],
+                (unsigned int *) args->args[3]
+            );
+            break;
+        case hotcall_ecall_miniflow_expand_and_tag:
+            ecall_miniflow_expand_and_tag(
+                *(int *) args->args[0],
+                (struct cls_rule *) args->args[1],
+                (struct flow *) args->args[2],
+                *(uint8_t *) args->args[3]
+            );
+            break;
 
         /*case hotcall_ecall_ofproto_evict_get_rest:
             ecall_ofproto_evict_get_rest(
