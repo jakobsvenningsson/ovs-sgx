@@ -8,14 +8,15 @@ enclave {
 
 	untrusted {
 		include "ocall.h"
-		include "hotcall-producer.h"
+		include "hotcall-untrusted.h"
 		void ocall_print([in, string] const char *str);
 		void ocall_sleep();
+		void ocall_allocate_page(size_t sz, [user_check] shared_memory *shared_memory, [out] size_t *page_idx);
 	};
 
 	trusted {
 		include "call-table.h"
-		include "hotcall.h"
+		include "hotcall-trusted.h"
 
 
 		// Hot-call e-calls
@@ -222,7 +223,7 @@ enclave {
 		public void ecall_fet_ccfes_r(int bridge_id, [user_check]struct cls_rule **buf,int elem);
 		public int ecall_fet_ccfe_c(int bridge_id);
 		public void ecall_fet_ccfe_r(int bridge_id,[user_check]struct cls_rule **buf,int elem);
-		public void ecall_cls_lookup(int bridge_id,[user_check]struct cls_rule **o_cls_rule,int table_id,[user_check]const struct flow *flow,[user_check]struct flow_wildcards *wc);
+		public void ecall_cls_lookup(int bridge_id,[user_check]struct cls_rule **o_cls_rule, int table_id,[user_check]const struct flow *flow,[user_check]struct flow_wildcards *wc);
 		public unsigned int ecall_cls_rule_priority(int bridge_id,[user_check]struct cls_rule *o_cls_rule);
 		public int ecall_desfet_ccfes_c(int bridge_id);
 		public void ecall_desfet_ccfes_r(int bridge_id, [user_check]struct cls_rule **buf,int elem);

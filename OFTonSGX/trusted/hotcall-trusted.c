@@ -1,24 +1,42 @@
-#include "hotcall.h"
+#include "hotcall-trusted.h"
 #include "enclave-utils.h"
+#include "cache-trusted.h"
+
+#define INIT_CACHE_VALIDATION_VALUE 99999999;
+
+#ifdef TIMEOUT
+#define INIT_TIMER_VALUE 9999999;
+static unsigned int timeout_counter = INIT_TIMER_VALUE;
+#endif
 
 int
 ecall_start_poller(async_ecall * ctx){
     // sgx_thread_mutex_init(&ctx->mutex, NULL);
     char buf[128];
 
+    unsigned int cache_validation_timeout = INIT_CACHE_VALIDATION_VALUE;
+
     while (1) {
+        if(--cache_validation_timeout == 0) {
+            cache_validation_timeout = INIT_CACHE_VALIDATION_VALUE;
+            if(!flow_map_cache_is_valid(&ctx->flow_cache)) {
+                printf("VARNING: Flow cache hash is incorrect.\nFlushing cache and reporting the incident.\n");
+                flow_map_cache_flush(&ctx->flow_cache);
+            } else {
+                printf("FLOW CACHE IS VALID!\n");
+            }
+        }
+
         sgx_spin_lock(&ctx->spinlock);
 
         if (ctx->run) {
             #ifdef TIMEOUT
             timeout_counter = INIT_TIMER_VALUE;
             #endif
-            ENCLAVE_LOG(buf, "Running function %d\n", ctx->function);
             ctx->run = false;
-            execute_function(ctx->function, ctx->args, ctx->ret);
+            execute_function(ctx->function, ctx->args, ctx->ret, &ctx->flow_cache);
             ctx->is_done = true;
             sgx_spin_unlock(&ctx->spinlock);
-            ENCLAVE_LOG(buf, "Running function %d done.\n", ctx->function);
             continue;
         }
 

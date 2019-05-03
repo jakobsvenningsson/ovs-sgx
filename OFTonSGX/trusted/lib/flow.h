@@ -121,6 +121,27 @@ BUILD_ASSERT_DECL(sizeof(struct flow) % 4 == 0);
 
 #define FLOW_U32S (sizeof(struct flow) / 4)
 
+void flow_zero_wildcards(struct flow *, const struct flow_wildcards *);
+
+static inline size_t
+flow_hash(const struct flow *flow, uint32_t basis)
+{
+    return hash_words((const uint32_t *) flow, sizeof *flow / 4, basis);
+}
+
+static inline int
+flow_compare_3way(const struct flow *a, const struct flow *b)
+{
+    return memcmp(a, b, sizeof *a);
+}
+
+static inline bool
+flow_equal(const struct flow *a, const struct flow *b)
+{
+    return !flow_compare_3way(a, b);
+}
+
+
 /* Remember to update FLOW_WC_SEQ when changing 'struct flow'. */
 
 //BUILD_ASSERT_DECL(sizeof(struct flow) == sizeof(struct flow_tnl) + 160 &&
@@ -139,7 +160,6 @@ struct flow_metadata {
 void flow_extract(struct ofpbuf *, uint32_t priority, uint32_t mark,
                   const struct flow_tnl *, uint16_t in_port, struct flow *);
 
-void flow_zero_wildcards(struct flow *, const struct flow_wildcards *);
 void flow_get_metadata(const struct flow *, struct flow_metadata *);
 
 char *flow_to_string(const struct flow *);
@@ -162,24 +182,6 @@ void flow_set_mpls_tc(struct flow *flow, uint8_t tc);
 void flow_set_mpls_bos(struct flow *flow, uint8_t stack);
 
 void flow_compose(struct ofpbuf *, const struct flow *);
-
-static inline int
-flow_compare_3way(const struct flow *a, const struct flow *b)
-{
-    return memcmp(a, b, sizeof *a);
-}
-
-static inline bool
-flow_equal(const struct flow *a, const struct flow *b)
-{
-    return !flow_compare_3way(a, b);
-}
-
-static inline size_t
-flow_hash(const struct flow *flow, uint32_t basis)
-{
-    return hash_words((const uint32_t *) flow, sizeof *flow / 4, basis);
-}
 
 
 

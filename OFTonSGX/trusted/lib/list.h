@@ -13,12 +13,14 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "util.h"
+#include "common.h"
+
 
 /* Doubly linked list head or element. */
-struct list {
-    struct list *prev;     /* Previous list element. */
-    struct list *next;     /* Next list element. */
-};
+/*struct list {
+    struct list *prev;
+    struct list *next;
+};*/
 
 #define LIST_INITIALIZER(LIST) { LIST, LIST }
 

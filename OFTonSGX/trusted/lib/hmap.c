@@ -9,10 +9,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include "util.h"
+#include "cache-trusted.h"
+#include "shared-memory-trusted.h"
+
 
 /* Initializes 'hmap' as an empty hash table. */
 void
-hmap_init(struct hmap *hmap)
+hmap_init(struct hmap *hmap, shared_memory *shared_memory)
 {
     hmap->buckets = &hmap->one;
     hmap->one = NULL;
@@ -68,17 +71,30 @@ hmap_moved(struct hmap *hmap)
 }
 
 static void
-resize(struct hmap *hmap, size_t new_mask)
+resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory, uint8_t page_type)
 {
     struct hmap tmp;
     size_t i;
+    size_t page_n = -1;
 
     ovs_assert(!(new_mask & (new_mask + 1)));
     ovs_assert(new_mask != SIZE_MAX);
 
-    hmap_init(&tmp);
+    hmap_init(&tmp, NULL);
     if (new_mask) {
-        tmp.buckets = xmalloc(sizeof *tmp.buckets * (new_mask + 1));
+        if(shared_memory) {
+            size_t requested_size = sizeof *tmp.buckets * (new_mask + 1);
+            struct page *page = shared_memory_get_page(shared_memory, requested_size, page_type);
+            if(!page) {
+                printf("Error, failed to allocate page for hash map. Exiting...\n");
+                return;
+            }
+            tmp.buckets = (struct hmap_node **) page->bytes;
+
+            printf("Page is allocated %s of enclave\n", sgx_is_outside_enclave(tmp.buckets, page->size) ? "outside" : "inside");
+        } else {
+            tmp.buckets = xmalloc(sizeof *tmp.buckets * (new_mask + 1));
+        }
         tmp.mask = new_mask;
         for (i = 0; i <= tmp.mask; i++) {
             tmp.buckets[i] = NULL;
@@ -96,8 +112,18 @@ resize(struct hmap *hmap, size_t new_mask)
             //COVERAGE_INC(hmap_pathological);
         }
     }
-    hmap_swap(hmap, &tmp);
-    hmap_destroy(&tmp);
+
+    if(!shared_memory) {
+        hmap_swap(hmap, &tmp);
+        hmap_destroy(&tmp);
+    } else {
+        hmap_swap(hmap, &tmp);
+        //printf("Addr of hmap %p addr of tmp %p\n", hmap->buckets, tmp.buckets);i
+        if (tmp.buckets != &tmp.one) {
+            shared_memory_free_page(shared_memory, tmp.buckets);
+            //shared_memory_mark_page_for_deallocation(shared_memory, tmp.buckets);
+        }
+    }
 }
 
 
@@ -123,11 +149,11 @@ calc_mask(size_t capacity)
 }
 /* Expands 'hmap', if necessary, to optimize the performance of searches. */
 void
-hmap_expand(struct hmap *hmap)
+hmap_expand(struct hmap *hmap, shared_memory *shared_memory, uint8_t page_type)
 {
     size_t new_mask = calc_mask(hmap->n);
     if (new_mask > hmap->mask) {
         //COVERAGE_INC(hmap_expand);
-        resize(hmap, new_mask);
+        resize(hmap, new_mask, shared_memory, page_type);
     }
 }

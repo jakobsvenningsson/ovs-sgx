@@ -126,7 +126,7 @@ void
 classifier_init(struct classifier *cls)
 {
     cls->n_rules = 0;
-    hmap_init(&cls->tables);
+    hmap_init(&cls->tables, NULL);
     list_init(&cls->tables_priority);
 }
 
@@ -524,9 +524,9 @@ insert_table(struct classifier *cls, const struct minimask *mask)
     struct cls_table *table;
 
     table = xzalloc(sizeof *table);
-    hmap_init(&table->rules);
+    hmap_init(&table->rules, NULL);
     minimask_clone(&table->mask, mask);
-    hmap_insert(&cls->tables, &table->hmap_node, minimask_hash(mask, 0));
+    hmap_insert(&cls->tables, &table->hmap_node, minimask_hash(mask, 0), NULL, 0);
     list_push_back(&cls->tables_priority, &table->list_node);
 
     return table;
@@ -673,7 +673,7 @@ insert_rule(struct classifier *cls,
 
     head = find_equal(table, &new->match.flow, new->hmap_node.hash);
     if (!head) {
-        hmap_insert(&table->rules, &new->hmap_node, new->hmap_node.hash);
+        hmap_insert(&table->rules, &new->hmap_node, new->hmap_node.hash, NULL, 0);
         list_init(&new->list);
         goto out;
     } else {
@@ -723,6 +723,3 @@ next_rule_in_list(struct cls_rule *rule)
     struct cls_rule *next = next_rule_in_list__(rule);
     return next->priority < rule->priority ? next : NULL;
 }
-
-
-
