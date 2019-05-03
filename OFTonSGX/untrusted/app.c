@@ -761,28 +761,6 @@ SGX_delete_flows(int bridge_id,
 				 unsigned int *rule_priorities,
 				 struct match *match, size_t n)
  {
-
-     /*for(size_t i = 0; i < n; ++i) {
-         struct flow flow = match[i].flow;
-         struct flow_wildcards wc = match[i].wc;
-         flow_zero_wildcards(&flow, &wc);
-         size_t hash = flow_hash(&flow, 0);
-
-         cls_cache_entry *cache_entry;
-         HMAP_FOR_EACH_WITH_HASH(cache_entry, hmap_node, hash, &ctx.lru_cache) {
-             hmap_remove(&ctx.lru_cache, &cache_entry->hmap_node);
-             free(cache_entry);
-             break;
-         }
-     }*/
-
-     /*cls_cache_entry *cache_entry, *next;
-     HMAP_FOR_EACH_SAFE(cache_entry, next, hmap_node, &ctx.lru_cache) {
-         hmap_remove(&ctx.lru_cache, &cache_entry->hmap_node);
-         free(cache_entry);
-     }*/
-
-
      ECALL(
          ecall_delete_flows, false, 8, CAST(bridge_id), rule_table_ids, cls_rules, rule_is_hidden, rule_hashes, rule_priorities, match, CAST(n)
      );
@@ -849,11 +827,6 @@ SGX_ofproto_rule_send_removed(int bridge_id, struct cls_rule *cr, struct match *
 
 size_t
 SGX_remove_rules(int bridge_id, int *table_ids, struct cls_rule **rules, bool *is_hidden, size_t n_rules) {
-    /*cls_cache_entry *cache_entry, *next;
-    HMAP_FOR_EACH_SAFE(cache_entry, next, hmap_node, &ctx.lru_cache) {
-        hmap_remove(&ctx.lru_cache, &cache_entry->hmap_node);
-        free(cache_entry);
-    }*/
     size_t n;
     ECALL(ecall_remove_rules, true, 5, &n, CAST(bridge_id), table_ids, rules, is_hidden, CAST(n_rules));
     return n;

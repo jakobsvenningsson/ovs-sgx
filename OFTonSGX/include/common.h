@@ -182,16 +182,6 @@ typedef struct {
   argument_list *args;
   void *ret;
   flow_map_cache flow_cache;
-
-  #ifdef HOTCALL
-  //flow_map_cache flow_cache;
-  /*size_t lru_cache_capacity;
-  struct hmap lru_cache;
-  size_t data_ptr;
-  char data[10000];
-  cls_cache_entry *entries[10000];
-  struct list lru_list;*/
-  #endif
 } async_ecall;
 
 #endif

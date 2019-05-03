@@ -7,6 +7,9 @@
 #include "flow.h"
 
 
+//#define CAD(VARIABLE, TYPE) \
+//    *((TYPE *) VARIABLE)
+
 void
 execute_function(int function, argument_list * args, void *ret, flow_map_cache *flow_cache){
     cls_cache_entry *cache_entry, *next;
@@ -226,7 +229,6 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
             break;
         case hotcall_ecall_cls_lookup:
         {
-
             const struct flow *flow = (const struct flow *) args->args[3];
             struct flow_wildcards *wc = args->args[4];
             int table_id = *((int *) args->args[2]);
@@ -309,6 +311,7 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
                                                         *((size_t *) args->args[4]),
                                                         *((size_t *) args->args[5]),
                                                         (size_t *) args->args[6]);
+            flow_map_cache_flush(flow_cache);
             break;
         case hotcall_ecall_ofproto_evict:
             *((size_t *) ret) = ecall_ofproto_evict(*((int *) args->args[0]),
@@ -371,17 +374,24 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
             );
             break;
         case hotcall_ecall_delete_flows:
-            ecall_delete_flows(
-                *((int *) args->args[0]),
-                (int *) args->args[1],
-                (struct cls_rule **) args->args[2],
-                (bool *) args->args[3],
-                (uint32_t *) args->args[4],
-                (unsigned int *) args->args[5],
-                (struct match *) args->args[6],
-                *((size_t *) args->args[7])
-            );
-            break;
+            {
+                struct cls_rule **ut_crs = (struct cls_rule **) args->args[2];
+                size_t n = *(size_t *) args->args[7];
+                ecall_delete_flows(
+                    *((int *) args->args[0]),
+                    (int *) args->args[1],
+                    ut_crs,
+                    (bool *) args->args[3],
+                    (uint32_t *) args->args[4],
+                    (unsigned int *) args->args[5],
+                    (struct match *) args->args[6],
+                    n
+                );
+                for(size_t i = 0; i < n; ++i) {
+                    flow_map_cache_remove_ut_cr(flow_cache, ut_crs[i]);
+                }
+                break;
+            }
         case hotcall_ecall_configure_table:
             ecall_configure_table(
                 *((int *) args->args[0]),
@@ -424,14 +434,22 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
             );
             break;
         case hotcall_ecall_remove_rules:
-            *((size_t *) ret) = ecall_remove_rules(
-                *((int *) args->args[0]),
-                (int *) args->args[1],
-                (struct cls_rule **) args->args[2],
-                (bool *) args->args[3],
-                *((size_t *) args->args[4])
-            );
-            break;
+            {
+                struct cls_rule **ut_crs = (struct cls_rule **) args->args[2];
+                size_t n = *(size_t *) args->args[4];
+                *((size_t *) ret) = ecall_remove_rules(
+                    *((int *) args->args[0]),
+                    (int *) args->args[1],
+                    (struct cls_rule **) args->args[2],
+                    (bool *) args->args[3],
+                    *((size_t *) args->args[4])
+                );
+                for(size_t i = 0; i < n; ++i) {
+                    flow_map_cache_remove_ut_cr(flow_cache, ut_crs[i]);
+                }
+                break;
+            }
+
         /*case hotcall_ecall_ofproto_evict_get_rest:
             ecall_ofproto_evict_get_rest(
                 (uint32_t *) args->args[0],
