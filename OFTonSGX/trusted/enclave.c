@@ -21,7 +21,7 @@ struct sgx_cls_table * SGX_hmap_table[100];
 void
 sgx_table_cls_init(int bridge_id){
     SGX_hmap_table[bridge_id] = xmalloc(sizeof(struct sgx_cls_table));
-    hmap_init(&SGX_hmap_table[bridge_id]->cls_rules);
+    hmap_init(&SGX_hmap_table[bridge_id]->cls_rules, NULL);
 }
 
 /*2. Node_search: This method is in charge of the searching of a cls_rule based on
@@ -812,7 +812,7 @@ ecall_oftable_enable_eviction(int bridge_id, int table_id, const struct mf_subfi
     SGX_oftables[bridge_id][table_id].eviction_fields         = xmemdup(fields, n_fields * sizeof *fields);
     SGX_oftables[bridge_id][table_id].eviction_group_id_basis = random_v;
 
-    hmap_init(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id);
+    hmap_init(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id, NULL);
     heap_init_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
 
     //printf("enable eviction size %d\n", heap_count_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size));

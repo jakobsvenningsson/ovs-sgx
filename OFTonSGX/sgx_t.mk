@@ -55,6 +55,7 @@ Enclave_C_Files := trusted/enclave.c \
 										 trusted/hotcall-trusted.c \
 										 trusted/enclave-utils.c \
 										 trusted/call-table.c \
+										 trusted/shared-memory-trusted.c \
 										 trusted/cache-trusted.c \
 										 trusted/lib/meta-flow.c \
 										 trusted/lib/sgx_htons.c \

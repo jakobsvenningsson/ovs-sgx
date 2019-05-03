@@ -56,7 +56,7 @@ hmap_node_nullify(struct hmap_node *node)
 #define HMAP_INITIALIZER(HMAP) { &(HMAP)->one, NULL, 0, 0 }
 
 /* Initialization. */
-void hmap_init(struct hmap *);
+void hmap_init(struct hmap *, shared_memory *shared_memory);
 void hmap_destroy(struct hmap *);
 void hmap_clear(struct hmap *);
 void hmap_swap(struct hmap *a, struct hmap *b);

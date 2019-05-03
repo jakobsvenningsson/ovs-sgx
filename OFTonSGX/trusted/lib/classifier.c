@@ -126,7 +126,7 @@ void
 classifier_init(struct classifier *cls)
 {
     cls->n_rules = 0;
-    hmap_init(&cls->tables);
+    hmap_init(&cls->tables, NULL);
     list_init(&cls->tables_priority);
 }
 
@@ -524,7 +524,7 @@ insert_table(struct classifier *cls, const struct minimask *mask)
     struct cls_table *table;
 
     table = xzalloc(sizeof *table);
-    hmap_init(&table->rules);
+    hmap_init(&table->rules, NULL);
     minimask_clone(&table->mask, mask);
     hmap_insert(&cls->tables, &table->hmap_node, minimask_hash(mask, 0), NULL, 0);
     list_push_back(&cls->tables_priority, &table->list_node);

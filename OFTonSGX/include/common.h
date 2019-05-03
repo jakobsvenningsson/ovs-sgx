@@ -131,21 +131,26 @@ typedef struct {
     struct hmap_node hmap_node;
     struct hmap_node hmap_node_ut_crs;
     struct list list_node;
+    int nr;
 } cls_cache_entry;
 
 
-#define PAGE_TYPE_FREE 0
-#define PAGE_TYPE_CACHE 1
-#define PAGE_TYPE_UT_CRS 2
+#define PAGE_STATUS_FREE 0
+#define PAGE_STATUS_ALLOCATED 1
+
+struct page {
+    uint8_t *bytes;
+    size_t size;
+    size_t status;
+    uint8_t pending_deallocation;
+};
 
 typedef struct {
-    uint8_t **pages;
-    size_t *page_sz;
+    struct page **pages;
     size_t  cap;
-    uint8_t *page_type;
     uint8_t *allocated;
-    uint8_t *deallocate_page;
     size_t default_page_sz;
+    sgx_spinlock_t spinlock;
 } shared_memory;
 
 typedef struct {
@@ -176,8 +181,10 @@ typedef struct {
   int function;
   argument_list *args;
   void *ret;
-  #ifdef HOTCALL
   flow_map_cache flow_cache;
+
+  #ifdef HOTCALL
+  //flow_map_cache flow_cache;
   /*size_t lru_cache_capacity;
   struct hmap lru_cache;
   size_t data_ptr;

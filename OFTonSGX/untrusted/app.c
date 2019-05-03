@@ -13,8 +13,9 @@
 #include <pthread.h>
 
 #include "spinlock.h"
-#include "hotcall-producer.h"
+#include "hotcall-untrusted.h"
 #include "cache-untrusted.h"
+#include "shared-memory-untrusted.h"
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid        = 0;
@@ -62,7 +63,7 @@ sgx_ofproto_init_tables(int n_tables){
         #ifdef HOTCALL
         printf("HOTCALLS ENABLED STARTING THREAD.\n");
 
-        initialize_enclave_cache(&ctx.flow_cache);
+        flow_map_cache_init(&ctx.flow_cache);
 
         pthread_t thread_id;
         pthread_create(&thread_id, NULL, ecall_polling_thread, NULL);
@@ -386,12 +387,12 @@ SGX_cls_lookup(int bridge_id, struct cls_rule ** ut_cr, int table_id, const stru
 
     // deallocate any marker pages from shared memory
 
-    //deallocate_marked_pages(&ctx.flow_cache.shared_memory);
-
+    #ifdef HOTCALL
+    shared_memory_deallocate_marked_pages(&ctx.flow_cache.shared_memory);
 
     // Check if mapping is in cache
     cls_cache_entry *cache_entry;
-    cache_entry = flow_map_cache_get_entry(&ctx.flow_cache, flow, wc, bridge_id, table_id);
+    flow_map_cache_get_entry(&ctx.flow_cache, flow, wc, bridge_id, table_id, &cache_entry);
     if(cache_entry) {
         printf("CACHE HIT!!!!\n");
         *ut_cr = cache_entry->cr;
@@ -399,6 +400,9 @@ SGX_cls_lookup(int bridge_id, struct cls_rule ** ut_cr, int table_id, const stru
     } else {
         printf("NO CACHE HIT...\n");
     }
+
+    #endif
+
 
     ECALL(ecall_cls_lookup, false, 5, CAST(bridge_id), ut_cr, CAST(table_id), flow, wc);
 }

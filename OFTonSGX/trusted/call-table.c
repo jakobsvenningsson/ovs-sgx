@@ -7,23 +7,9 @@
 #include "flow.h"
 
 
-/*void insert_in_cache(struct hmap *lru_cache, struct cls_rule *cr, struct cls_rule *o_cr, int bridge_id, int table_id) {
-    size_t hash;
-    hash = miniflow_hash_in_minimask(&cr->match.flow, &cr->match.mask, 0) + bridge_id + table_id;
-    //hash = calculate_cash_hash(flow, wc, bridge_id, table_id);
-    cls_cache_entry *cache_entry;
-    cache_entry = malloc(sizeof(cls_cache_entry));
-    cache_entry->cr = o_cr;
-    hmap_insert(lru_cache, &cache_entry->hmap_node, hash);
-}*/
-
-
-
 void
 execute_function(int function, argument_list * args, void *ret, flow_map_cache *flow_cache){
     cls_cache_entry *cache_entry, *next;
-
-    //flow_map_cache_flush(lru_cache);
 
     switch (function) {
         case hotcall_ecall_istable_readonly:
@@ -247,21 +233,6 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
             int bridge_id = *((int *) args->args[0]);
             struct cls_rule **ut_cr = (struct cls_rule **) args->args[1];
 
-
-            // Check if mapping is in cache
-            /*cls_cache_entry *cache_entry;
-            cache_entry = flow_map_cache_get_entry(lru_cache, flow, wc, bridge_id, table_id);
-
-            printf("Cache size %d\n", hmap_count(lru_cache));
-
-            if(cache_entry) {
-                printf("CACHE HIT!!!!\n");
-                *ut_cr = cache_entry->cr;
-                return;
-            } else {
-                printf("NO CACHE HIT...\n");
-            }*/
-
             ecall_cls_lookup(bridge_id,
                             ut_cr,
                             table_id,
@@ -269,31 +240,6 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
                             wc);
 
             if(*ut_cr) {
-                //struct sgx_cls_rule *sgx_cr = sgx_rule_from_ut_cr(bridge_id, *ut_cr);
-
-                /*struct flow ff;
-                miniflow_expand(&sgx_cr->cls_rule.match.flow, &ff);
-                struct flow_wildcards ff_wc;
-                minimask_expand(&sgx_cr->cls_rule.match.mask, &ff_wc);
-
-
-
-                flow_zero_wildcards(&ff, &ff_wc);
-
-
-                struct flow zero_flow = *flow;
-                if(wc) {
-                    flow_zero_wildcards(&zero_flow, wc);
-                }
-
-                if (miniflow_equal_flow_in_minimask(&rule->match.flow, flow,
-                                                    &table->mask)
-
-
-                printf("Flow is %s!\n", flow_equal(&ff, &zero_flow) ? "equal" : "not equal");*/
-
-
-                //flow_map_cache_insert_rule(lru_cache, &sgx_cr->cls_rule, *ut_cr, bridge_id, table_id, entries);
                 flow_map_cache_insert(flow_cache, flow, wc, *ut_cr, bridge_id, table_id);
             }
             break;
@@ -315,7 +261,7 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
         /*case hotcall_ecall_table_dpif_init:
             ecall_table_dpif_init(*((int *) args->args[0]));
             break;*/
-    /*    case hotcall_ecall_get_cls_rules:
+        case hotcall_ecall_get_cls_rules:
             *((size_t *) ret) = ecall_get_cls_rules(*((int *) args->args[0]),
                                                     *((int *) args->args[1]),
                                                     *((size_t *) args->args[2]),
@@ -485,7 +431,7 @@ execute_function(int function, argument_list * args, void *ret, flow_map_cache *
                 (bool *) args->args[3],
                 *((size_t *) args->args[4])
             );
-            break;*/
+            break;
         /*case hotcall_ecall_ofproto_evict_get_rest:
             ecall_ofproto_evict_get_rest(
                 (uint32_t *) args->args[0],

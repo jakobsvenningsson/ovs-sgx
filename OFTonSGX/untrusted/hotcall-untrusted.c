@@ -1,10 +1,9 @@
-#include "hotcall-producer.h"
+#include "hotcall-untrusted.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "sgx-utils.h"
 #include <assert.h>
-#include "hotcall-producer.h"
 
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;

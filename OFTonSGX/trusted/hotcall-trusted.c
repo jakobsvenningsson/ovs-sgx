@@ -9,10 +9,6 @@
 static unsigned int timeout_counter = INIT_TIMER_VALUE;
 #endif
 
-
-
-
-
 int
 ecall_start_poller(async_ecall * ctx){
     // sgx_thread_mutex_init(&ctx->mutex, NULL);
@@ -23,7 +19,7 @@ ecall_start_poller(async_ecall * ctx){
     while (1) {
         if(--cache_validation_timeout == 0) {
             cache_validation_timeout = INIT_CACHE_VALIDATION_VALUE;
-            if(!flow_map_cach_is_valid(&ctx->flow_cache.entries)) {
+            if(!flow_map_cache_is_valid(&ctx->flow_cache)) {
                 printf("VARNING: Flow cache hash is incorrect.\nFlushing cache and reporting the incident.\n");
                 flow_map_cache_flush(&ctx->flow_cache);
             } else {
@@ -32,8 +28,6 @@ ecall_start_poller(async_ecall * ctx){
         }
 
         sgx_spin_lock(&ctx->spinlock);
-
-
 
         if (ctx->run) {
             #ifdef TIMEOUT

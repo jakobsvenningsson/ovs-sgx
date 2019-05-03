@@ -10,19 +10,8 @@
 #define FLOW_CACHE_UPDATE_TYPE_INSERT 0
 #define FLOW_CACHE_UPDATE_TYPE_DELETE 1
 
-
-void
-mark_page_for_deallocation(shared_memory *shared_memory, size_t exclude_page, uint8_t page_type);
-size_t
-shared_memory_get_page(shared_memory *shared_memory, size_t requested_size, uint8_t page_type);
-void
-shared_memory_free_page(shared_memory *shared_memory, size_t exclude_page, uint8_t page_type);
-
-
 bool
-flow_map_cach_is_valid(struct hmap *flow_cache);
-size_t
-flow_map_cache_hash(struct hmap *lru_cache);
+flow_map_cache_is_valid(flow_map_cache *flow_cache);
 size_t
 flow_map_cache_calculate_hash(const struct flow *flow, const struct flow_wildcards *wc, int bridge_id, int table_id);
 void
@@ -35,5 +24,15 @@ void
 flow_map_cache_insert_rule(flow_map_cache *flow_cache, struct cls_rule *t_cr, struct cls_rule *ut_cr, int bridge_id, int table_id);
 void
 flow_map_cache_flush(flow_map_cache *flow_cache);
+
+static inline uint32_t
+ut_cr_addr_hash(struct cls_rule *ut_cr) {
+    return hash_bytes(ut_cr, 8, 0);
+}
+
+static inline uint32_t
+cache_entry_hash(cls_cache_entry *ce, uint32_t basis) {
+    return hash_int(ce->hmap_node.hash + (size_t) ce->cr, basis);
+}
 
 #endif
