@@ -1598,11 +1598,11 @@ destruct(struct ofproto *ofproto_)
 //VLOG_ERR("SGX_desfet_ccfes_c");
 
   int buf_size;
-  buf_size=SGX_desfet_ccfes_c(ofproto->up.bridge_id);
+  buf_size=SGX_dpif_destroy_c(ofproto->up.bridge_id);
   if(buf_size){
 	  int lp;
 	  struct cls_rule *buf[buf_size];
-	  SGX_desfet_ccfes_r(ofproto->up.bridge_id, buf,buf_size);
+	  SGX_dpif_destroy_r(ofproto->up.bridge_id, buf,buf_size);
 	  //we loop every value obtained.
 	  for(lp=0;lp<buf_size;lp++){
 		  struct rule_dpif *rule=rule_dpif_cast(rule_from_cls_rule(buf[lp]));
@@ -3713,7 +3713,7 @@ handle_flow_miss_common(struct rule_dpif *rule,
 #ifndef SGX
     if (rule->up.cr.priority == FAIL_OPEN_PRIORITY) {
 #else
-    if (SGX_cls_rule_priority(rule->up.ofproto->bridge_id, &rule->up.cr) == FAIL_OPEN_PRIORITY) {
+    if (SGX_cr_priority(rule->up.ofproto->bridge_id, &rule->up.cr) == FAIL_OPEN_PRIORITY) {
 #endif
     	/*
          * Extra-special case for fail-open mode.

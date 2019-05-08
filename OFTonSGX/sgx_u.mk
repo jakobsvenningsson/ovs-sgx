@@ -50,7 +50,7 @@ App_C_Files := $(UNTRUSTED_DIR)/app.c  \
 				 $(UNTRUSTED_DIR)/hotcall-untrusted.c \
 				 $(UNTRUSTED_DIR)/spinlock.c
 
-App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include
+App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include -I$(HOME)/ovs-sgx/ovs/lib -I$(HOME)/ovs-sgx/benchmark/include
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths) $(LFLAGS)
 

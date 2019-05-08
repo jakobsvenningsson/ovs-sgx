@@ -1910,7 +1910,7 @@ ofmonitor_report(struct connmgr *mgr, struct rule *rule,
 #ifndef SGX
                 fu.priority = rule->cr.priority;
 #else
-                fu.priority=SGX_cls_rule_priority(rule->ofproto->bridge_id, &rule->cr);
+                fu.priority=SGX_cr_priority(rule->ofproto->bridge_id, &rule->cr);
 #endif
                 if (flags & NXFMF_ACTIONS) {
                     fu.ofpacts = rule->ofpacts;

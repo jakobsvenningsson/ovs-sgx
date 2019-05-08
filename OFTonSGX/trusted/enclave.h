@@ -5,11 +5,12 @@
 #include <assert.h>
 #include "ofproto-provider.h"
 
-
+/*
 struct oftable *SGX_oftables[100];
 struct SGX_table_dpif * SGX_table_dpif[100];
 int SGX_n_tables[100];
-struct sgx_cls_table * SGX_hmap_table[100];
+struct sgx_cls_table * SGX_hmap_table[100];*/
+
 
 #define OFPROTO_FOR_EACH_TABLE(TABLE, SGX_TABLES)              \
     for ((TABLE) = SGX_TABLES;                       \
@@ -28,10 +29,6 @@ extern "C" {
 #endif
 
 void printf(const char *fmt, ...);
-
-struct
-sgx_cls_rule *
-sgx_rule_from_ut_cr(int bridge_id, const struct cls_rule * out);
 
 #if defined(__cplusplus)
 }

@@ -3,6 +3,6 @@
 
 #include "common.h"
 
-int ecall_start_poller(async_ecall *ctx);
+int ecall_start_poller(struct shared_memory_ctx *sm_ctx);
 
 #endif
