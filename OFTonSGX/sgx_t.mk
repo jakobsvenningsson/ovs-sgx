@@ -59,6 +59,12 @@ Enclave_C_Files := trusted/enclave.c \
 										 trusted/cache-trusted.c \
 										 trusted/lib/meta-flow.c \
 										 trusted/lib/sgx_htons.c \
+										 trusted/eviction/eviction.c \
+										 trusted/cls_rule/cls-rule.c \
+										 trusted/dpif/dpif.c \
+										 trusted/ofproto/ofproto.c \
+										 trusted/stats/stats.c \
+										 trusted/oftable/oftable.c \
 										 trusted/lib/heap.c \
 
 

@@ -1,0 +1,9 @@
+enclave {
+	include "common.h"
+    trusted {
+        public size_t
+        ecall_dpif_destroy_c(uint8_t bridge_id);
+        public size_t
+        ecall_dpif_destroy_r(uint8_t bridge_id, [user_check]struct cls_rule **buf,int elem);
+    };
+};

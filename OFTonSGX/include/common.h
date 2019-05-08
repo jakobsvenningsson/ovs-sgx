@@ -6,67 +6,70 @@
 #include <stdarg.h>
 #include <sgx_thread.h>
 
+
+#define hotcall_ecall_async_test 100
+
 #define hotcall_ecall_myenclave_sample 0
 #define hotcall_ecall_ofproto_init_tables 1
-#define hotcall_ecall_readonly_set 2
-#define hotcall_ecall_istable_readonly 3
+#define hotcall_ecall_oftable_set_readonly 2
+#define hotcall_ecall_oftable_is_readonly 3
 #define hotcall_ecall_cls_rule_init 4
 #define hotcall_ecall_cr_rule_overlaps 5
 #define hotcall_ecall_cls_rule_destroy 6
 #define hotcall_ecall_cls_rule_hash 7
 #define hotcall_ecall_cls_rule_equal 8
-#define hotcall_ecall_classifier_replace 9
-#define hotcall_ecall_rule_get_flags 10
-#define hotcall_ecall_cls_count 11
-#define hotcall_ecall_eviction_fields_enable 12
+#define hotcall_ecall_oftable_classifier_replace 9
+#define hotcall_ecall_oftable_get_flags 10
+#define hotcall_ecall_oftable_cls_count 11
+#define hotcall_ecall_is_eviction_fields_enabled 12
 #define hotcall_ecall_evg_group_resize 13
 #define hotcall_ecall_evg_add_rule 14
 #define hotcall_ecall_evg_remove_rule 15
 #define hotcall_ecall_cls_remove 16
 #define hotcall_ecall_choose_rule_to_evict 17
-#define hotcall_ecall_table_mflows 18
+#define hotcall_ecall_oftable_mflows 18
 #define hotcall_ecall_choose_rule_to_evict_p 19
 #define hotcall_ecall_minimatch_expand 20
 #define hotcall_ecall_cr_priority 21
-#define hotcall_ecall_cls_find_match_exactly 22
-#define hotcall_ecall_femt_ccfe_c 23
-#define hotcall_ecall_femt_ccfe_r 24
-#define hotcall_ecall_femt_c 25
-#define hotcall_ecall_femt_r 26
+#define hotcall_ecall_oftable_cls_find_match_exactly 22
+#define hotcall_ecall_collect_rules_loose_c 23
+#define hotcall_ecall_collect_rules_loose_r 24
+#define hotcall_ecall_collect_rules_strict_c 25
+#define hotcall_ecall_collect_rules_strict_r 26
 #define hotcall_ecall_oftable_enable_eviction 27
 #define hotcall_ecall_oftable_disable_eviction 28
-#define hotcall_ecall_ccfe_c 29
-#define hotcall_ecall_ccfe_r 30
-#define hotcall_ecall_table_mflows_set 31
+#define hotcall_ecall_oftable_enable_eviction_c 29
+#define hotcall_ecall_oftable_enable_eviction_r 30
+#define hotcall_ecall_oftable_mflows_set 31
 #define hotcall_ecall_ofproto_destroy 32
 #define hotcall_ecall_total_rules 33
-#define hotcall_ecall_table_name 34
+#define hotcall_ecall_oftable_name 34
 #define hotcall_ecall_collect_ofmonitor_util_c 35
 #define hotcall_ecall_collect_ofmonitor_util_r 36
 #define hotcall_ecall_cls_rule_is_loose_match 37
-#define hotcall_ecall_fet_ccfes_c 38
-#define hotcall_ecall_fet_ccfes_r 39
-#define hotcall_ecall_fet_ccfe_c 40
-#define hotcall_ecall_fet_ccfe_r 41
-#define hotcall_ecall_cls_lookup 42
+#define hotcall_ecall_flush_c 38
+#define hotcall_ecall_flush_r 39
+#define hotcall_ecall_flow_stats_c 40
+#define hotcall_ecall_flow_stats_r 41
+#define hotcall_ecall_oftable_cls_lookup 42
 #define hotcall_ecall_cls_rule_priority 43
-#define hotcall_ecall_desfet_ccfes_c 44
-#define hotcall_ecall_desfet_ccfes_r 45
+#define hotcall_ecall_dpif_destroy_c 44
+#define hotcall_ecall_dpif_destroy_r 45
 #define hotcall_ecall_cls_rule_format 46
 #define hotcall_ecall_miniflow_expand 47
 #define hotcall_ecall_rule_calculate_tag 48
 //#define hotcall_ecall_sgx_table_dpif 49
-#define hotcall_ecall_table_update_taggable 50
-#define hotcall_ecall_is_sgx_other_table 51
+#define hotcall_ecall_oftable_update_taggable 50
+#define hotcall_ecall_oftable_is_other_table 51
 #define hotcall_ecall_rule_calculate_tag_s 52
-#define hotcall_ecall_hidden_tables_check 53
+#define hotcall_ecall_oftable_hidden_check 53
 #define hotcall_ecall_oftable_set_name 54
 #define hotcall_ecall_minimask_get_vid_mask 55
 #define hotcall_ecall_miniflow_get_vid 56
 #define hotcall_ecall_ofproto_get_vlan_c 57
 #define hotcall_ecall_ofproto_get_vlan_r 58
 
-#define hotcall_ecall_get_cls_rules 59
+#define hotcall_ecall_oftable_get_cls_rules 59
 #define hotcall_ecall_get_cls_rules_and_enable_eviction 60
 #define hotcall_ecall_eviction_group_add_rules 61
 #define hotcall_ecall_ofproto_get_vlan_usage 62
@@ -76,11 +79,11 @@
 #define hotcall_ecall_collect_rules_loose 66
 #define hotcall_ecall_collect_rules_strict 67
 #define hotcall_ecall_delete_flows 68
-#define hotcall_ecall_configure_table 69
+#define hotcall_ecall_oftable_configure 69
 #define hotcall_ecall_need_to_evict 70
 #define hotcall_ecall_collect_rules_loose_stats_request 71
 #define hotcall_ecall_ofproto_rule_send_removed 72
-#define hotcall_ecall_remove_rules 73
+#define hotcall_ecall_oftable_remove_rules 73
 #define hotcall_ecall_ofproto_evict_get_rest 74
 
 #define hotcall_ecall_cls_rules_format 75
@@ -96,6 +99,10 @@ struct mf_subfield;
 struct minimatch;
 struct flow;
 struct flow_wildcards;
+
+
+
+
 
 /* A hash map. */
 struct hmap {
@@ -140,6 +147,14 @@ typedef struct {
 #define PAGE_STATUS_FREE 0
 #define PAGE_STATUS_ALLOCATED 1
 
+#define ui8 "a"
+#define ui8_c 'a'
+#define ui16 "f"
+#define ui16_c 'f'
+#define ui32 "c"
+#define ui32_c 'c'
+
+
 struct page {
     uint8_t *bytes;
     size_t size;
@@ -171,19 +186,48 @@ typedef struct {
     shared_memory shared_memory;
 } flow_map_cache;
 
-typedef struct {
-  sgx_thread_mutex_t mutex;
-  sgx_spinlock_t spinlock;
-  sgx_thread_cond_t cond;
-  bool run;
-  bool running_function;
-  bool is_done;
-  bool sleeping;
-  int timeout_counter;
-  int function;
-  argument_list *args;
-  void *ret;
+struct function_call {
+    uint8_t id;
+    argument_list args;
+    void *return_value;
+    char *fmt;
+    bool async;
+    struct list list_node;
+};
+
+struct hotcall {
+    sgx_thread_mutex_t mutex;
+    sgx_spinlock_t spinlock;
+    sgx_thread_cond_t cond;
+    bool run;
+    bool running_function;
+    bool is_done;
+    bool sleeping;
+    int timeout_counter;
+    //struct function_call function;
+    struct list ecall_queue;
+};
+
+struct shared_memory_ctx {
+  struct hotcall hcall;
   flow_map_cache flow_cache;
-} async_ecall;
+};
+
+struct preallocated_function_calls {
+    struct function_call fcs[20];
+    void *args[20][20];
+    size_t idx;
+    size_t len;
+
+    size_t idx_uint8;
+    uint8_t uint8_ts[20];
+
+    size_t idx_sizet;
+    size_t size_ts[20];
+
+    size_t idx_unsigned;
+    unsigned int unsigned_ts[20];
+};
+
 
 #endif
