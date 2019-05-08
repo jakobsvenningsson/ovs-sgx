@@ -4,23 +4,23 @@
 #include <stdio.h>
 #include "sgx-utils.h"
 #include <assert.h>
-
+#include "enclave_u.h"
+#include <string.h>
+#include <sched.h>
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond   = PTHREAD_COND_INITIALIZER;
 
 void
-make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret){
+make_hotcall(struct hotcall *hcall){
 
-    ctx->function = function;
-    ctx->args     = args;
-    ctx->ret      = ret;
-    ctx->is_done  = false;
-    ctx->run      = true;
+    struct function_call *fcall, *next;
+    hcall->is_done  = false;
+    hcall->run      = true;
 
     while (1) {
         #ifdef TIMEOUT
-        if (ctx->sleeping) {
+        if (hcall->sleeping) {
             pthread_mutex_lock(&mutex);
             pthread_cond_signal(&cond);
             pthread_mutex_unlock(&mutex);
@@ -28,12 +28,12 @@ make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret){
         }
         #endif
 
-        sgx_spin_lock(&ctx->spinlock);
-        if (ctx->is_done) {
-            sgx_spin_unlock(&ctx->spinlock);
+        sgx_spin_lock(&hcall->spinlock);
+        if (hcall->is_done) {
+            sgx_spin_unlock(&hcall->spinlock);
             break;
         }
-        sgx_spin_unlock(&ctx->spinlock);
+        sgx_spin_unlock(&hcall->spinlock);
         for (int i = 0; i < 3; ++i) {
             __asm
             __volatile(
@@ -43,18 +43,43 @@ make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret){
     }
 }
 
-void compile_arg_list(void **return_val, argument_list *arg_list, bool has_return, int n_args, ...) {
-    arg_list->n_args = n_args;
+void prepare_hotcall_function(struct hotcall *hcall, uint8_t function_id, char *fmt, bool async, bool has_return, int n_args, ...) {
+
+    struct function_call *f_call = &pfc.fcs[pfc.idx++];
+    if(pfc.idx == 20) {
+        pfc.idx = 0;
+    }
+    f_call->id = function_id;
+    f_call->async = async;
+
+    f_call->args.n_args = n_args;
+
+    if(async) {
+        f_call->fmt = strdup(fmt);
+    } else {
+        f_call->fmt = fmt;
+    }
+
     va_list args;
     va_start(args, n_args);
 
+    char* token = strtok(fmt, ",");
+
     if(has_return) {
-        *return_val = va_arg(args, void *);
+        f_call->return_value = va_arg(args, void *);
+        token = strtok(NULL, ",");
     }
-    for(int i = 0; i < n_args; ++i) {
-        arg_list->args[i] = va_arg(args, void *);
+
+    size_t i = 0;
+    while (token) {
+        f_call->args.args[i] = va_arg(args, void *);
+        i++;
+        token = strtok(NULL, ",");
     }
+
     va_end(args);
+
+    list_push_back(&hcall->ecall_queue, &f_call->list_node);
 }
 
 void

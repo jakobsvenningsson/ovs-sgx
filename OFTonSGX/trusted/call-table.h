@@ -3,6 +3,6 @@
 
 #include "common.h"
 
-void execute_function(int function, argument_list *args, void *ret, flow_map_cache *flow_cache);
+void execute_function(struct function_call *f_call, flow_map_cache *flow_cache);
 
 #endif

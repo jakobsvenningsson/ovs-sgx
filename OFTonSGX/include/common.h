@@ -204,7 +204,6 @@ struct hotcall {
     bool is_done;
     bool sleeping;
     int timeout_counter;
-    //struct function_call function;
     struct list ecall_queue;
 };
 
@@ -212,22 +211,5 @@ struct shared_memory_ctx {
   struct hotcall hcall;
   flow_map_cache flow_cache;
 };
-
-struct preallocated_function_calls {
-    struct function_call fcs[20];
-    void *args[20][20];
-    size_t idx;
-    size_t len;
-
-    size_t idx_uint8;
-    uint8_t uint8_ts[20];
-
-    size_t idx_sizet;
-    size_t size_ts[20];
-
-    size_t idx_unsigned;
-    unsigned int unsigned_ts[20];
-};
-
 
 #endif
