@@ -1,0 +1,46 @@
+enclave {
+	include "common.h"
+    trusted {
+
+		// Vanilla ECALLS
+
+        public void
+        ecall_ofproto_destroy(uint8_t bridge_id);
+        public unsigned int
+        ecall_total_rules(uint8_t bridge_id);
+        public size_t
+        ecall_ofproto_get_vlan_c(uint8_t bridge_id);
+        public size_t
+        ecall_ofproto_get_vlan_r(uint8_t bridge_id, [user_check]uint16_t *buf,int elem);
+		public size_t
+		ecall_collect_ofmonitor_util_c(uint8_t bridge_id, int ofproto_n_tables,uint8_t table_id,[user_check]const struct minimatch *match);
+		public size_t
+		ecall_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables,[user_check]struct cls_rule **buf,int elem,uint8_t table_id,[user_check]const struct minimatch *match);
+
+		// Optimized ECALLS
+
+		public size_t ecall_ofproto_get_vlan_usage(uint8_t bridge_id,
+						                           size_t default_buffer_size,
+						                           [user_check] uint16_t *vlan_buffer,
+						                           size_t start_index,
+						                           size_t end_index,
+						                           [user_check] size_t *n_vlan);
+
+		public size_t ecall_ofproto_flush(uint8_t bridge_id,
+										  [user_check] struct cls_rule **cls_rules,
+										  [user_check] uint32_t *hashes,
+										  size_t default_buffer_size,
+										  size_t start_index,
+										  size_t end_index,
+										  [user_check] size_t *n_rules);
+
+
+		public void
+		ecall_ofproto_rule_send_removed(uint8_t bridge_id,
+										[user_check] struct cls_rule *cr,
+										[user_check] struct match *match,
+										[user_check] unsigned int *priority,
+										[user_check] bool *rule_is_hidden);
+
+    };
+};

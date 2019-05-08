@@ -1,0 +1,61 @@
+enclave {
+	include "common.h"
+    trusted {
+
+		// Vanilla ECALLS
+
+        public
+        int ecall_is_eviction_fields_enabled(uint8_t bridge_id, uint8_t table_id);
+		public
+		void ecall_evg_add_rule(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule *o_cls_rule,uint32_t priority,uint32_t rule_evict_prioriy, struct heap_node rule_evg_node);
+		public
+		void ecall_evg_remove_rule(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule *o_cls_rule);
+		public
+		void ecall_choose_rule_to_evict(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule **o_cls_rule);
+		public
+		void ecall_choose_rule_to_evict_p(uint8_t bridge_id, uint8_t table_id,[user_check] struct cls_rule **o_cls_rule, [user_check] struct cls_rule *replacer);
+		public
+		void ecall_oftable_enable_eviction(uint8_t bridge_id, uint8_t table_id,[in]const struct mf_subfield *fields,size_t n_fields,uint32_t random_v, [user_check] bool *no_change);
+		public
+		void ecall_oftable_disable_eviction(uint8_t bridge_id, uint8_t table_id);
+		public size_t
+		ecall_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id);
+		public size_t
+		ecall_oftable_enable_eviction_r(uint8_t bridge_id, [user_check]struct cls_rule **buf,int elem,uint8_t table_id);
+
+		// Optimized ECALLS
+
+		public size_t
+		ecall_ofproto_evict(uint8_t bridge_id,
+							int ofproto_n_tables,
+							size_t start_index,
+							[user_check] uint32_t *hashes,
+							[user_check] struct cls_rule ** cls_rules,
+							size_t buf_size,
+							[user_check] size_t *n_evictions);
+		public bool
+		ecall_need_to_evict(uint8_t bridge_id, uint8_t table_id);
+
+		public size_t ecall_get_cls_rules_and_enable_eviction(uint8_t bridge_id,
+									   uint8_t table_id,
+									   size_t start_index,
+									   size_t end_index,
+									   [user_check] struct cls_rule ** buf,
+									   size_t buf_size,
+									   [user_check] size_t *n_rules,
+									   [user_check] const struct mf_subfield *fields,
+									   size_t n_fields,
+									   uint32_t random_v,
+									   [user_check] bool *no_change,
+									   [user_check] bool *is_eviction_fields_enabled);
+	   public void
+	   ecall_eviction_group_add_rules(uint8_t bridge_id,
+										  		   uint8_t table_id,
+												   size_t n,
+												   [user_check] struct cls_rule **cls_rules,
+										  		   [user_check] struct heap_node *evg_nodes,
+										  		   [user_check] uint32_t *rule_priorities,
+										   		   uint32_t group_priority);
+
+    };
+};

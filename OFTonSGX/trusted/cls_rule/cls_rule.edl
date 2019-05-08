@@ -1,0 +1,47 @@
+enclave {
+	include "common.h"
+    trusted {
+
+		// Vanilla ECALLS
+
+        public void
+        ecall_cls_rule_init(uint8_t bridge_id, [user_check]struct cls_rule * o_cls_rule, [user_check] const struct match * match , unsigned int priority);
+        public int
+        ecall_cr_rule_overlaps(uint8_t bridge_id, uint8_t table_id,[user_check] struct cls_rule * o_cls_rule);
+        public void
+        ecall_cls_rule_destroy(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule);
+        public uint32_t
+        ecall_cls_rule_hash(uint8_t bridge_id, [user_check]const struct cls_rule * o_cls_rule, uint32_t basis);
+        public int
+        ecall_cls_rule_equal(uint8_t bridge_id, [user_check]const struct cls_rule *o_cls_rule_a,[user_check]const struct cls_rule *o_cls_rule_b);
+        public void
+        ecall_cls_remove(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule *o_cls_rule);
+        public unsigned int
+        ecall_cr_priority(uint8_t bridge_id, [user_check] const struct cls_rule *o_cls_rule);
+		public int
+		ecall_cls_rule_is_loose_match(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]const struct minimatch *criteria);
+		public unsigned int
+		ecall_cls_rule_format(uint8_t bridge_id, [user_check]const struct cls_rule *o_cls_rule,[user_check]struct match *megamatch);
+		public uint32_t
+		ecall_rule_calculate_tag(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]const struct flow *flow,uint8_t table_id);
+		public uint32_t
+		ecall_rule_calculate_tag_s(uint8_t bridge_id, int id, [user_check]const struct flow *flow);
+		public void
+		ecall_minimatch_expand(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]struct match *dst);
+		public void
+		ecall_miniflow_expand(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule,[user_check]struct flow *flow);
+		public uint16_t
+		ecall_minimask_get_vid_mask(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule);
+		public uint16_t
+		ecall_miniflow_get_vid(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule);
+
+		// Optimized ECALLS
+
+		public void
+		ecall_cls_rules_format(uint8_t bridge_id, [user_check] const struct cls_rule *cls_rules, [user_check] struct match *megamatches, size_t n);
+		public void
+		ecall_minimatch_expand_and_get_priority(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr, [user_check] struct match *match, [user_check] unsigned int *priority);
+		public uint32_t
+		ecall_miniflow_expand_and_tag(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr, [user_check] struct flow *flow, uint8_t table_id);
+    };
+};
