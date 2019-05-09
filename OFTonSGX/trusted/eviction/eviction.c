@@ -2,12 +2,15 @@
 #include "enclave.h"
 #include "eviction.h"
 #include "cls-rule.h"
+#include "enclave-batch-allocator.h"
 
 // Global data structures
 extern struct oftable * SGX_oftables[100];
 extern struct SGX_table_dpif * SGX_table_dpif[100];
 extern int SGX_n_tables[100];
 extern struct sgx_cls_table * SGX_hmap_table[100];
+
+extern struct batch_allocator evg_ba;
 
 // Vanilla ECALLS
 
@@ -299,7 +302,14 @@ sgx_evg_find(uint8_t bridge_id, uint8_t table_id, uint32_t evg_id, uint32_t prio
     HMAP_FOR_EACH_WITH_HASH(evg, id_node, evg_id, &SGX_oftables[bridge_id][table_id].eviction_groups_by_id){
         return evg;
     }
+    #ifdef BATCH_ALLOCATION
+    struct bblock *b;
+    b = batch_allocator_get_block(&evg_ba);
+    evg = (struct eviction_group *) b->ptr;
+    evg->block_list_node = &b->list_node;
+    #else
     evg = xmalloc(sizeof *evg);
+    #endif
     hmap_insert(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node, evg_id, NULL, 0);
     heap_insert_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size, &evg->size_node, priority);
     heap_init_ovs(&evg->rules);
@@ -350,7 +360,12 @@ sgx_evg_destroy(uint8_t bridge_id, uint8_t table_id, struct eviction_group * evg
     hmap_remove(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node);
     heap_remove_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size, &evg->size_node);
     heap_destroy_ovs(&evg->rules);
+
+    #ifdef BATCH_ALLOCATION
+    batch_allocator_free_block(&evg_ba, evg->block_list_node);
+    #else
     free(evg);
+    #endif
 }
 
 

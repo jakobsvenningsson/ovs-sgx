@@ -1,12 +1,14 @@
 #include "enclave_t.h"
 #include "enclave.h"
 #include "cls-rule.h"
+#include "enclave-batch-allocator.h"
 
 // Global data structures
 extern struct oftable * SGX_oftables[100];
 extern struct SGX_table_dpif * SGX_table_dpif[100];
 extern int SGX_n_tables[100];
 extern struct sgx_cls_table * SGX_hmap_table[100];
+extern struct batch_allocator cr_ba;
 
 // Vanilla ECALLS
 
@@ -34,7 +36,6 @@ ecall_cls_rule_destroy(uint8_t bridge_id, struct cls_rule * out){
 
     cls_rule_destroy(cls_rule);
     node_delete(bridge_id, sgx_cls_rule->o_cls_rule);
-    // free(sgx_cls_rule);
     sgx_cls_rule = NULL;
 }
 
@@ -175,8 +176,14 @@ sgx_cls_rule_init_i(uint8_t bridge_id, struct cls_rule * cls_rule, const struct 
 
 struct sgx_cls_rule *
 node_insert(uint8_t bridge_id, uint32_t hash){
-    struct sgx_cls_rule * new = xmalloc(sizeof(struct sgx_cls_rule));
-    memset(new, 0, sizeof(struct sgx_cls_rule));
+    struct sgx_cls_rule * new;
+    #ifdef BATCH_ALLOCATION
+    struct bblock *b = batch_allocator_get_block(&cr_ba);
+    new = (struct sgx_cls_rule *)  b->ptr;
+    new->block_list_node = &b->list_node;
+    #else
+    new = xmalloc(sizeof(struct sgx_cls_rule));
+    #endif
     new->hmap_node.hash = hash;
     hmap_insert(&SGX_hmap_table[bridge_id]->cls_rules, &new->hmap_node, new->hmap_node.hash, NULL, 0);
     return new;
@@ -188,7 +195,11 @@ node_delete(uint8_t bridge_id, struct cls_rule * out){
 
     rule = sgx_rule_from_ut_cr(bridge_id, out);
     hmap_remove(&SGX_hmap_table[bridge_id]->cls_rules, &rule->hmap_node);
-    //free(rule);
+    #ifdef BATCH_ALLOCATION
+    batch_allocator_free_block(&cr_ba, rule->block_list_node);
+    #else
+    free(rule);
+    #endif
 }
 
 struct sgx_cls_rule *

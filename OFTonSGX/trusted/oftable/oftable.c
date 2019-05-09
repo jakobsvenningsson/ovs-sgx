@@ -14,20 +14,6 @@ extern struct sgx_cls_table * SGX_hmap_table[100];
 // Vanilla ECALLS
 
 void
-ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
-    struct oftable * table;
-
-    SGX_n_tables[bridge_id] = n_tables;
-    SGX_oftables[bridge_id] = xmalloc(n_tables * sizeof(struct oftable));
-    OFPROTO_FOR_EACH_TABLE(table, SGX_oftables[bridge_id]){
-        oftable_init(table);
-    }
-    sgx_table_cls_init(bridge_id);
-    sgx_table_dpif_init(bridge_id, n_tables);
-}
-
-
-void
 ecall_oftable_set_name(uint8_t bridge_id, uint8_t table_id, char * name){
     if (name && name[bridge_id]) {
         int len = strnlen(name, OFP_MAX_TABLE_NAME_LEN);
@@ -538,7 +524,7 @@ sgx_table_cls_init(uint8_t bridge_id){
     hmap_init(&SGX_hmap_table[bridge_id]->cls_rules, NULL);
 }
 
-static void
+void
 oftable_init(struct oftable * table){
     memset(table, 0, sizeof *table);
     classifier_init(&table->cls);

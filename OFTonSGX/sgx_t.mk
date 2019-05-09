@@ -65,6 +65,7 @@ Enclave_C_Files := trusted/enclave.c \
 										 trusted/ofproto/ofproto.c \
 										 trusted/stats/stats.c \
 										 trusted/oftable/oftable.c \
+										 trusted/enclave-batch-allocator.c \
 										 trusted/lib/heap.c \
 
 

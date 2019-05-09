@@ -90,8 +90,7 @@ resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory, uint8_t
                 return;
             }
             tmp.buckets = (struct hmap_node **) page->bytes;
-
-            printf("Page is allocated %s of enclave\n", sgx_is_outside_enclave(tmp.buckets, page->size) ? "outside" : "inside");
+            //printf("Page is allocated %s of enclave\n", sgx_is_outside_enclave(tmp.buckets, page->size) ? "outside" : "inside");
         } else {
             tmp.buckets = xmalloc(sizeof *tmp.buckets * (new_mask + 1));
         }

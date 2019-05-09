@@ -26,9 +26,13 @@ enclave {
 		include "call-table.h"
 		include "hotcall-trusted.h"
 
-		public int ecall_start_poller([user_check] struct shared_memory_ctx *sm_ctx);
+		public int
+		ecall_start_poller([user_check] struct shared_memory_ctx *sm_ctx);
 
+		public void
+		ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables);
 
-		public size_t ecall_async_test([user_check] int *x, size_t len);
+		public size_t
+		ecall_async_test([user_check] int *x, size_t len);
 	};
 };

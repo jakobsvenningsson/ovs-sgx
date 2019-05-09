@@ -5,8 +5,6 @@ enclave {
 		// Vanilla ECALLS
 
         public void
-        ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables);
-        public void
         ecall_oftable_set_readonly(uint8_t bridge_id, uint8_t table_id);
         public int
         ecall_oftable_is_readonly(uint8_t bridge_id, uint8_t table_id);

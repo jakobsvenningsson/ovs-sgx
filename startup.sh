@@ -23,7 +23,7 @@ ovsdb-server --remote=punix:/usr/local/var/run/openvswitch/db.sock \
 echo $?
 ovs-vsctl --no-wait init
 echo "Starting ovs-vswitch"
-ovs-vswitchd --pidfile 5>out #--log-file=$HOME/ovs-log
+ovs-vswitchd --pidfile 5>out_batch #--log-file=$HOME/ovs-log
 #ovs-vsctl add-br br0
 #ovs-vsctl set-controller br0 ssl:127.0.0.1:6633
 #touch text.txt

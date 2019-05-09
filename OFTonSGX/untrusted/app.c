@@ -26,9 +26,9 @@ static uint8_t bridge_counter = 0;
 static struct shared_memory_ctx sm_ctx;
 struct preallocated_function_calls pfc;
 
+
 struct function_call *fc_;
 #define HCALL(f, async, ret, n_args, args) \
-    printf("Calling f %s\n", #f); \
     fc_ = get_fcall(hotcall_ ## f, ret, n_args, args); \
     list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node); \
     if(!async) { \
@@ -87,14 +87,13 @@ sgx_ofproto_init_tables(int n_tables){
         enclave_is_initialized = true;
 
         #ifdef HOTCALL
-        printf("HOTCALLS ENABLED STARTING THREAD.\n");
-
+        printf("HOTCALLS ENABLED.\n");
         flow_map_cache_init(&sm_ctx.flow_cache);
-
         hotcall_init();
+        #endif
 
-        #else
-        puts("NO HOTCALLS.");
+        #ifdef BATCH_ALLOCATION
+        printf("BATCH ALLOCATIONS ENABLED.\n");
         #endif
 
         #ifdef TIMEOUT
@@ -147,10 +146,9 @@ SGX_cls_rule_init(uint8_t bridge_id, struct cls_rule * o_cls_rule,
     args[1] = o_cls_rule;
     args[2] = (struct match *) match;
     args[3] = async ? next_unsigned(priority) : &priority;
+    //BEGIN
     HCALL(ecall_cls_rule_init, async, NULL, 4, args);
-    /*printf("SGX_cls_rule_init\n");
-    BEGIN
-    fc_ = get_fcall(hotcall_ecall_cls_rule_init, NULL, 4, args);
+    /*fc_ = get_fcall(hotcall_ecall_cls_rule_init, NULL, 4, args);
     list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node);
     CLOSE
     SHOWTIME5
@@ -158,9 +156,9 @@ SGX_cls_rule_init(uint8_t bridge_id, struct cls_rule * o_cls_rule,
     BEGIN
     if(!async) {
         make_hotcall(&sm_ctx.hcall);
-    }
-    CLOSE
-    SHOWTIME5*/
+    }*/
+    //CLOSE
+    //SHOWTIME5
     #else
     ECALL(ecall_cls_rule_init, bridge_id, o_cls_rule, match, priority);
     #endif

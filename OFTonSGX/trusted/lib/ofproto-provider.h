@@ -18,6 +18,7 @@ struct eviction_group {
     struct hmap_node id_node;   /* In oftable's "eviction_groups_by_id". */
     struct heap_node size_node; /* In oftable's "eviction_groups_by_size". */
     struct heap rules;          /* Contains "struct rule"s. */
+    struct list *block_list_node;
 };
 
 /* Number of implemented OpenFlow tables. */
@@ -105,6 +106,7 @@ struct sgx_cls_rule {
 	bool evictable;              /* If false, prevents eviction. */
 	//struct sgx_cls_rule *node;
 	struct hmap_node hmap_node;
+    struct list *block_list_node;
 };
 
 /*Struct SGX_table_dpif: is a struct to store in trusted memory

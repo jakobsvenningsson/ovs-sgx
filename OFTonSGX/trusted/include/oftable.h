@@ -3,7 +3,7 @@
 
 void
 sgx_table_dpif_init(uint8_t bridge_id, int n_tables);
-static void
+void
 oftable_init(struct oftable * table);
 void
 sgx_table_cls_init(uint8_t bridge_id);
