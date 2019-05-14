@@ -15,7 +15,7 @@ struct batch_allocator {
     unsigned int n_blocks;
     unsigned int n_allocated;
 
-    uint8_t *bytes[100];
+    uint8_t *bytes[200];
     //uint8_t *free_list[100];
 
     //struct hmap allocated_blocks;

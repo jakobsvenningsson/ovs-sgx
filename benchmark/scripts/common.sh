@@ -86,7 +86,7 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 function get_targets() {
   local TARGETS=()
   if [ "$1" = "ALL_FLOW" ]; then
-    TARGETS=("BASELINE" "SGX" "OPTIMIZED" "HOTCALL" "HOTCALL+OPTIMIZED")
+    TARGETS=("BASELINE" "SGX" "BATCHING" "OPTIMIZED" "HOTCALL" "HOTCALL+OPTIMIZED")
   elif [ "$1" = "ALL_TLS" ]; then
     TARGETS=("BASELINE" "SGX" "HOTCALL")
   else
@@ -106,6 +106,9 @@ function get_compile_flags() {
       ;;
     OPTIMIZED)
       FLAGS="-D SGX -D OPTIMIZED"
+      ;;
+    BATCHING)
+      FLAGS="-D SGX -D BATCHING -D HOTCALL"
       ;;
     HOTCALL)
       FLAGS="-D SGX -D HOTCALL"

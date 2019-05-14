@@ -14,6 +14,7 @@ struct flow_wildcards;
 
 
 void SGX_async_test();
+void SGX_batch_flush();
 
 
 // Optimized calls

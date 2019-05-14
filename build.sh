@@ -24,7 +24,7 @@ cd ovs
 
 
 make clean
-make
+make -j4
 echo "Compilation successfull."
 
 make install

@@ -4,7 +4,7 @@
 #include "util.h"
 #include "list.h"
 
-#define BATCH_SIZE 32
+#define BATCH_SIZE 512
 
 void
 batch_allocator_add_block(struct batch_allocator * ba) {
@@ -13,11 +13,14 @@ batch_allocator_add_block(struct batch_allocator * ba) {
     //memset(ba->free_list[ba->n_blocks], 1, ba->block_sz);
 
     ba->bytes[ba->n_blocks] = malloc(ba->block_sz * BATCH_SIZE + sizeof(struct bblock) * BATCH_SIZE);
+    if(ba->bytes[ba->n_blocks] == NULL) {
+        printf("Failed to malloc\n");
+    }
 
     struct bblock *b;
     for(size_t i = 0; i < BATCH_SIZE; ++i) {
-        b = (struct bblock *) ba->bytes[ba->n_blocks] + ba->block_sz * BATCH_SIZE + i * sizeof(struct bblock);
-        b->ptr = ba->bytes[ba->n_blocks] + i * ba->block_sz;
+        b = (struct bblock *) ((char *) ba->bytes[ba->n_blocks] + (ba->block_sz * BATCH_SIZE + i * sizeof(struct bblock)));
+        b->ptr = ((char *) ba->bytes[ba->n_blocks] + i * ba->block_sz);
         list_insert(&ba->free_list, &b->list_node);
     }
 

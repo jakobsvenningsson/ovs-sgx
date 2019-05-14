@@ -29,13 +29,16 @@ struct preallocated_function_calls pfc;
 
 struct function_call *fc_;
 #define HCALL(f, async, ret, n_args, args) \
+    printf("Executing func %s\n", #f);\
     fc_ = get_fcall(hotcall_ ## f, ret, n_args, args); \
     list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node); \
     if(!async) { \
         make_hotcall(&sm_ctx.hcall); \
     }
+#define ECALL(f, args ...) \
+    f(global_eid, ## args)
 
-#ifdef HOTCALL
+/*#ifdef HOTCALL123
 #define ECALL(f, fmt, async, has_return, args ...) \
     prepare_hotcall_function(&sm_ctx.hcall, hotcall_ ## f, fmt, async, has_return, get_n_args(fmt), args); \
     if(!async) { \
@@ -45,7 +48,7 @@ struct function_call *fc_;
 #define ECALL(f, args ...) \
     f(global_eid, ## args)
 #endif
-
+*/
 #ifdef BATCHING
 #define ASYNC(X) X
 #else
@@ -75,6 +78,11 @@ void hotcall_init() {
     pthread_create(&thread_id, NULL, start_enclave_thread, NULL);
 }
 
+
+void SGX_batch_flush() {
+    make_hotcall(&sm_ctx.hcall);
+}
+
 // 1. Creation and Initialization of tables
 int
 sgx_ofproto_init_tables(int n_tables){
@@ -96,12 +104,20 @@ sgx_ofproto_init_tables(int n_tables){
         printf("BATCH ALLOCATIONS ENABLED.\n");
         #endif
 
+        #ifdef BATCHING
+        printf("BATCH ECALL ENABLED.\n");
+        #endif
+
         #ifdef TIMEOUT
         puts("TIMEOUT ENABLED\n");
         #endif
+
+
+
     }
     uint8_t this_bridge_id = bridge_counter++;
     ecall_ofproto_init_tables(global_eid, this_bridge_id, n_tables);
+
     return this_bridge_id;
 }
 

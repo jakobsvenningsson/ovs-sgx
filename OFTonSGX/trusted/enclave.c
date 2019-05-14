@@ -19,8 +19,8 @@ struct oftable * SGX_oftables[100];
 struct SGX_table_dpif * SGX_table_dpif[100];
 int SGX_n_tables[100];
 struct sgx_cls_table * SGX_hmap_table[100];
-struct batch_allocator cr_ba;
-struct batch_allocator evg_ba;
+const struct batch_allocator cr_ba;
+const struct batch_allocator evg_ba;
 
 
 void

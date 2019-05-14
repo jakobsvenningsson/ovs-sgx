@@ -10,7 +10,7 @@ extern struct SGX_table_dpif * SGX_table_dpif[100];
 extern int SGX_n_tables[100];
 extern struct sgx_cls_table * SGX_hmap_table[100];
 
-extern struct batch_allocator evg_ba;
+extern const struct batch_allocator evg_ba;
 
 // Vanilla ECALLS
 
