@@ -37,6 +37,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
             sm_ctx->hcall.run = false;
             struct function_call *fcall, *next;
             LIST_FOR_EACH_SAFE(fcall, next, list_node, &sm_ctx->hcall.ecall_queue) {
+                //printf("Executing function: %d.\n", fcall->id);
                 execute_function(fcall, &sm_ctx->flow_cache);
                 list_remove(&fcall->list_node);
             }

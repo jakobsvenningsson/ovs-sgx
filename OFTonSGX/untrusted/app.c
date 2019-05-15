@@ -29,7 +29,6 @@ struct preallocated_function_calls pfc;
 
 struct function_call *fc_;
 #define HCALL(f, async, ret, n_args, args) \
-    printf("Executing function: %s.\n", #f);\
     fc_ = get_fcall(hotcall_ ## f, ret, n_args, args); \
     list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node); \
     if(!async) { \
@@ -1181,8 +1180,12 @@ SGX_ofproto_evict(uint8_t bridge_id,
     #endif
     return n;
 }
-
+static int ii = 0;
 void
+#ifdef ARG_OPT
+SGX_add_flow(void **args_)
+#else
+
 SGX_add_flow(uint8_t bridge_id,
 			 uint8_t table_id,
 			 struct cls_rule *cr,
@@ -1200,10 +1203,27 @@ SGX_add_flow(uint8_t bridge_id,
              bool has_timeout,
              uint16_t *state,
              int *table_update_taggable)
+#endif
  {
+
      #ifdef HOTCALL
      bool async = ASYNC(false);
      void **args = pfc.args[pfc.idx];
+
+    /*if(ii > 2) {
+         *(uint8_t *) args_[15] |= (1 << 4);
+         //*state |= (1 << 4);
+         //int ret;
+         //args[0] = args_[0];
+         //args[1] = args_[1];
+         //HCALL(ecall_oftable_mflows, async, &ret, 2, args);
+         return;
+     }
+     ii++;*/
+
+     #ifdef ARG_OPT
+     memcpy(args, args_, 8 * 17);
+     #else
      args[0] = &bridge_id;
      args[1] = &table_id;
      args[2] = cr;
@@ -1221,6 +1241,24 @@ SGX_add_flow(uint8_t bridge_id,
      args[14] = &has_timeout;
      args[15] = state;
      args[16] = table_update_taggable;
+     #endif
+     /*args[0] = args_[0];
+     args[1] = args_[1];
+     args[2] = args_[2];
+     args[3] = args_[3];
+     args[4] = args_[4];
+     args[5] = args_[5];
+     args[6] = args_[6];
+     args[7] = args_[7];
+     args[8] = args_[8];
+     args[9] = args_[9];
+     args[10] = args_[10];
+     args[11] = args_[11];
+     args[12] = args_[12];
+     args[13] = args_[13];
+     args[14] = args_[14];
+     args[15] = args_[15];
+     args[16] = args_[16];*/
      HCALL(ecall_add_flow, async, NULL, 17, args);
      #else
      ECALL(
@@ -1630,6 +1668,21 @@ SGX_is_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
 }
 
 void
+SGX_backup_and_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, uint8_t new_value) {
+    #ifdef HOTCALL
+    bool async = ASYNC(true);
+    void **args = pfc.args[pfc.idx];
+    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
+    args[1] = async ? next_voidptr(ut_cr) : ut_cr;
+    args[2] = async ? next_uint8(new_value) : &new_value;
+    HCALL(ecall_backup_and_set_evictable, async, NULL, 3, args);
+    #else
+    ECALL(ecall_backup_and_set_evictable, bridge_id, ut_cr, new_value);
+    #endif
+
+}
+
+void
 SGX_backup_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
     #ifdef HOTCALL
     bool async = ASYNC(true);
@@ -1644,6 +1697,18 @@ SGX_backup_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
 
 void
 SGX_restore_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
+
+    #ifdef BATCHING
+    // Check if backup action is still in ecall queue, if it is then we can simply discard both the backup ecall and this ecall.
+    struct function_call *fcall;
+    LIST_FOR_EACH (fcall, list_node, &sm_ctx.hcall.ecall_queue) {
+        if(fcall->id == hotcall_ecall_backup_and_set_evictable) {
+            list_remove(&fcall->list_node);
+            return;
+        }
+    }
+    #endif
+
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];

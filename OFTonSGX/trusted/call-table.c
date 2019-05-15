@@ -15,6 +15,13 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
 
 
     switch (fc->id) {
+        case hotcall_ecall_backup_and_set_evictable:
+            ecall_backup_and_set_evictable(
+                *(uint8_t *) args->args[0],
+                args->args[1],
+                *(bool *) args->args[2]
+            );
+            break;
         case hotcall_ecall_restore_evictable:
             ecall_restore_evictable(
                 *(uint8_t *) args->args[0],

@@ -9,6 +9,5 @@ void ocall_print(const char *str) {
 
 void
 ocall_allocate_page(size_t sz, shared_memory *shared_memory, size_t *page_idx) {
-    printf("OCALL ALLOCATE PAGE\n");
     *page_idx = shared_memory_allocate_page(shared_memory, sz);
 }

@@ -346,6 +346,8 @@ ecall_oftable_remove_rules(uint8_t bridge_id, uint8_t *table_ids, struct cls_rul
     }
 }
 
+
+static int ii = 0;
 void
 ecall_add_flow(uint8_t bridge_id,
 			 uint8_t table_id,
@@ -365,7 +367,11 @@ ecall_add_flow(uint8_t bridge_id,
              uint16_t *state,
              int *table_update_taggable)
  {
-
+    /*if(ii > 2) {
+        *state |= (1 << 4);
+        return;
+    }
+    ii++;*/
 
 
      if (ecall_oftable_is_readonly(bridge_id, table_id)){

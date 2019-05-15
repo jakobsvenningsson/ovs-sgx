@@ -6979,8 +6979,9 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
         /* Don't let the rule we're working on get evicted underneath us. */
         //FIX EVG
         #ifdef SGX
-        SGX_backup_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr);
-        SGX_set_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr, false);
+        //SGX_backup_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr);
+        //SGX_set_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr, false);
+        SGX_backup_and_set_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr, false);
         #else
         was_evictable = ctx->rule->up.evictable;
         ctx->rule->up.evictable = false;
@@ -7233,11 +7234,8 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
                 }
                 ctx->rule = rule;
                 //FIX_EVG
-                //was_evictable = rule->up.evictable;
-                //rule->up.evictable = false;
                 #ifdef SGX
-                SGX_backup_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr);
-                SGX_set_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr, false);
+                SGX_backup_and_set_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr, false);
                 #else
                 was_evictable = rule->up.evictable;
                 rule->up.evictable = false;

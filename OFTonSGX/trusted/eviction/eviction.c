@@ -202,6 +202,12 @@ ecall_is_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
 }
 
 void
+ecall_backup_and_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, bool new_value) {
+    ecall_backup_evictable(bridge_id, ut_cr);
+    ecall_set_evictable(bridge_id, ut_cr, new_value);
+}
+
+void
 ecall_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t eviction_rule_priority) {
     struct sgx_cls_rule *sgx_cr;
     sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);

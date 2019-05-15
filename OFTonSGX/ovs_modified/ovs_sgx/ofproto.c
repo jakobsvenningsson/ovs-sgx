@@ -3640,7 +3640,7 @@ static enum ofperr
 add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
          const struct ofputil_flow_mod *fm, const struct ofp_header *request)
 {
-    printf("ADD FLOW BEG\n");
+    //printf("ADD FLOW BEG\n");
 
     #ifdef BATCHING_FLUSH
     SGX_batch_flush();
@@ -3648,10 +3648,10 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
 
     #ifdef BENCHMARK_FLUSH
 
-    unsigned long sz = 1024 * 32;
+    unsigned long sz = 1024 * (32 + 256);
     unsigned long *dummy = malloc(sz * sizeof(unsigned long));
     for(size_t i = 0; i < sz; ++i) {
-        dummy[i] = rand();//i + (sz - i);
+        dummy[i] = rand();
     }
     free(dummy);
 
@@ -3802,24 +3802,21 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     rule->add_seqno = 0;
     rule->modify_seqno = 0;
 
-    int n_pending = hmap_count(&ofproto->deletions);
+    int n_pending = 0;
     struct cls_rule *pending_deletions[n_pending];
+    /*int n_pending = hmap_count(&ofproto->deletions);
     if(n_pending > 0) {
         int i = 0;
         struct ofoperation *op;
         HMAP_FOR_EACH (op, hmap_node, &ofproto->deletions) {
             pending_deletions[i++] =  &op->rule->cr;
         }
-    }
+    }*/
+
     struct cls_rule *cls_rule_victim = NULL;
     struct cls_rule *cls_rule_evict = NULL;
 
-    bool is_read_only = false,
-         is_rule_overlapping = false,
-         is_deletion_pending = false,
-         is_rule_modifiable = false,
-         table_overflow = false,
-         is_hidden = false,
+    bool is_hidden = false,
          is_other_table = false;
 
     uint32_t evict_rule_hash;
@@ -3827,7 +3824,39 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     int table_update_taggable;
 
     uint16_t state = 0;
+    CLOSE
+    ts[0] = GET_TIME
 
+
+    uint32_t rule_pr = rule_eviction_priority(rule);
+    bool has_timeout = (rule->idle_timeout || rule->hard_timeout);
+
+
+
+    BEGIN
+
+    #ifdef ARG_OPT
+    void *args[17];
+    args[0] = &ofproto->bridge_id;
+    args[1] = &table_id;
+    args[2] = &rule->cr;
+    args[3] = &cls_rule_victim;
+    args[4] = &cls_rule_evict;
+    args[5] = &fm->match;
+    args[6] = &evict_rule_hash;
+    args[7] = &rule->tmp_storage_vid;
+    args[8] = &rule->tmp_storage_vid_mask;
+    args[9] = &fm->priority;
+    args[10] = &fm->flags;
+    args[11] = &rule_pr;
+    args[12] = pending_deletions;
+    args[13] = &n_pending;
+    args[14] = &has_timeout;
+    args[15] = &state;
+    args[16] = &table_update_taggable;
+
+    SGX_add_flow(args);
+    #else
     SGX_add_flow(ofproto->bridge_id,
                  table_id,
                  &rule->cr,
@@ -3845,26 +3874,32 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
                  (rule->idle_timeout || rule->hard_timeout),
                  &state,
                  &table_update_taggable);
+    #endif
+    CLOSE
+    ts[1] = GET_TIME
 
-    table_overflow = state & 1;
-    is_rule_modifiable = (state & 2) == 0;
-    is_deletion_pending = state & 4;
-    is_rule_overlapping = state & 8;
-    is_read_only = state & 16;
+    BEGIN
+
     is_hidden = state & 32;
     is_other_table = state & 64;
 
-    if(is_read_only) {
+    // read only
+    if(state & 16) {
+        char bb[128];
+        sprintf(bb, "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n", ts[0], ts[1], ts[2], ts[3], ts[4], ts[5], ts[6], ts[7], ts[8]);
+        write(5, bb, strlen(bb));
         ofproto->ofproto_class->rule_dealloc(rule);
         return OFPERR_OFPBRC_EPERM;
     }
 
-    if(is_deletion_pending) {
+    // deletion pending
+    if(state & 4) {
         ofproto->ofproto_class->rule_dealloc(rule);
         return OFPROTO_POSTPONE;
     }
 
-    if(is_rule_overlapping) {
+    // rule overlapping
+    if(state & 8) {
         ofproto->ofproto_class->rule_dealloc(rule);
         return OFPERR_OFPFMFC_OVERLAP;
     }
@@ -3889,15 +3924,16 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
             list_remove(&victim->expirable);
         }
     }
-
-    if(!is_rule_modifiable) {
+    // rule_is_modifiable
+    if(!((state & 2) == 0)) {
         error = OFPERR_OFPBRC_EPERM;
     } else if (victim && victim->pending) {
         error = OFPROTO_POSTPONE;
     } else {
         struct ofoperation *op;
         struct rule *evict;
-        if(table_overflow) {
+        // table_overflow
+        if(state & 1) {
             evict = rule_from_cls_rule(cls_rule_evict);
             if (!evict) {
                 error = OFPERR_OFPFMFC_TABLE_FULL;
@@ -3910,7 +3946,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
             evict = NULL;
         }
     CLOSE
-    ts[0] = GET_TIME
+    ts[2] = GET_TIME
 #else
     BEGIN
     if (SGX_istable_readonly(ofproto->bridge_id, table_id)){
@@ -4055,7 +4091,7 @@ exit:
         ofproto_rule_destroy__(rule);
     }
 
-    printf("ADD FLOW END\n");
+    //printf("ADD FLOW END\n");
     return error;
 }
 

@@ -97,6 +97,8 @@
 #define hotcall_ecall_restore_evictable 80
 #define hotcall_ecall_backup_evictable 81
 #define hotcall_ecall_rule_update_used 82
+#define hotcall_ecall_backup_and_set_evictable 83
+
 
 /* API untrusted functions to trusted inside the enclave */
 struct match;
@@ -107,10 +109,6 @@ struct mf_subfield;
 struct minimatch;
 struct flow;
 struct flow_wildcards;
-
-
-
-
 
 /* A hash map. */
 struct hmap {

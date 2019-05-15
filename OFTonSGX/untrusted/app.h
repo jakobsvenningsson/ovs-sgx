@@ -28,6 +28,8 @@ SGX_backup_evictable(uint8_t bridge_id, struct cls_rule *ut_cr);
 void
 SGX_restore_evictable(uint8_t bridge_id, struct cls_rule *ut_cr);
 
+void
+SGX_backup_and_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, uint8_t new_value);
 
 void
 SGX_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t eviction_rule_priority);
@@ -89,6 +91,9 @@ SGX_ofproto_evict(uint8_t bridge_id,
                 size_t *n_evictions);
 
 void
+#ifdef ARG_OPT
+SGX_add_flow(void **args_);
+#else
 SGX_add_flow(uint8_t bridge_id,
 			 uint8_t table_id,
 			 struct cls_rule *cr,
@@ -106,6 +111,7 @@ SGX_add_flow(uint8_t bridge_id,
 			 bool has_timeout,
 			 uint16_t *state,
 			 int *table_update_taggable);
+#endif
 
 /*
 bool *table_overflow,
