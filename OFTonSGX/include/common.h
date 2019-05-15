@@ -6,8 +6,10 @@
 #include <stdarg.h>
 #include <sgx_thread.h>
 
-
+#define hotcall_ecall_test 101
 #define hotcall_ecall_async_test 100
+
+
 
 #define hotcall_ecall_myenclave_sample 0
 #define hotcall_ecall_ofproto_init_tables 1
@@ -90,6 +92,12 @@
 #define hotcall_ecall_minimatch_expand_and_get_priority 76
 #define hotcall_ecall_miniflow_expand_and_tag 77
 
+#define hotcall_ecall_set_evictable 78
+#define hotcall_ecall_is_evictable 79
+#define hotcall_ecall_restore_evictable 80
+#define hotcall_ecall_backup_evictable 81
+#define hotcall_ecall_rule_update_used 82
+
 /* API untrusted functions to trusted inside the enclave */
 struct match;
 struct cls_rule;
@@ -123,9 +131,11 @@ struct list {
     struct list *next;     /* Next list element. */
 };
 
+
+#define HOTCALL_MAX_ARG 25
 typedef struct {
     int n_args;
-    void *args[22];
+    void *args[HOTCALL_MAX_ARG];
 } argument_list;
 
 

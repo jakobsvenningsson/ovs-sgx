@@ -1,6 +1,7 @@
 #include "hotcall-trusted.h"
 #include "enclave-utils.h"
 #include "cache-trusted.h"
+#include <sgx_thread.h>
 
 #define INIT_CACHE_VALIDATION_VALUE 99999999;
 
@@ -11,7 +12,7 @@ static unsigned int timeout_counter = INIT_TIMER_VALUE;
 
 int
 ecall_start_poller(struct shared_memory_ctx *sm_ctx){
-    // sgx_thread_mutex_init(&ctx->mutex, NULL);
+    //sgx_thread_mutex_init(&sm_ctx->hcall.mutex, NULL);
     char buf[128];
 
     unsigned int cache_validation_timeout = INIT_CACHE_VALIDATION_VALUE;
@@ -26,7 +27,6 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                 //printf("FLOW CACHE IS VALID!\n");
             }
         }*/
-
         sgx_spin_lock(&sm_ctx->hcall.spinlock);
 
         if (sm_ctx->hcall.run) {
@@ -54,6 +54,8 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
               "pause"
             );
         }
+
+        //printf("%d\n", timeout_counter);
 
         #ifdef TIMEOUT
         timeout_counter--;

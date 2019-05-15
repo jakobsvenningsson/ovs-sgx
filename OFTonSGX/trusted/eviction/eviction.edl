@@ -7,7 +7,7 @@ enclave {
         public
         int ecall_is_eviction_fields_enabled(uint8_t bridge_id, uint8_t table_id);
 		public
-		void ecall_evg_add_rule(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule *o_cls_rule,uint32_t priority,uint32_t rule_evict_prioriy, struct heap_node rule_evg_node);
+		void ecall_evg_add_rule(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule *o_cls_rule, [user_check]uint32_t *priority,uint32_t rule_evict_prioriy);
 		public
 		void ecall_evg_remove_rule(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule *o_cls_rule);
 		public
@@ -22,6 +22,19 @@ enclave {
 		ecall_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id);
 		public size_t
 		ecall_oftable_enable_eviction_r(uint8_t bridge_id, [user_check]struct cls_rule **buf,int elem,uint8_t table_id);
+
+
+		public void
+		ecall_set_evictable(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr, bool new_value);
+		public bool
+		ecall_is_evictable(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr);
+		public void
+		ecall_backup_evictable(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr);
+		public void
+		ecall_restore_evictable(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr);
+
+		public void
+		ecall_rule_update_used(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr, uint32_t eviction_rule_priority);
 
 		// Optimized ECALLS
 
@@ -53,9 +66,7 @@ enclave {
 										  		   uint8_t table_id,
 												   size_t n,
 												   [user_check] struct cls_rule **cls_rules,
-										  		   [user_check] struct heap_node *evg_nodes,
-										  		   [user_check] uint32_t *rule_priorities,
-										   		   uint32_t group_priority);
+										  		   [user_check] uint32_t *rule_priorities);
 
     };
 };

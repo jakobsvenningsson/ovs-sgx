@@ -11,6 +11,7 @@ void
 choose_rule_to_evict(uint8_t bridge_id, uint8_t table_id, struct sgx_cls_rule ** o_cls_rule, struct sgx_cls_rule **exclude_rules, size_t n_excluded);
 void
 sgx_evg_group_resize(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule, size_t priority, struct eviction_group * evg);
-
+uint32_t
+eviction_group_priority(size_t n_rules);
 
 #endif

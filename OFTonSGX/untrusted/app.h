@@ -16,6 +16,21 @@ struct flow_wildcards;
 void SGX_async_test();
 void SGX_batch_flush();
 
+void
+SGX_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, uint8_t new_value);
+
+bool
+SGX_is_evictable(uint8_t bridge_id, struct cls_rule *ut_cr);
+
+void
+SGX_backup_evictable(uint8_t bridge_id, struct cls_rule *ut_cr);
+
+void
+SGX_restore_evictable(uint8_t bridge_id, struct cls_rule *ut_cr);
+
+
+void
+SGX_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t eviction_rule_priority);
 
 // Optimized calls
 
@@ -45,9 +60,7 @@ void SGX_eviction_group_add_rules(uint8_t bridge_id,
 								  uint8_t table_id,
 								  size_t n,
 								  struct cls_rule **cls_rules,
-								  struct heap_node *evg_nodes,
-								  uint32_t *rule_priorities,
-								  uint32_t group_priority);
+								  uint32_t *rule_priorities);
 
 size_t
 SGX_ofproto_get_vlan_usage(uint8_t bridge_id,
@@ -87,17 +100,21 @@ SGX_add_flow(uint8_t bridge_id,
 			 uint16_t *vid_mask,
 			 unsigned int priority,
 			 uint16_t flags,
-			 uint32_t group_eviction_priority,
 			 uint32_t rule_eviction_priority,
-			 struct heap_node eviction_node,
 			 struct cls_rule **pending_deletions,
 			 int n_pending,
 			 bool has_timeout,
-			 bool *table_overflow,
-			 bool *is_rule_modifiable,
-			 bool *is_rule_overlapping,
-			 bool *is_deletion_pending,
-			 bool *is_read_only);
+			 uint16_t *state,
+			 int *table_update_taggable);
+
+/*
+bool *table_overflow,
+bool *is_rule_modifiable,
+bool *is_rule_overlapping,
+bool *is_deletion_pending,
+bool *is_read_only, bool *is_hidden, bool *is_other_table,
+
+*/
 
  size_t
  SGX_collect_rules_strict(uint8_t bridge_id,
@@ -199,7 +216,7 @@ int SGX_cls_count(uint8_t bridge_id, uint8_t table_id);
 int SGX_eviction_fields_enable(uint8_t bridge_id, uint8_t table_id);
 void SGX_table_mflows_set(uint8_t bridge_id, uint8_t table_id,unsigned int value);
 void SGX_evg_add_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule *o_cls_rule,uint32_t priority,
-		uint32_t rule_evict_prioriy,struct heap_node rule_evg_node);
+		uint32_t rule_evict_prioriy);
 void SGX_evg_group_resize(uint8_t bridge_id, uint8_t table_id,struct cls_rule *o_cls_rule,size_t priority, struct eviction_group *evg);
 void SGX_evg_remove_rule(uint8_t bridge_id, uint8_t table_id,struct cls_rule *o_cls_rule);
 void SGX_cls_remove(uint8_t bridge_id, uint8_t table_id,struct cls_rule *o_cls_rule);

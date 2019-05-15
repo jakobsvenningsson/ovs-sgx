@@ -15,8 +15,37 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
 
 
     switch (fc->id) {
-        case hotcall_ecall_async_test:
-            *(size_t *) fc->return_value = ecall_async_test((int *) args->args[0], *(size_t *) args->args[1]);
+        case hotcall_ecall_restore_evictable:
+            ecall_restore_evictable(
+                *(uint8_t *) args->args[0],
+                args->args[1]
+            );
+            break;
+        case hotcall_ecall_backup_evictable:
+            ecall_backup_evictable(
+                *(uint8_t *) args->args[0],
+                args->args[1]
+            );
+            break;
+        case hotcall_ecall_set_evictable:
+            ecall_set_evictable(
+                *(uint8_t *) args->args[0],
+                args->args[1],
+                *(bool *) args->args[2]
+            );
+            break;
+        case hotcall_ecall_is_evictable:
+            *(bool *) fc->return_value = ecall_is_evictable(
+                *(uint8_t *) args->args[0],
+                args->args[1]
+            );
+            break;
+        case hotcall_ecall_rule_update_used:
+            ecall_rule_update_used(
+                *(uint8_t *) args->args[0],
+                args->args[1],
+                *(uint32_t *) args->args[2]
+            );
             break;
         case hotcall_ecall_oftable_is_readonly:
             *(int *) fc->return_value = ecall_oftable_is_readonly(
@@ -257,9 +286,8 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(uint8_t *) args->args[0],
                 *(uint8_t *) args->args[1],
                 (struct cls_rule *) args->args[2],
-                *(uint32_t *) args->args[3],
-                *(uint32_t *) args->args[4],
-                *(struct heap_node *) args->args[5]
+                (uint32_t *) args->args[3],
+                *(uint32_t *) args->args[4]
             );
             break;
         case hotcall_ecall_oftable_enable_eviction:
@@ -459,9 +487,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(int *) args->args[1],
                 *(size_t *) args->args[2],
                 (struct cls_rule **) args->args[3],
-                (struct heap_node *) args->args[4],
-                (uint32_t *) args->args[5],
-                *(uint32_t *) args->args[6]
+                (uint32_t *) args->args[4]
             );
             break;
         case hotcall_ecall_ofproto_get_vlan_usage:
@@ -511,16 +537,11 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(unsigned int *) args->args[9],
                 *(uint16_t *) args->args[10],
                 *(uint32_t *) args->args[11],
-                *(uint32_t *) args->args[12],
-                *(struct heap_node *) args->args[13],
-                (struct cls_rule **) args->args[14],
-                *(int *) args->args[15],
-                *(bool *) args->args[16],
-                (bool *) args->args[17],
-                (bool *) args->args[18],
-                (bool *) args->args[19],
-                (bool *) args->args[20],
-                (bool *) args->args[21]
+                (struct cls_rule **) args->args[12],
+                *(int *) args->args[13],
+                *(bool *) args->args[14],
+                (uint16_t *) args->args[15],
+                (int *) args->args[16]
             );
             break;
         case hotcall_ecall_collect_rules_loose:

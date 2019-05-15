@@ -10,29 +10,33 @@
 //void compile_arg_list(void **return_val, argument_list *arg_list, bool has_return, int n_args, ...);
 //void make_hotcall(async_ecall * ctx, int function, argument_list * args, void * ret);
 
+#define MAX_FCS 100
+#define MAX_TS 100
+
+
 struct preallocated_function_calls {
-    struct function_call fcs[20];
-    void *args[20][22];
+    struct function_call fcs[MAX_FCS];
+    void *args[MAX_FCS][HOTCALL_MAX_ARG];
     size_t idx;
     size_t len;
 
     size_t idx_uint8;
-    uint8_t uint8_ts[20];
+    uint8_t uint8_ts[MAX_TS];
 
     size_t idx_sizet;
-    size_t size_ts[20];
+    size_t size_ts[MAX_TS];
 
     size_t idx_unsigned;
-    unsigned int unsigned_ts[20];
+    unsigned int unsigned_ts[MAX_TS];
 
     size_t idx_void;
-    void *void_ts[20];
+    void *void_ts[MAX_TS];
 
     size_t idx_uint32;
-    uint32_t uint32_ts[20];
+    uint32_t uint32_ts[MAX_TS];
 
     size_t idx_heap_node;
-    struct heap_node heap_node_ts[20];
+    struct heap_node heap_node_ts[MAX_TS];
 };
 
 extern struct preallocated_function_calls pfc;
@@ -51,7 +55,7 @@ get_n_args(char *fmt) {
 inline
 struct function_call * get_fcall(uint8_t f_id, void *ret, uint8_t n_args, void *args) {
     struct function_call *fcall = &pfc.fcs[pfc.idx++];
-    if(pfc.idx == 20) {
+    if(pfc.idx == MAX_TS) {
         pfc.idx = 0;
     }
     fcall->id = f_id;
@@ -63,7 +67,7 @@ struct function_call * get_fcall(uint8_t f_id, void *ret, uint8_t n_args, void *
 
 inline size_t *
 next_sizet(size_t x) {
-    if(pfc.idx_sizet == 20) {
+    if(pfc.idx_sizet == MAX_TS) {
         pfc.idx_sizet = 0;
     }
     pfc.size_ts[pfc.idx_sizet] = x;
@@ -72,7 +76,7 @@ next_sizet(size_t x) {
 
 inline uint8_t *
 next_uint8(uint8_t x) {
-    if(pfc.idx_uint8 == 20) {
+    if(pfc.idx_uint8 == MAX_TS) {
         pfc.idx_uint8 = 0;
     }
     pfc.uint8_ts[pfc.idx_uint8] = x;
@@ -81,7 +85,7 @@ next_uint8(uint8_t x) {
 
 inline unsigned int *
 next_unsigned(unsigned int x) {
-    if(pfc.idx_unsigned == 20) {
+    if(pfc.idx_unsigned == MAX_TS) {
         pfc.idx_unsigned = 0;
     }
     pfc.unsigned_ts[pfc.idx_unsigned] = x;
@@ -90,7 +94,7 @@ next_unsigned(unsigned int x) {
 
 inline void *
 next_voidptr(void *ptr) {
-    if(pfc.idx_void == 20) {
+    if(pfc.idx_void == MAX_TS) {
         pfc.idx_void = 0;
     }
     pfc.void_ts[pfc.idx_void] = ptr;
@@ -99,7 +103,7 @@ next_voidptr(void *ptr) {
 
 inline void *
 next_uint32(uint32_t x) {
-    if(pfc.idx_uint32 == 20) {
+    if(pfc.idx_uint32 == MAX_TS) {
         pfc.idx_uint32 = 0;
     }
     pfc.uint32_ts[pfc.idx_uint32] = x;
@@ -108,7 +112,7 @@ next_uint32(uint32_t x) {
 
 inline void *
 next_heapnode(struct heap_node h) {
-    if(pfc.idx_heap_node == 20) {
+    if(pfc.idx_heap_node == MAX_TS) {
         pfc.idx_heap_node = 0;
     }
     pfc.heap_node_ts[pfc.idx_heap_node] = h;

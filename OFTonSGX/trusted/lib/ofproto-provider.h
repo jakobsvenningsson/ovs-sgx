@@ -107,6 +107,10 @@ struct sgx_cls_rule {
 	//struct sgx_cls_rule *node;
 	struct hmap_node hmap_node;
     struct list *block_list_node;
+
+
+    uint16_t hard_timeout;       /* In seconds from ->modified. */
+    uint16_t idle_timeout;       /* In seconds from ->used. */
 };
 
 /*Struct SGX_table_dpif: is a struct to store in trusted memory

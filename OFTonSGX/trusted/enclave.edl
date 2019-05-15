@@ -31,8 +31,5 @@ enclave {
 
 		public void
 		ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables);
-
-		public size_t
-		ecall_async_test([user_check] int *x, size_t len);
 	};
 };

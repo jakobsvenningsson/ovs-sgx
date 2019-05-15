@@ -3,6 +3,7 @@
 #include "eviction.h"
 #include "cls-rule.h"
 #include "enclave-batch-allocator.h"
+#include "heap.h"
 
 // Global data structures
 extern struct oftable * SGX_oftables[100];
@@ -20,19 +21,17 @@ ecall_is_eviction_fields_enabled(uint8_t bridge_id, uint8_t table_id){
 }
 
 void
-ecall_evg_add_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule, uint32_t priority,
-  uint32_t rule_evict_prioriy,
-  struct heap_node rule_evg_node){
+ecall_evg_add_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule, uint32_t *group_priority, uint32_t rule_evict_prioriy){
     struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     struct eviction_group * evg;
 
     evg = sgx_evg_find(bridge_id, table_id, eviction_group_hash_rule(bridge_id, table_id,
-          &sgx_cls_rule->cls_rule), priority);
+          &sgx_cls_rule->cls_rule), group_priority ? *group_priority : eviction_group_priority(0));
     sgx_cls_rule->evict_group   = evg;
-    sgx_cls_rule->rule_evg_node = rule_evg_node;
+    //sgx_cls_rule->rule_evg_node = rule_evg_node;
     heap_insert_ovs(&evg->rules, &sgx_cls_rule->rule_evg_node, rule_evict_prioriy);
     size_t n_rules      = (size_t) heap_count_ovs(&evg->rules);
-    size_t new_priority = (MIN(UINT16_MAX, n_rules) << 16) | random_uint16();
+    size_t new_priority = eviction_group_priority(n_rules);
     sgx_evg_group_resize(bridge_id, table_id, o_cls_rule, new_priority, evg);
 }
 
@@ -171,6 +170,47 @@ ecall_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int e
     return p;
 }
 
+
+static bool was_evictable;
+
+void
+ecall_backup_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
+    struct sgx_cls_rule *sgx_cr;
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
+    was_evictable = sgx_cr->evictable;
+}
+
+void
+ecall_restore_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
+    struct sgx_cls_rule *sgx_cr;
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
+    sgx_cr->evictable = was_evictable;
+}
+
+void
+ecall_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, bool new_value) {
+    struct sgx_cls_rule *sgx_cr;
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
+    sgx_cr->evictable = new_value;
+}
+
+bool
+ecall_is_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
+    struct sgx_cls_rule *sgx_cr;
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
+    return sgx_cr->evictable;
+}
+
+void
+ecall_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t eviction_rule_priority) {
+    struct sgx_cls_rule *sgx_cr;
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
+    struct eviction_group *evg = sgx_cr->evict_group;
+    if (evg) {
+        heap_change_ovs(&evg->rules, &sgx_cr->rule_evg_node, eviction_rule_priority);
+    }
+}
+
 // Optimized ECALLS
 
 size_t
@@ -234,10 +274,10 @@ ecall_ofproto_evict(uint8_t bridge_id,
         struct sgx_cls_rule * sgx_cls_rule;
         if(i >= start_index) {
             sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, cls_rules[i - start_index]);
-            ecall_evg_add_rule(bridge_id, table_ids[i], cls_rules[i  - start_index], group_prios[i], rule_prios[i], sgx_cls_rule->rule_evg_node);
+            ecall_evg_add_rule(bridge_id, table_ids[i], cls_rules[i  - start_index], &group_prios[i], rule_prios[i]);
         } else {
             sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, skip_rules[i]);
-            ecall_evg_add_rule(bridge_id, table_ids[i], skip_rules[i], group_prios[i], rule_prios[i], sgx_cls_rule->rule_evg_node);
+            ecall_evg_add_rule(bridge_id, table_ids[i], skip_rules[i], &group_prios[i], rule_prios[i]);
         }
     }
 
@@ -279,17 +319,14 @@ void ecall_eviction_group_add_rules(uint8_t bridge_id,
                                            uint8_t table_id,
                                            size_t n,
                                            struct cls_rule **cls_rules,
-                                           struct heap_node *evg_nodes,
-                                           uint32_t *rule_priorities,
-                                           uint32_t group_priority)
+                                           uint32_t *rule_priorities)
 {
     for(size_t i = 0; i < n; ++i) {
         ecall_evg_add_rule(bridge_id,
                            table_id,
                            cls_rules[i],
-                           group_priority,
-                           rule_priorities[i],
-                           evg_nodes[i]);
+                           NULL,
+                           rule_priorities[i]);
     }
 }
 
@@ -412,4 +449,11 @@ sgx_evg_group_resize(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cl
     struct heap * h      = &SGX_oftables[bridge_id][table_id].eviction_groups_by_size;
     struct heap_node * n = &evg->size_node;
     heap_change_ovs(h, n, priority);
+}
+
+uint32_t
+eviction_group_priority(size_t n_rules)
+{
+    uint16_t size = MIN(UINT16_MAX, n_rules);
+    return (size << 16) | random_uint16();
 }

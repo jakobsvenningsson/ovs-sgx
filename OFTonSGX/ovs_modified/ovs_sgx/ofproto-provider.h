@@ -221,9 +221,11 @@ struct rule {
     bool send_flow_removed;      /* Send a flow removed message? */
 
     /* Eviction groups. */
+    #ifndef SGX
     bool evictable;              /* If false, prevents eviction. */
     struct heap_node evg_node;   /* In eviction_group's "rules" heap. */
     struct eviction_group *eviction_group; /* NULL if not in any group. */
+    #endif
 
     struct ofpact *ofpacts;      /* Sequence of "struct ofpacts". */
     unsigned int ofpacts_len;    /* Size of 'ofpacts', in bytes. */
@@ -237,9 +239,14 @@ struct rule {
     struct list expirable;      /* In ofproto's 'expirable' list if this rule
                                  * is expirable, otherwise empty. */
 
-    struct list list_node;
     uint16_t tmp_storage_vid;
+    uint8_t tmp_storage_vid_exist;
     uint16_t tmp_storage_vid_mask;
+    uint8_t tmp_storage_vid_mask_exist;
+
+    bool *is_other_table;
+    int *table_update_taggable;
+
 };
 
 static inline struct rule *

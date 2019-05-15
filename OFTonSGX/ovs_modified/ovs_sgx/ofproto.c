@@ -61,6 +61,7 @@
 
 #include "ovs-benchmark.h"
 
+unsigned long long ts[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 VLOG_DEFINE_THIS_MODULE(ofproto);
 
@@ -498,6 +499,7 @@ ofproto_create(const char *datapath_name, const char *datapath_type,
     init_ports(ofproto);
 
     *ofprotop = ofproto;
+
     return 0;
 
 }
@@ -3638,13 +3640,22 @@ static enum ofperr
 add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
          const struct ofputil_flow_mod *fm, const struct ofp_header *request)
 {
+    printf("ADD FLOW BEG\n");
 
-	struct timespec st;
-	struct timespec et;
-	struct timespec st1;
-	struct timespec et1;
+    #ifdef BATCHING_FLUSH
+    SGX_batch_flush();
+    #endif
 
-	clock_gettime(CLOCK_REALTIME,&st1);
+    #ifdef BENCHMARK_FLUSH
+
+    unsigned long sz = 1024 * 32;
+    unsigned long *dummy = malloc(sz * sizeof(unsigned long));
+    for(size_t i = 0; i < sz; ++i) {
+        dummy[i] = rand();//i + (sz - i);
+    }
+    free(dummy);
+
+    #endif
 
 	struct ofopgroup *group;
     struct rule *victim;
@@ -3676,6 +3687,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         return OFPERR_OFPBRC_BAD_TABLE_ID;
     }
 #ifndef SGX
+    BEGIN
     struct oftable *table;
     table = &ofproto->tables[table_id];
 
@@ -3689,11 +3701,15 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
                      ofproto->name, strerror(error));
         return ENOMEM;
     }
+    CLOSE
+    ts[0] = GET_TIME
+
     BEGIN
     cls_rule_init(&rule->cr, &fm->match, fm->priority);
     CLOSE
-    SHOWTIME5
+    ts[1] = GET_TIME
 
+    BEGIN
     /* Serialize against pending deletion. */
     if (is_flow_deletion_pending(ofproto, &rule->cr, table_id)) {
         cls_rule_destroy(&rule->cr);
@@ -3727,8 +3743,13 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     rule->monitor_flags = 0;
     rule->add_seqno = 0;
     rule->modify_seqno = 0;
+    CLOSE
+    ts[2] = GET_TIME
 
+    BEGIN
     victim = oftable_replace_rule(rule);
+    CLOSE
+    ts[3] = GET_TIME
 
     // rule_is_modifiable contains SGX
     if (victim && !rule_is_modifiable(victim)) {
@@ -3736,6 +3757,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     } else if (victim && victim->pending) {
         error = OFPROTO_POSTPONE;
     } else {
+        BEGIN
         struct ofoperation *op;
         struct rule *evict;
         if (classifier_count(&table->cls) > table->max_flows) {
@@ -3754,7 +3776,10 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         } else {
             evict = NULL;
         }
+        CLOSE
+        ts[4] = GET_TIME
 #elif OPTIMIZED
+    BEGIN
     rule = ofproto->ofproto_class->rule_alloc();
     if (!rule) {
         VLOG_WARN_RL(&rl, "%s: failed to create rule (%s)",
@@ -3772,8 +3797,6 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     rule->send_flow_removed = (fm->flags & OFPFF_SEND_FLOW_REM) != 0;
     rule->ofpacts = xmemdup(fm->ofpacts, fm->ofpacts_len);
     rule->ofpacts_len = fm->ofpacts_len;
-    rule->evictable = true;
-    rule->eviction_group = NULL;
     list_init(&rule->expirable);
     rule->monitor_flags = 0;
     rule->add_seqno = 0;
@@ -3790,16 +3813,20 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     }
     struct cls_rule *cls_rule_victim = NULL;
     struct cls_rule *cls_rule_evict = NULL;
+
     bool is_read_only = false,
          is_rule_overlapping = false,
          is_deletion_pending = false,
-         is_rule_modifiable = true,
-         table_overflow = false;
+         is_rule_modifiable = false,
+         table_overflow = false,
+         is_hidden = false,
+         is_other_table = false;
 
     uint32_t evict_rule_hash;
-    uint16_t vid;
-    uint16_t vid_mask;
 
+    int table_update_taggable;
+
+    uint16_t state = 0;
 
     SGX_add_flow(ofproto->bridge_id,
                  table_id,
@@ -3808,21 +3835,24 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
                  &cls_rule_evict,
                  &fm->match,
                  &evict_rule_hash,
-                 &vid,
-                 &vid_mask,
+                 &rule->tmp_storage_vid,
+                 &rule->tmp_storage_vid_mask,
                  fm->priority,
                  fm->flags,
-                 eviction_group_priority(0),
              	 rule_eviction_priority(rule),
-                 rule->evg_node,
                  pending_deletions,
                  n_pending,
                  (rule->idle_timeout || rule->hard_timeout),
-                 &table_overflow,
-                 &is_rule_modifiable,
-                 &is_deletion_pending,
-                 &is_rule_overlapping,
-                 &is_read_only);
+                 &state,
+                 &table_update_taggable);
+
+    table_overflow = state & 1;
+    is_rule_modifiable = (state & 2) == 0;
+    is_deletion_pending = state & 4;
+    is_rule_overlapping = state & 8;
+    is_read_only = state & 16;
+    is_hidden = state & 32;
+    is_other_table = state & 64;
 
     if(is_read_only) {
         ofproto->ofproto_class->rule_dealloc(rule);
@@ -3839,13 +3869,13 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         return OFPERR_OFPFMFC_OVERLAP;
     }
 
-    if(vid) {
-        rule->tmp_storage_vid = vid;
-    }
 
-    if(vid_mask) {
-        rule->tmp_storage_vid_mask = vid_mask;
-    }
+    rule->tmp_storage_vid_exist = 1;
+    rule->tmp_storage_vid_mask_exist = 1;
+
+
+    rule->is_other_table = &is_other_table;
+    rule->table_update_taggable = &table_update_taggable;
 
     bool may_expire = rule->hard_timeout || rule->idle_timeout;
 
@@ -3879,7 +3909,10 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         } else {
             evict = NULL;
         }
+    CLOSE
+    ts[0] = GET_TIME
 #else
+    BEGIN
     if (SGX_istable_readonly(ofproto->bridge_id, table_id)){
     	return OFPERR_OFPBRC_EPERM;
     }
@@ -3890,24 +3923,16 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
                      ofproto->name, strerror(error));
         return ENOMEM;
     }
-
-    //printf("add flow!!\n");
-
-    //BENCHMARK_NO_RETURN(SGX_cls_rule_init, ofproto->bridge_id, &rule->cr, &fm->match, fm->priority);
+    CLOSE
+    ts[0] = GET_TIME
 
     BEGIN
     SGX_cls_rule_init(ofproto->bridge_id, &rule->cr, &fm->match, fm->priority);
     CLOSE
-    SHOWTIME5
+    //SHOWTIME5
+    ts[1] = GET_TIME
 
-    //SGX_cls_rule_init(ofproto->bridge_id, &rule->cr, &fm->match, fm->priority);
-
-
-    /*printf("BEFORE\n");
-    SGX_cls_rule_destroy(ofproto->bridge_id, &rule->cr);
-    SGX_cls_count(ofproto->bridge_id, table_id);
-    return ENOMEM;*/
-
+    BEGIN
 
     /* Serialize against pending deletion. */
     if (is_flow_deletion_pending(ofproto, &rule->cr, table_id)) {
@@ -3938,14 +3963,23 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
 
     rule->ofpacts = xmemdup(fm->ofpacts, fm->ofpacts_len);
     rule->ofpacts_len = fm->ofpacts_len;
-    rule->evictable = true;
-    rule->eviction_group = NULL;
+    //rule->evictable = true;
+    //rule->eviction_group = NULL;
     list_init(&rule->expirable);
     rule->monitor_flags = 0;
     rule->add_seqno = 0;
     rule->modify_seqno = 0;
 
+    CLOSE
+    ts[2] = GET_TIME
+
+
+
+    BEGIN
     victim = oftable_replace_rule(rule);
+    CLOSE
+    ts[3] = GET_TIME
+
 
     // rule_is_modifiable contains SGX
     if (victim && !rule_is_modifiable(victim)) {
@@ -3955,6 +3989,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     } else {
         struct ofoperation *op;
         struct rule *evict;
+        BEGIN
         if (SGX_cls_count(ofproto->bridge_id, table_id) > SGX_table_mflows(ofproto->bridge_id, table_id)){
             struct cls_rule * tmp;
             SGX_choose_rule_to_evict_p(ofproto->bridge_id, table_id, &tmp, &rule->cr);
@@ -3969,16 +4004,19 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         } else {
             evict = NULL;
         }
+        CLOSE
+        ts[4] = GET_TIME
 #endif
         group = ofopgroup_create(ofproto, ofconn, request, fm->buffer_id);
         op = ofoperation_create(group, rule, OFOPERATION_ADD, 0, NULL);
         op->victim = victim;
         error = ofproto->ofproto_class->rule_construct(rule);
+
         if (error) {
             op->group->n_running--;
             ofoperation_destroy(rule->pending);
         } else if (evict) {
-
+            BEGIN
             // This method also contains enclave information which could be pre fetched!
             ofproto_rule_send_removed(evict, OFPRR_DELETE);
 
@@ -3993,12 +4031,22 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
                 }
             #endif
             ofproto->ofproto_class->rule_destruct(evict);
+            CLOSE
+            ts[5] = GET_TIME
         }
-        #ifndef OPTIMIZED
-        ofopgroup_submit(group, NULL, NULL, NULL);
+        BEGIN
+        #ifdef OPTIMIZED
+        ofopgroup_submit(group, NULL, NULL, &is_hidden);
         #else
         ofopgroup_submit(group, NULL, NULL, NULL);
         #endif
+        CLOSE
+        ts[6] = GET_TIME
+
+
+        char bb[128];
+        sprintf(bb, "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n", ts[0], ts[1], ts[2], ts[3], ts[4], ts[5], ts[6], ts[7], ts[8]);
+        write(5, bb, strlen(bb));
     }
 exit:
     /* Back out if an error occurred. */
@@ -4006,6 +4054,8 @@ exit:
         oftable_substitute_rule(rule, victim);
         ofproto_rule_destroy__(rule);
     }
+
+    printf("ADD FLOW END\n");
     return error;
 }
 
@@ -4315,6 +4365,10 @@ void
 ofproto_rule_update_used(struct rule *rule, long long int used)
 {
     if (used > rule->used) {
+        #ifdef SGX
+        rule->used = used;
+        SGX_rule_update_used(rule->ofproto->bridge_id, &rule->cr, rule_eviction_priority(rule));
+        #else
         struct eviction_group *evg = rule->eviction_group;
 
         rule->used = used;
@@ -4322,6 +4376,7 @@ ofproto_rule_update_used(struct rule *rule, long long int used)
             heap_change(&evg->rules, &rule->evg_node,
                         rule_eviction_priority(rule));
         }
+        #endif
     }
 }
 
@@ -4417,6 +4472,7 @@ handle_flow_mod__(struct ofproto *ofproto, struct ofconn *ofconn,
                   const struct ofputil_flow_mod *fm,
                   const struct ofp_header *oh)
 {
+
     if (ofproto->n_pending >= 50) {
         ovs_assert(!list_is_empty(&ofproto->pending));
         return OFPROTO_POSTPONE;
@@ -4933,7 +4989,6 @@ handle_flow_monitor_cancel(struct ofconn *ofconn, const struct ofp_header *oh)
 static enum ofperr
 handle_openflow__(struct ofconn *ofconn, const struct ofpbuf *msg)
 {
-
     const struct ofp_header *oh = msg->data;
     enum ofptype type;
     enum ofperr error;
@@ -5244,10 +5299,10 @@ ofopgroup_complete(struct ofopgroup *group, uint16_t *_vid, uint16_t *_vid_mask,
 #ifndef SGX
                 vid_mask = minimask_get_vid_mask(&rule->cr.match.mask);
 #elif OPTIMIZED
-                vid_mask = rule->tmp_storage_vid_mask
+                vid_mask = rule->tmp_storage_vid_mask_exist
                     ? rule->tmp_storage_vid_mask
                     : SGX_minimask_get_vid_mask(rule->ofproto->bridge_id, &rule->cr);
-                rule->tmp_storage_vid_mask = 0;
+                rule->tmp_storage_vid_mask_exist = 0;
 #else
                 vid_mask = SGX_minimask_get_vid_mask(rule->ofproto->bridge_id, &rule->cr);
 #endif
@@ -5259,10 +5314,10 @@ ofopgroup_complete(struct ofopgroup *group, uint16_t *_vid, uint16_t *_vid_mask,
 #ifndef SGX
                 		uint16_t vid = miniflow_get_vid(&rule->cr.match.flow);
 #elif OPTIMIZED
-                        uint16_t vid = rule->tmp_storage_vid
+                        uint16_t vid = rule->tmp_storage_vid_exist
                             ? rule->tmp_storage_vid
                             : SGX_miniflow_get_vid(rule->ofproto->bridge_id, &rule->cr);
-                        rule->tmp_storage_vid = 0;
+                        rule->tmp_storage_vid_exist = 0;
 #else
                 		uint16_t vid = (_vid ? *_vid : SGX_miniflow_get_vid(rule->ofproto->bridge_id, &rule->cr));
 #endif
@@ -5525,7 +5580,6 @@ static void
 ofproto_evict(struct ofproto *ofproto)
 {
     struct ofopgroup *group;
-    printf("ofproto_evict\n");
 
     group = ofopgroup_create_unattached(ofproto);
 #ifndef SGX
@@ -5828,8 +5882,9 @@ eviction_group_add_rule(struct rule *rule)
 #else
 
     if(SGX_eviction_fields_enable(rule->ofproto->bridge_id, rule->table_id) && (rule->hard_timeout || rule->idle_timeout)) {
+        // FIX_EVG
         SGX_evg_add_rule(rule->ofproto->bridge_id, rule->table_id, &rule->cr, eviction_group_priority(0),
-    	    			rule_eviction_priority(rule), rule->evg_node);
+    	    			rule_eviction_priority(rule));
 
     }
 #endif
@@ -5982,7 +6037,7 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
     }
 
     struct cls_rule *eviction_cls_rules[n_rules];
-    struct heap_node evg_nodes[n_rules];
+    //struct heap_node evg_nodes[n_rules];
     uint32_t rule_priorities[n_rules];
 
     size_t m = 0;
@@ -5992,11 +6047,11 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
             continue;
         }
         eviction_cls_rules[m] = &rule->cr;
-        evg_nodes[m] = rule->evg_node;
+        //evg_nodes[m] = rule->evg_node;
         rule_priorities[m] = rule_eviction_priority(rule);
         ++m;
     }
-    SGX_eviction_group_add_rules(bridge_id, table_id, m, eviction_cls_rules, evg_nodes, rule_priorities, eviction_group_priority(0));
+    SGX_eviction_group_add_rules(bridge_id, table_id, m, eviction_cls_rules, rule_priorities);
 #else
     bool no_change = false;
     SGX_oftable_enable_eviction(bridge_id, table_id, fields, n_fields, random_uint32(), &no_change);
@@ -6053,11 +6108,11 @@ oftable_replace_rule(struct rule *rule)
 
 
 #ifndef SGX
-    //BEGIN
+    BEGIN
     struct oftable *table = &ofproto->tables[rule->table_id];
     victim = rule_from_cls_rule(classifier_replace(&table->cls, &rule->cr));
-    //CLOSE
-    //SHOWTIME5
+    CLOSE
+    ts[7] = GET_TIME
 #elif OPTIMIZED
     SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id, &rule->cr, &sgx_cls_rule);
     victim = rule_from_cls_rule(sgx_cls_rule);
@@ -6066,22 +6121,25 @@ oftable_replace_rule(struct rule *rule)
     //SGX_async_test();
     //BENCHMARK_NO_RETURN(SGX_classifier_replace, rule->ofproto->bridge_id, rule->table_id, &rule->cr, &sgx_cls_rule);
     //BEGIN
+    BEGIN
     SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id, &rule->cr, &sgx_cls_rule);
     //CLOSE
     //SHOWTIME5
 
     victim = rule_from_cls_rule(sgx_cls_rule);
+    CLOSE
+    ts[7] = GET_TIME
 #endif
+    BEGIN
     if (victim) {
         if (!list_is_empty(&victim->expirable)) {
             list_remove(&victim->expirable);
         }
         eviction_group_remove_rule(victim);
     }
-
-
-
     eviction_group_add_rule(rule);
+    CLOSE
+    ts[8] = GET_TIME
     return victim;
 }
 

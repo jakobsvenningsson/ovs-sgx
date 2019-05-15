@@ -1,4 +1,6 @@
 #include "enclave_t.h"
+#include <stdbool.h>
+
 #include "enclave.h"
 #include "oftable.h"
 #include "cls-rule.h"
@@ -82,10 +84,12 @@ ecall_oftable_hidden_check(uint8_t bridge_id){
     }
 }
 
+static int i = 0;
 void
 ecall_oftable_classifier_replace(uint8_t bridge_id, uint8_t table_id, struct cls_rule *ut_cr, struct cls_rule **cls_rule_rtrn){
     struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, ut_cr);
-    struct cls_rule * cls_rule         = classifier_replace(&SGX_oftables[bridge_id][table_id].cls,
+    struct cls_rule * cls_rule = NULL;
+    cls_rule = classifier_replace(&SGX_oftables[bridge_id][table_id].cls,
       &sgx_cls_rule->cls_rule);
 
     if (cls_rule) {
@@ -354,36 +358,39 @@ ecall_add_flow(uint8_t bridge_id,
              uint16_t *vid_mask,
 			 unsigned int priority,
 			 uint16_t flags,
-             uint32_t eviction_group_priority,
              uint32_t eviction_rule_priority,
-             struct heap_node eviction_node,
              struct  cls_rule **pending_deletions,
              int n_pending,
              bool has_timout,
-             bool *table_overflow,
-             bool *is_rule_modifiable,
-             bool *is_deletion_pending,
-             bool *is_rule_overlapping,
-			 bool *is_read_only)
+             uint16_t *state,
+             int *table_update_taggable)
  {
+
+
+
      if (ecall_oftable_is_readonly(bridge_id, table_id)){
-         *is_read_only = true;
+         //is_read_only
+         *state |= (1 << 4);
          return;
      }
 
      ecall_cls_rule_init(bridge_id, cr, match, priority);
 
+     struct sgx_cls_rule *sgx_cr = sgx_rule_from_ut_cr(bridge_id, cr);
+
      for(int i = 0; i < n_pending; ++i) {
          if (ecall_cls_rule_equal(bridge_id, cr, pending_deletions[i])) {
              ecall_cls_rule_destroy(bridge_id, cr);
-             *is_deletion_pending = true;
+             //is_deletion_pending
+             *state |= (1 << 2);
              return;
          }
      }
 
     if (flags & OFPFF_CHECK_OVERLAP && ecall_cr_rule_overlaps(bridge_id, table_id, cr)) {
          ecall_cls_rule_destroy(bridge_id, cr);
-         *is_rule_overlapping = true;
+        // is_rule_overlapping
+         *state |= (1 << 3);
          return;
      }
 
@@ -393,20 +400,21 @@ ecall_add_flow(uint8_t bridge_id,
      }
 
      if(ecall_is_eviction_fields_enabled(bridge_id, table_id) && has_timout) {
-     	ecall_evg_add_rule(bridge_id, table_id, cr, eviction_group_priority,
-     	    			eviction_rule_priority, eviction_node);
+     	ecall_evg_add_rule(bridge_id, table_id, cr, NULL,
+     	    			eviction_rule_priority);
 
      }
 
      bool rule_is_mod = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
-
      if(*victim && !rule_is_mod) {
-         *is_rule_modifiable = false;
+        // is_rule_modifiable
+         *state |= (1 << 1);
          return;
      }
 
      if (ecall_oftable_cls_count(bridge_id, table_id) > ecall_oftable_mflows(bridge_id, table_id)){
-         *table_overflow = true;
+         // table_overflow
+         *state |= (1 << 0);
          ecall_choose_rule_to_evict_p(bridge_id, table_id, evict, cr);
          if(*evict) {
              ecall_cls_remove(bridge_id, table_id, *evict);
@@ -417,6 +425,15 @@ ecall_add_flow(uint8_t bridge_id,
 
      *vid = ecall_miniflow_get_vid(bridge_id, cr);
      *vid_mask = ecall_minimask_get_vid_mask(bridge_id, cr);
+
+     //*is_hidden
+     *state |= ((ecall_cr_priority(bridge_id, cr) > UINT16_MAX) << 5);
+
+     *table_update_taggable = ecall_oftable_update_taggable(bridge_id, table_id);
+
+     //*is_other_table
+     *state |= ((ecall_oftable_is_other_table(bridge_id, table_id) > UINT16_MAX) << 6);
+
  }
 
  void

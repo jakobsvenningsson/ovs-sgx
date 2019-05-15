@@ -132,7 +132,7 @@ static void rule_credit_stats(struct rule_dpif *,
 static tag_type rule_calculate_tag(const struct flow *,
                                    const struct minimask *, uint32_t basis);
 #endif
-static void rule_invalidate(const struct rule_dpif *);
+static void rule_invalidate(const struct rule_dpif *, bool *is_other_table, int *table_update_taggable);
 
 #define MAX_MIRRORS 32
 typedef uint32_t mirror_mask_t;
@@ -5722,10 +5722,10 @@ rule_dpif_miss_rule(struct ofproto_dpif *ofproto, const struct flow *flow)
 }
 
 static void
-complete_operation(struct rule_dpif *rule)
+complete_operation(struct rule_dpif *rule, bool *is_other_table, int *table_update_taggable)
 {
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(rule->up.ofproto);
-    rule_invalidate(rule);
+    rule_invalidate(rule, is_other_table, table_update_taggable);
     if (clogged) {
         struct dpif_completion *c = xmalloc(sizeof *c);
         c->op = rule->up.pending;
@@ -5805,6 +5805,8 @@ rule_construct(struct rule *rule_)
 		}else{
 			rule->tag=0;
 		}
+        rule_->is_other_table = NULL;
+        rule_->table_update_taggable = NULL;
 #else
         SGX_miniflow_expand(rule->up.ofproto->bridge_id, &rule->up.cr,&flow);
         uint32_t hash;
@@ -5816,7 +5818,9 @@ rule_construct(struct rule *rule_)
 		}
 #endif
     }
-    complete_operation(rule);
+    complete_operation(rule, rule_->is_other_table, rule_->table_update_taggable);
+    rule_->is_other_table = NULL;
+    rule_->table_update_taggable = NULL;
     return 0;
 }
 
@@ -5830,7 +5834,7 @@ rule_destruct(struct rule *rule_)
         facet_revalidate(facet);
     }
 
-    complete_operation(rule);
+    complete_operation(rule, NULL, NULL);
 }
 
 static void
@@ -5890,7 +5894,7 @@ rule_modify_actions(struct rule *rule_)
 {
     struct rule_dpif *rule = rule_dpif_cast(rule_);
 
-    complete_operation(rule);
+    complete_operation(rule, NULL, NULL);
 }
 
 /* Sends 'packet' out 'ofport'.
@@ -6966,13 +6970,21 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
                  struct xlate_ctx *ctx)
 {
     struct flow_wildcards *wc = &ctx->xout->wc;
+    #ifndef SGX
     bool was_evictable = true;
+    #endif
     const struct ofpact *a;
 
     if (ctx->rule) {
         /* Don't let the rule we're working on get evicted underneath us. */
+        //FIX EVG
+        #ifdef SGX
+        SGX_backup_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr);
+        SGX_set_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr, false);
+        #else
         was_evictable = ctx->rule->up.evictable;
         ctx->rule->up.evictable = false;
+        #endif
     }
 
  do_xlate_actions_again:
@@ -7211,11 +7223,26 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
 
             if (rule) {
                 if (ctx->rule) {
+                    //FIX_EVG
+                    //ctx->rule->up.evictable = was_evictable;
+                    #ifdef SGX
+                    SGX_restore_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr);
+                    #else
                     ctx->rule->up.evictable = was_evictable;
+                    #endif
                 }
                 ctx->rule = rule;
+                //FIX_EVG
+                //was_evictable = rule->up.evictable;
+                //rule->up.evictable = false;
+                #ifdef SGX
+                SGX_backup_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr);
+                SGX_set_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr, false);
+                #else
                 was_evictable = rule->up.evictable;
                 rule->up.evictable = false;
+                #endif
+
 
                 /* Tail recursion removal. */
                 ofpacts = rule->up.ofpacts;
@@ -7233,7 +7260,13 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
 
 out:
     if (ctx->rule) {
+        //FIX EVG
+        //ctx->rule->up.evictable = was_evictable;
+        #ifdef SGX
+        SGX_restore_evictable(ctx->rule->up.ofproto->bridge_id, &ctx->rule->up.cr);
+        #else
         ctx->rule->up.evictable = was_evictable;
+        #endif
     }
 }
 
@@ -8196,27 +8229,31 @@ table_update_taggable(struct ofproto_dpif *ofproto, uint8_t table_id)
  * This function must be called after *each* change to a flow table.  See
  * the comment on table_update_taggable() for more information. */
 static void
-rule_invalidate(const struct rule_dpif *rule)
+rule_invalidate(const struct rule_dpif *rule, bool *is_other_table, int *table_update_taggable_)
 {
     struct ofproto_dpif *ofproto = ofproto_dpif_cast(rule->up.ofproto);
 
 #ifndef SGX
     table_update_taggable(ofproto, rule->up.table_id);
+    if (!ofproto->backer->need_revalidate) {
+        struct table_dpif *table = &ofproto->tables[rule->up.table_id];
+        if (table->other_table && rule->tag) {
+#elif OPTIMIZED
+    int todo;
+    todo = table_update_taggable_ ? *table_update_taggable_ : SGX_table_update_taggable(rule->up.ofproto->bridge_id, rule->up.table_id);
+    if(todo){
+        ofproto->backer->need_revalidate=REV_FLOW_TABLE;
+    }
+    if (!ofproto->backer->need_revalidate) {
+        if((is_other_table ? *is_other_table : SGX_is_sgx_other_table(rule->up.ofproto->bridge_id, rule->up.table_id)) && rule->tag){
 #else
     int todo;
     todo = SGX_table_update_taggable(rule->up.ofproto->bridge_id, rule->up.table_id);
     if(todo){
     	ofproto->backer->need_revalidate=REV_FLOW_TABLE;
     }
-#endif
     if (!ofproto->backer->need_revalidate) {
-
-#ifndef SGX
-        struct table_dpif *table = &ofproto->tables[rule->up.table_id];
-        if (table->other_table && rule->tag) {
-
-#else
-      if(SGX_is_sgx_other_table(rule->up.ofproto->bridge_id, rule->up.table_id) && rule->tag){
+        if(SGX_is_sgx_other_table(rule->up.ofproto->bridge_id, rule->up.table_id) && rule->tag){
 #endif
         	tag_set_add(&ofproto->backer->revalidate_set, rule->tag);
         } else {

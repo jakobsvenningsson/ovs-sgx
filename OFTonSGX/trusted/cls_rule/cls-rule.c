@@ -8,13 +8,14 @@ extern struct oftable * SGX_oftables[100];
 extern struct SGX_table_dpif * SGX_table_dpif[100];
 extern int SGX_n_tables[100];
 extern struct sgx_cls_table * SGX_hmap_table[100];
-extern struct batch_allocator cr_ba;
+extern const struct batch_allocator cr_ba;
 
 // Vanilla ECALLS
 
 void
 ecall_cls_rule_init(uint8_t bridge_id, struct cls_rule * o_cls_rule, const struct match * match, unsigned int priority){
-    struct sgx_cls_rule * sgx_cls_rule = node_insert(bridge_id, (uint32_t)(uintptr_t) o_cls_rule);
+    //(uint32_t)(uintptr_t)
+    struct sgx_cls_rule * sgx_cls_rule = node_insert(bridge_id, hash_pointer(o_cls_rule, 0));
     sgx_cls_rule->o_cls_rule = o_cls_rule;
     cls_rule_init(&sgx_cls_rule->cls_rule, match, priority);
     sgx_cls_rule->evictable = true;
@@ -184,6 +185,7 @@ node_insert(uint8_t bridge_id, uint32_t hash){
     #else
     new = xmalloc(sizeof(struct sgx_cls_rule));
     #endif
+    memset(new, 0, sizeof(struct sgx_cls_rule));
     new->hmap_node.hash = hash;
     hmap_insert(&SGX_hmap_table[bridge_id]->cls_rules, &new->hmap_node, new->hmap_node.hash, NULL, 0);
     return new;
@@ -206,7 +208,7 @@ struct sgx_cls_rule *
 sgx_rule_from_ut_cr(uint8_t bridge_id, const struct cls_rule * out){
     struct sgx_cls_rule * rule;
 
-    HMAP_FOR_EACH_WITH_HASH(rule, hmap_node, (uint32_t)(uintptr_t) out, &SGX_hmap_table[bridge_id]->cls_rules){
+    HMAP_FOR_EACH_WITH_HASH(rule, hmap_node, hash_pointer(out, 0), &SGX_hmap_table[bridge_id]->cls_rules){
         return rule;
     }
     return NULL;
