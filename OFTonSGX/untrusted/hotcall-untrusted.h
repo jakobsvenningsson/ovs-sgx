@@ -39,11 +39,40 @@ struct preallocated_function_calls {
     struct heap_node heap_node_ts[MAX_TS];
 };
 
-extern struct preallocated_function_calls pfc;
+//extern struct preallocated_function_calls pfc;
 
-void prepare_hotcall_function(struct hotcall *hcall, uint8_t function_id, char *fmt, bool async, bool has_return, int n_args, ...);
+//void prepare_hotcall_function(struct hotcall *hcall, uint8_t function_id, char *fmt, bool async, bool has_return, int n_args, ...);
 
-void make_hotcall(struct hotcall *hcall);
+static void 
+make_hotcall(struct hotcall *hcall) {
+    struct function_call *fcall, *next;
+    hcall->is_done  = false;
+    hcall->run      = true;
+
+    while (1) {
+        #ifdef TIMEOUT
+        if (hcall->sleeping) {
+            pthread_mutex_lock(&mutex);
+            pthread_cond_signal(&cond);
+            pthread_mutex_unlock(&mutex);
+            continue;
+        }
+        #endif
+
+        sgx_spin_lock(&hcall->spinlock);
+        if (hcall->is_done) {
+            sgx_spin_unlock(&hcall->spinlock);
+            break;
+        }
+        sgx_spin_unlock(&hcall->spinlock);
+        for (int i = 0; i < 3; ++i) {
+            __asm
+            __volatile(
+              "pause"
+            );
+        }
+    }
+}
 
 inline size_t
 get_n_args(char *fmt) {
@@ -53,10 +82,10 @@ get_n_args(char *fmt) {
 }
 
 inline
-struct function_call * get_fcall(uint8_t f_id, void *ret, uint8_t n_args, void *args) {
-    struct function_call *fcall = &pfc.fcs[pfc.idx++];
-    if(pfc.idx == MAX_TS) {
-        pfc.idx = 0;
+struct function_call * get_fcall(struct preallocated_function_calls *pfc, uint8_t f_id, void *ret, uint8_t n_args, void *args) {
+    struct function_call *fcall = &pfc->fcs[pfc->idx++];
+    if(pfc->idx == MAX_TS) {
+        pfc->idx = 0;
     }
     fcall->id = f_id;
     fcall->args.n_args = n_args;
@@ -66,57 +95,57 @@ struct function_call * get_fcall(uint8_t f_id, void *ret, uint8_t n_args, void *
 }
 
 inline size_t *
-next_sizet(size_t x) {
-    if(pfc.idx_sizet == MAX_TS) {
-        pfc.idx_sizet = 0;
+next_sizet(struct preallocated_function_calls *pfc, size_t x) {
+    if(pfc->idx_sizet == MAX_TS) {
+        pfc->idx_sizet = 0;
     }
-    pfc.size_ts[pfc.idx_sizet] = x;
-    return &pfc.size_ts[pfc.idx_sizet++];
+    pfc->size_ts[pfc->idx_sizet] = x;
+    return &pfc->size_ts[pfc->idx_sizet++];
 }
 
 inline uint8_t *
-next_uint8(uint8_t x) {
-    if(pfc.idx_uint8 == MAX_TS) {
-        pfc.idx_uint8 = 0;
+next_uint8(struct preallocated_function_calls *pfc, uint8_t x) {
+    if(pfc->idx_uint8 == MAX_TS) {
+        pfc->idx_uint8 = 0;
     }
-    pfc.uint8_ts[pfc.idx_uint8] = x;
-    return &pfc.uint8_ts[pfc.idx_uint8++];
+    pfc->uint8_ts[pfc->idx_uint8] = x;
+    return &pfc->uint8_ts[pfc->idx_uint8++];
 }
 
 inline unsigned int *
-next_unsigned(unsigned int x) {
-    if(pfc.idx_unsigned == MAX_TS) {
-        pfc.idx_unsigned = 0;
+next_unsigned(struct preallocated_function_calls *pfc, unsigned int x) {
+    if(pfc->idx_unsigned == MAX_TS) {
+        pfc->idx_unsigned = 0;
     }
-    pfc.unsigned_ts[pfc.idx_unsigned] = x;
-    return &pfc.unsigned_ts[pfc.idx_unsigned++];
+    pfc->unsigned_ts[pfc->idx_unsigned] = x;
+    return &pfc->unsigned_ts[pfc->idx_unsigned++];
 }
 
 inline void *
-next_voidptr(void *ptr) {
-    if(pfc.idx_void == MAX_TS) {
-        pfc.idx_void = 0;
+next_voidptr(struct preallocated_function_calls *pfc, void *ptr) {
+    if(pfc->idx_void == MAX_TS) {
+        pfc->idx_void = 0;
     }
-    pfc.void_ts[pfc.idx_void] = ptr;
-    return pfc.void_ts[pfc.idx_void++];
+    pfc->void_ts[pfc->idx_void] = ptr;
+    return pfc->void_ts[pfc->idx_void++];
 }
 
 inline void *
-next_uint32(uint32_t x) {
-    if(pfc.idx_uint32 == MAX_TS) {
-        pfc.idx_uint32 = 0;
+next_uint32(struct preallocated_function_calls *pfc, uint32_t x) {
+    if(pfc->idx_uint32 == MAX_TS) {
+        pfc->idx_uint32 = 0;
     }
-    pfc.uint32_ts[pfc.idx_uint32] = x;
-    return &pfc.uint32_ts[pfc.idx_uint32++];
+    pfc->uint32_ts[pfc->idx_uint32] = x;
+    return &pfc->uint32_ts[pfc->idx_uint32++];
 }
 
 inline void *
-next_heapnode(struct heap_node h) {
-    if(pfc.idx_heap_node == MAX_TS) {
-        pfc.idx_heap_node = 0;
+next_heapnode(struct preallocated_function_calls *pfc, struct heap_node h) {
+    if(pfc->idx_heap_node == MAX_TS) {
+        pfc->idx_heap_node = 0;
     }
-    pfc.heap_node_ts[pfc.idx_heap_node] = h;
-    return &pfc.heap_node_ts[pfc.idx_heap_node++];
+    pfc->heap_node_ts[pfc->idx_heap_node] = h;
+    return &pfc->heap_node_ts[pfc->idx_heap_node++];
 }
 
 #endif

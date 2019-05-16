@@ -24,12 +24,12 @@ sgx_enclave_id_t global_eid        = 0;
 static bool enclave_is_initialized = false;
 static uint8_t bridge_counter = 0;
 static struct shared_memory_ctx sm_ctx;
-struct preallocated_function_calls pfc;
+static struct preallocated_function_calls pfc;
 
 
 struct function_call *fc_;
 #define HCALL(f, async, ret, n_args, args) \
-    fc_ = get_fcall(hotcall_ ## f, ret, n_args, args); \
+    fc_ = get_fcall(&pfc, hotcall_ ## f, ret, n_args, args); \
     list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node); \
     if(!async) { \
         make_hotcall(&sm_ctx.hcall); \
@@ -125,8 +125,8 @@ SGX_readonly_set(uint8_t bridge_id, uint8_t table_id){
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_uint8(table_id) : &table_id;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
     HCALL(ecall_oftable_set_readonly, async, NULL, 2, args);
     #else
     ECALL(ecall_oftable_set_readonly, bridge_id, table_id);
@@ -154,10 +154,10 @@ SGX_cls_rule_init(uint8_t bridge_id, struct cls_rule * o_cls_rule,
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_voidptr(o_cls_rule) : o_cls_rule;
-    args[2] = async ? next_voidptr((struct match *) match) : (struct match *) match;
-    args[3] = async ? next_unsigned(priority) : &priority;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_voidptr(&pfc, o_cls_rule) : o_cls_rule;
+    args[2] = async ? next_voidptr(&pfc, (struct match *) match) : (struct match *) match;
+    args[3] = async ? next_unsigned(&pfc, priority) : &priority;
     HCALL(ecall_cls_rule_init, async, NULL, 4, args);
     #else
     ECALL(ecall_cls_rule_init, bridge_id, o_cls_rule, match, priority);
@@ -186,8 +186,8 @@ SGX_cls_rule_destroy(uint8_t bridge_id, struct cls_rule * ut_cr){
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_voidptr(ut_cr) : ut_cr;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
     HCALL(ecall_cls_rule_destroy, async, NULL, 2, args);
     #else
     ECALL(ecall_cls_rule_destroy, bridge_id, ut_cr);
@@ -292,11 +292,11 @@ SGX_evg_add_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_cr, u
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_uint8(table_id) : &table_id;
-    args[2] = async ? next_voidptr(ut_cr) : ut_cr;
-    args[3] = async ? next_uint32(priority) : &priority;;
-    args[4] = async ? next_uint32(rule_evict_prioriy) : &rule_evict_prioriy;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    args[2] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
+    args[3] = async ? next_uint32(&pfc, priority) : &priority;;
+    args[4] = async ? next_uint32(&pfc, rule_evict_prioriy) : &rule_evict_prioriy;
     HCALL(ecall_evg_add_rule, async, NULL, 5, args);
     #else
     ECALL(
@@ -315,9 +315,9 @@ SGX_evg_remove_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_cr
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_uint8(table_id) : &table_id;
-    args[2] = async ? next_voidptr(ut_cr) : ut_cr;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    args[2] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
     HCALL(ecall_evg_remove_rule, async, NULL, 3, args);
     #else
     ECALL(ecall_evg_remove_rule, bridge_id, table_id, ut_cr);
@@ -329,9 +329,9 @@ SGX_cls_remove(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_cr){
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_uint8(table_id) : &table_id;
-    args[2] = async ? next_voidptr(ut_cr) : ut_cr;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    args[2] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
     HCALL(ecall_cls_remove, async, NULL, 3, args);
     #else
     ECALL(ecall_cls_remove, bridge_id, table_id, ut_cr);
@@ -387,9 +387,9 @@ SGX_table_mflows_set(uint8_t bridge_id, uint8_t table_id, unsigned int new_value
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_uint8(table_id) : &table_id;
-    args[2] = async ? next_unsigned(new_value) : &new_value;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    args[2] = async ? next_unsigned(&pfc, new_value) : &new_value;
     HCALL(ecall_oftable_mflows_set, async, NULL, 3, args);
     #else
     ECALL(ecall_oftable_mflows_set, bridge_id, table_id, new_value);
@@ -625,8 +625,8 @@ SGX_oftable_disable_eviction(uint8_t bridge_id, uint8_t table_id){
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_uint8(table_id) : &table_id;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
     HCALL(ecall_oftable_disable_eviction, async, NULL, 2, args);
     #else
     ECALL(ecall_oftable_disable_eviction, bridge_id, table_id);
@@ -638,7 +638,7 @@ SGX_ofproto_destroy(uint8_t bridge_id){
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
     HCALL(ecall_ofproto_destroy, async, NULL, 1, args);
     #else
     ECALL(ecall_ofproto_destroy, bridge_id);
@@ -905,7 +905,7 @@ sgx_oftable_check_hidden(uint8_t bridge_id){
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
     HCALL(ecall_oftable_hidden_check, async, NULL, 1, args);
     #else
     ECALL(ecall_oftable_hidden_check, bridge_id);
@@ -917,8 +917,8 @@ SGX_oftable_set_name(uint8_t bridge_id, uint8_t table_id, char * name) {
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_uint8(table_id) : &table_id;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
     args[2] = name;
     HCALL(ecall_oftable_set_name, async, NULL, 3, args);
     #else
@@ -1184,8 +1184,9 @@ static int ii = 0;
 void
 #ifdef ARG_OPT
 SGX_add_flow(void **args_)
+#elif ARG_OPT_2
+SGX_add_flow(struct add_flow_args *args_)
 #else
-
 SGX_add_flow(uint8_t bridge_id,
 			 uint8_t table_id,
 			 struct cls_rule *cr,
@@ -1223,6 +1224,8 @@ SGX_add_flow(uint8_t bridge_id,
 
      #ifdef ARG_OPT
      memcpy(args, args_, 8 * 17);
+     #elif ARG_OPT_2
+     args[0] = (void *) args_;
      #else
      args[0] = &bridge_id;
      args[1] = &table_id;
@@ -1242,24 +1245,12 @@ SGX_add_flow(uint8_t bridge_id,
      args[15] = state;
      args[16] = table_update_taggable;
      #endif
-     /*args[0] = args_[0];
-     args[1] = args_[1];
-     args[2] = args_[2];
-     args[3] = args_[3];
-     args[4] = args_[4];
-     args[5] = args_[5];
-     args[6] = args_[6];
-     args[7] = args_[7];
-     args[8] = args_[8];
-     args[9] = args_[9];
-     args[10] = args_[10];
-     args[11] = args_[11];
-     args[12] = args_[12];
-     args[13] = args_[13];
-     args[14] = args_[14];
-     args[15] = args_[15];
-     args[16] = args_[16];*/
+
+     #ifdef ARG_OPT_2
+     HCALL(ecall_add_flow, async, NULL, 1, args);
+     #else
      HCALL(ecall_add_flow, async, NULL, 17, args);
+     #endif
      #else
      ECALL(
          ecall_add_flow,
@@ -1643,9 +1634,9 @@ SGX_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, uint8_t new_value) 
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_voidptr(ut_cr) : ut_cr;
-    args[2] = async ? next_uint8(new_value) : &new_value;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
+    args[2] = async ? next_uint8(&pfc, new_value) : &new_value;
     HCALL(ecall_set_evictable, async, NULL, 3, args);
     #else
     ECALL(ecall_set_evictable, bridge_id, ut_cr, new_value);
@@ -1672,9 +1663,9 @@ SGX_backup_and_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, uint8_t 
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_voidptr(ut_cr) : ut_cr;
-    args[2] = async ? next_uint8(new_value) : &new_value;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
+    args[2] = async ? next_uint8(&pfc, new_value) : &new_value;
     HCALL(ecall_backup_and_set_evictable, async, NULL, 3, args);
     #else
     ECALL(ecall_backup_and_set_evictable, bridge_id, ut_cr, new_value);
@@ -1687,8 +1678,8 @@ SGX_backup_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_voidptr(ut_cr) : ut_cr;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
     HCALL(ecall_backup_evictable, async, NULL, 2, args);
     #else
     ECALL(ecall_backup_evictable, bridge_id, ut_cr);
@@ -1712,8 +1703,8 @@ SGX_restore_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_voidptr(ut_cr) : ut_cr;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
     HCALL(ecall_restore_evictable, async, NULL, 2, args);
     #else
     ECALL(ecall_restore_evictable, bridge_id, ut_cr);
@@ -1725,9 +1716,9 @@ SGX_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t evictio
     #ifdef HOTCALL
     bool async = ASYNC(true);
     void **args = pfc.args[pfc.idx];
-    args[0] = async ? next_uint8(bridge_id) : &bridge_id;
-    args[1] = async ? next_voidptr(ut_cr) : ut_cr;
-    args[2] = async ? next_uint32(eviction_rule_priority) : &eviction_rule_priority;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_voidptr(&pfc, ut_cr) : ut_cr;
+    args[2] = async ? next_uint32(&pfc, eviction_rule_priority) : &eviction_rule_priority;
     HCALL(ecall_rule_update_used, async, NULL, 3, args);
     #else
     ECALL(ecall_rule_update_used, bridge_id, ut_cr, eviction_rule_priority);

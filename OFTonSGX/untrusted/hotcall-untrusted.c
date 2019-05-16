@@ -10,7 +10,7 @@
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond   = PTHREAD_COND_INITIALIZER;
-
+/*
 void
 make_hotcall(struct hotcall *hcall){
 
@@ -41,13 +41,13 @@ make_hotcall(struct hotcall *hcall){
             );
         }
     }
-}
-
+}*/
+/*
 void prepare_hotcall_function(struct hotcall *hcall, uint8_t function_id, char *fmt, bool async, bool has_return, int n_args, ...) {
 
-    struct function_call *f_call = &pfc.fcs[pfc.idx++];
-    if(pfc.idx == 20) {
-        pfc.idx = 0;
+    struct function_call *f_call = &pfc->fcs[pfc->idx++];
+    if(pfc->idx == 20) {
+        pfc->idx = 0;
     }
     f_call->id = function_id;
     f_call->async = async;
@@ -80,7 +80,7 @@ void prepare_hotcall_function(struct hotcall *hcall, uint8_t function_id, char *
     va_end(args);
 
     list_push_back(&hcall->ecall_queue, &f_call->list_node);
-}
+}*/
 
 void
 ocall_sleep(){
