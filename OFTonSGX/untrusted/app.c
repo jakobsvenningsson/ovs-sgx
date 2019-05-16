@@ -26,9 +26,9 @@ static uint8_t bridge_counter = 0;
 static struct shared_memory_ctx sm_ctx;
 static struct preallocated_function_calls pfc;
 
-
 struct function_call *fc_;
 #define HCALL(f, async, ret, n_args, args) \
+    printf("Calling func %s.\n", #f);\
     fc_ = get_fcall(&pfc, hotcall_ ## f, ret, n_args, args); \
     list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node); \
     if(!async) { \
@@ -37,17 +37,6 @@ struct function_call *fc_;
 #define ECALL(f, args ...) \
     f(global_eid, ## args)
 
-/*#ifdef HOTCALL123
-#define ECALL(f, fmt, async, has_return, args ...) \
-    prepare_hotcall_function(&sm_ctx.hcall, hotcall_ ## f, fmt, async, has_return, get_n_args(fmt), args); \
-    if(!async) { \
-        make_hotcall(&sm_ctx.hcall); \
-    }
-#else
-#define ECALL(f, args ...) \
-    f(global_eid, ## args)
-#endif
-*/
 #ifdef BATCHING
 #define ASYNC(X) X
 #else
@@ -1290,7 +1279,6 @@ SGX_add_flow(uint8_t bridge_id,
                          int n_tables,
                          struct match *match,
                          unsigned int priority,
-                         bool *rule_is_hidden_buffer,
                          struct cls_rule **cls_rule_buffer,
                          bool *rule_is_modifiable,
                          size_t buffer_size)
@@ -1304,11 +1292,10 @@ SGX_add_flow(uint8_t bridge_id,
     args[2] = &n_tables;
     args[3] = match;
     args[4] = &priority;
-    args[5] = rule_is_hidden_buffer;
-    args[6] = cls_rule_buffer;
-    args[7] = rule_is_modifiable;
-    args[8] = &buffer_size;
-    HCALL(ecall_collect_rules_strict, async, &n, 9, args);
+    args[5] = cls_rule_buffer;
+    args[6] = rule_is_modifiable;
+    args[7] = &buffer_size;
+    HCALL(ecall_collect_rules_strict, async, &n, 8, args);
     #else
     ECALL(
         ecall_collect_rules_strict,
@@ -1318,7 +1305,6 @@ SGX_add_flow(uint8_t bridge_id,
         n_tables,
         match,
         priority,
-        rule_is_hidden_buffer,
         cls_rule_buffer,
         rule_is_modifiable,
         buffer_size
@@ -1334,7 +1320,6 @@ SGX_collect_rules_loose(uint8_t bridge_id,
                        int ofproto_n_tables,
                        size_t start_index,
                        struct match *match,
-                       bool *rule_is_hidden_buffer,
                        struct cls_rule **cls_rule_buffer,
                        size_t buffer_size,
                        bool *rule_is_modifiable,
@@ -1349,12 +1334,11 @@ SGX_collect_rules_loose(uint8_t bridge_id,
     args[2] = &ofproto_n_tables;
     args[3] = &start_index;
     args[4] = match;
-    args[5] = rule_is_hidden_buffer;
-    args[6] = cls_rule_buffer;
-    args[7] = &buffer_size;
-    args[8] = rule_is_modifiable;
-    args[9] = n_rules;
-    HCALL(ecall_collect_rules_loose, async, &n, 10, args);
+    args[5] = cls_rule_buffer;
+    args[6] = &buffer_size;
+    args[7] = rule_is_modifiable;
+    args[8] = n_rules;
+    HCALL(ecall_collect_rules_loose, async, &n, 9, args);
     #else
     ECALL(
         ecall_collect_rules_loose,
@@ -1364,7 +1348,6 @@ SGX_collect_rules_loose(uint8_t bridge_id,
         ofproto_n_tables,
         start_index,
         match,
-        rule_is_hidden_buffer,
         cls_rule_buffer,
         buffer_size,
         rule_is_modifiable,
@@ -1382,6 +1365,8 @@ SGX_delete_flows(uint8_t bridge_id,
 				 uint32_t *rule_hashes,
 				 unsigned int *rule_priorities,
 				 struct match *match,
+                 int *table_update_taggable,
+                 uint8_t *is_other_table,
                  size_t n)
  {
      #ifdef HOTCALL
@@ -1394,8 +1379,11 @@ SGX_delete_flows(uint8_t bridge_id,
      args[4] = rule_hashes;
      args[5] = rule_priorities;
      args[6] = match;
-     args[7] = &n;
-     HCALL(ecall_delete_flows, async, NULL, 8, args);
+     args[7] = table_update_taggable;
+     args[8] = is_other_table;
+     args[9] = &n;
+
+     HCALL(ecall_delete_flows, async, NULL, 10, args);
      #else
      ECALL(
          ecall_delete_flows,
@@ -1406,6 +1394,8 @@ SGX_delete_flows(uint8_t bridge_id,
          rule_hashes,
          rule_priorities,
          match,
+         table_update_taggable,
+         is_other_table,
          n
      );
      #endif

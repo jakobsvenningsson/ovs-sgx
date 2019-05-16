@@ -57,6 +57,25 @@
 
 #ifdef SGX
 #include "app.h"
+struct add_flow_args {
+    uint8_t bridge_id;
+    uint8_t table_id;
+    struct cls_rule *ut_cr_insert;
+    struct cls_rule **ut_cr_victim;
+    struct cls_rule **ut_cr_evict;
+    struct match *match;
+    uint32_t *rule_hash;
+    uint16_t *tmp_storage_vid;
+    uint16_t *tmp_storage_vid_mask;
+    uint32_t priority;
+    uint16_t flags;
+    uint32_t rule_priority;
+    struct cls_rule **pending_deletions;
+    int n_pending;
+    uint8_t has_timeout;
+    uint16_t *state;
+    int *table_update_taggable;
+};
 #endif
 
 #include "ovs-benchmark.h"
@@ -2951,17 +2970,12 @@ exit:
     struct cls_rule *cls_rule_buffer[buffer_size];
     cls_rule_addresses = cls_rule_buffer;
 
-    bool *rule_is_hidden;
-    bool rule_is_hidden_buffer[buffer_size];
-    rule_is_hidden = rule_is_hidden_buffer;
-
     bool *rule_is_mod = malloc(buffer_size * sizeof(bool));
 
     size_t n = SGX_collect_rules_loose(ofproto->bridge_id,
                                          table_id,
                                          ofproto->n_tables,
                                          0, match,
-                                         rule_is_hidden_buffer,
                                          cls_rule_buffer,
                                          buffer_size,
                                          rule_is_mod,
@@ -2969,23 +2983,19 @@ exit:
 
     size_t leftovers = total_rules - n;
     struct cls_rule *extended_cls_rule_buffer[total_rules];
-    bool extended_rule_is_hidden_buffer[total_rules];
 
     if(leftovers > 0) {
         memcpy(extended_cls_rule_buffer, cls_rule_buffer, sizeof(cls_rule_buffer));
-        memcpy(extended_rule_is_hidden_buffer, rule_is_hidden_buffer, sizeof(rule_is_hidden_buffer));
         rule_is_mod = realloc(rule_is_mod, sizeof(bool) * total_rules);
 
         size_t dummy;
         SGX_collect_rules_loose(ofproto->bridge_id, table_id,
                                              ofproto->n_tables, n,
                                              match,
-                                             extended_rule_is_hidden_buffer + n,
                                              extended_cls_rule_buffer + n,
                                              leftovers,
                                              rule_is_mod + n,
                                              &dummy);
-        rule_is_hidden = extended_rule_is_hidden_buffer;
         cls_rule_addresses = extended_cls_rule_buffer;
     }
 
@@ -2996,8 +3006,7 @@ exit:
             goto exit;
         }
         // rule_is_modifiable contains SGX
-        if (!rule_is_hidden[i]
-            && ofproto_rule_has_out_port(rule, out_port)
+        if (ofproto_rule_has_out_port(rule, out_port)
                 && !((rule->flow_cookie ^ cookie) & cookie_mask)) {
             list_push_back(rules, &rule->ofproto_node);
         }
@@ -3171,23 +3180,18 @@ collect_rules_strict(struct ofproto *ofproto, uint8_t table_id,
             }
         }
     }
-    //VLOG_ERR("BUFFER SIZE %d\n", count);
-
 exit:
     cls_rule_destroy(&cr);
     return 0;
 #elif OPTIMIZED
     size_t buffer_size = table_id == 0xff ? ofproto->n_tables : 1;
     struct cls_rule *cls_rule_buffer[buffer_size];
-    bool rule_is_hidden_buffer[buffer_size];
     bool *rule_is_mod = malloc(buffer_size * sizeof(bool));
-    //uint32_t *hash_buffer = malloc(buffer_size * sizeof(uint32_t));
 
     size_t n = SGX_collect_rules_strict(ofproto->bridge_id,
                                         table_id,
                                         ofproto->n_tables,
                                         match, priority,
-                                        rule_is_hidden_buffer,
                                         cls_rule_buffer,
                                         rule_is_mod,
                                         buffer_size);
@@ -3200,10 +3204,7 @@ exit:
                 error = OFPROTO_POSTPONE;
                 goto exit;
             }
-
-            // rule_is_modifiable contains SGX
-            if (!rule_is_hidden_buffer[i]
-                && ofproto_rule_has_out_port(rule, out_port)
+            if (ofproto_rule_has_out_port(rule, out_port)
                     && !((rule->flow_cookie ^ cookie) & cookie_mask)) {
                 list_push_back(rules, &rule->ofproto_node);
             }
@@ -3215,13 +3216,10 @@ exit:
         }
         return 0;
 #else
-    //1. Need to determine the size of the buffer to allocatr
     int buf_size;
     buf_size=SGX_collect_rules_strict_c(ofproto->bridge_id, ofproto->n_tables, table_id, match, priority);
-    //2. allocate the buffer
     if(buf_size){
     	struct cls_rule *buf[buf_size];
-    	//3. Invoking the ecall to ge the pointers
     	SGX_collect_rules_strict_r(ofproto->bridge_id, ofproto->n_tables,buf,buf_size,table_id,match,priority);
        	int lp;
         for(lp=0;lp<buf_size;lp++){
@@ -3232,8 +3230,6 @@ exit:
                     error = OFPROTO_POSTPONE;
                     goto exit;
                 }
-
-                // rule_is_modifiable contains SGX
                 if (!ofproto_rule_is_hidden(rule)
                     && ofproto_rule_has_out_port(rule, out_port)
                         && !((rule->flow_cookie ^ cookie) & cookie_mask)) {
@@ -3241,11 +3237,9 @@ exit:
                 }
             }
         }
-
     }
  exit:
     return 0;
-
 #endif
 }
 
@@ -3636,6 +3630,8 @@ is_flow_deletion_pending(const struct ofproto *ofproto,
  *
  * 'ofconn' is used to retrieve the packet buffer specified in ofm->buffer_id,
  * if any. */
+
+
 static enum ofperr
 add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
          const struct ofputil_flow_mod *fm, const struct ofp_header *request)
@@ -3647,8 +3643,8 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     #endif
 
     #ifdef BENCHMARK_FLUSH
-
-    unsigned long sz = 1024 * (32 + 256);
+    //256
+    unsigned long sz = 1024 * (32);
     unsigned long *dummy = malloc(sz * sizeof(unsigned long));
     for(size_t i = 0; i < sz; ++i) {
         dummy[i] = rand();
@@ -3856,6 +3852,28 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     args[16] = &table_update_taggable;
 
     SGX_add_flow(args);
+    #elif ARG_OPT_2
+
+    struct add_flow_args args = {
+        .bridge_id = ofproto->bridge_id,
+        .table_id = table_id,
+        .ut_cr_insert = &rule->cr,
+        .ut_cr_victim = &cls_rule_victim,
+        .ut_cr_evict = &cls_rule_evict,
+        .match = &fm->match,
+        .rule_hash = &evict_rule_hash,
+        .tmp_storage_vid = &rule->tmp_storage_vid,
+        .tmp_storage_vid_mask = &rule->tmp_storage_vid_mask,
+        .priority = fm->priority,
+        .flags =  fm->flags,
+        .rule_priority =  rule_eviction_priority(rule),
+        .pending_deletions = pending_deletions,
+        .n_pending = n_pending,
+        .has_timeout =  (rule->idle_timeout || rule->hard_timeout),
+        .state = &state,
+        .table_update_taggable = &table_update_taggable
+    };
+    SGX_add_flow(&args);
     #else
     SGX_add_flow(ofproto->bridge_id,
                  table_id,
@@ -4275,10 +4293,7 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
     group = ofopgroup_create(ofproto, ofconn, request, UINT32_MAX);
     #ifdef OPTIMIZED
 
-    size_t n = 0;
-    LIST_FOR_EACH_SAFE (rule, next, ofproto_node, rules) {
-        n++;
-    }
+    size_t n = list_size(rules);
 
     unsigned int rule_priorities[n];
     bool rule_is_hidden[n];
@@ -4293,7 +4308,11 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
         cls_rules[i] = &rule->cr;
         i++;
     }
-    SGX_delete_flows(ofproto->bridge_id, rule_table_ids, cls_rules, rule_is_hidden, rule_hashes, rule_priorities, match, n);
+
+    int table_update_taggable[n];
+    uint8_t is_other_table[n];
+
+    SGX_delete_flows(ofproto->bridge_id, rule_table_ids, cls_rules, rule_is_hidden, rule_hashes, rule_priorities, match, table_update_taggable, is_other_table, n);
 
     i = 0;
     LIST_FOR_EACH_SAFE (rule, next, ofproto_node, rules) {
@@ -4306,6 +4325,9 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
             list_remove(&rule->expirable);
         }
 
+        rule->is_other_table = is_other_table + i;
+        rule->table_update_taggable = table_update_taggable + i;
+
         ofproto->ofproto_class->rule_destruct(rule);
         i++;
     }
@@ -4315,7 +4337,12 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
         delete_flow__(rule, group);
     }
     #endif
+
+    #ifdef OPTIMIZED
+    ofopgroup_submit(group, NULL, NULL, rule_is_hidden);
+    #else
     ofopgroup_submit(group, NULL, NULL, NULL);
+    #endif
 
     return 0;
 }
@@ -4556,10 +4583,12 @@ handle_flow_mod__(struct ofproto *ofproto, struct ofconn *ofconn,
         return delete_flows_loose(ofproto, ofconn, fm, oh);
         #endif
     case OFPFC_DELETE_STRICT:
+        printf("BEFORE DEL STRICT\n");
         #ifdef BENCHMARK_DEL_FLOW_STRICT
         {
             enum ofperr res;
             BENCHMARK(delete_flow_strict, res, ofproto, ofconn, fm, oh);
+            printf("AFTER DEL STRICT\n");
             return res;
         }
         #else

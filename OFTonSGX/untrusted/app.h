@@ -128,7 +128,6 @@ bool *is_read_only, bool *is_hidden, bool *is_other_table,
 						 int n_tables,
 						 struct match *match,
 						 unsigned int priority,
-                         bool *rule_is_hidden_buffer,
                          struct cls_rule **cls_rule_buffer,
 						 bool *rule_is_modifiable,
                          size_t buffer_size);
@@ -142,7 +141,6 @@ bool *is_read_only, bool *is_hidden, bool *is_other_table,
                         int ofproto_n_tables,
                         size_t start_index,
                         struct match *match,
-                        bool *rule_is_hidden_buffer,
                         struct cls_rule **cls_rule_buffer,
                         size_t buffer_size,
 						bool *rule_is_modifiable,
@@ -155,7 +153,10 @@ SGX_delete_flows(uint8_t bridge_id,
 				 bool *rule_is_hidden,
 				 uint32_t *rule_hashes,
 				 unsigned int *rule_priorities,
-				 struct match *match, size_t n);
+				 struct match *match,
+				 int *table_update_taggable,
+				 uint8_t *is_other_table,
+				 size_t n);
 
 
  void

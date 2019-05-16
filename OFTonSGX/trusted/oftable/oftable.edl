@@ -95,7 +95,10 @@ enclave {
  						 [user_check] bool *rule_is_hidden,
  						 [user_check] uint32_t *rule_hashes,
  						 [user_check] unsigned int *rule_priorities,
- 						 [user_check] struct match *match, size_t n);
+ 						 [user_check] struct match *match,
+						 [user_check] int *table_update_taggable,
+						 [user_check] uint8_t *is_other_table,
+						 size_t n);
 
 		 public size_t
 		 ecall_collect_rules_strict(uint8_t bridge_id,
@@ -103,7 +106,6 @@ enclave {
 		 						 int n_tables,
 		 						 [user_check] struct match *match,
 		 						 unsigned int priority,
-		 						 [user_check] bool *rule_is_hidden_buffer,
 		 						 [user_check] struct cls_rule **cls_rule_buffer,
 		 						 [user_check] bool *rule_is_modifiable,
 		 						 size_t buffer_size);
@@ -114,7 +116,6 @@ enclave {
 		 					   int ofproto_n_tables,
 		 					   size_t start_index,
 		 					   [user_check] struct match *match,
-		 					   [user_check] bool *rule_is_hidden_buffer,
 		 					   [user_check] struct cls_rule **cls_rule_buffer,
 		 					   size_t buffer_size,
 		 					   [user_check] bool *rule_is_modifiable,

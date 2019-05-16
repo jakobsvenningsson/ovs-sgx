@@ -6,6 +6,63 @@
 #include "cls-rule.h"
 #include "openflow-common.h"
 
+enum nx_flow_monitor_flags {
+    /* When to send updates. */
+    NXFMF_INITIAL = 1 << 0,     /* Initially matching flows. */
+    NXFMF_ADD = 1 << 1,         /* New matching flows as they are added. */
+    NXFMF_DELETE = 1 << 2,      /* Old matching flows as they are removed. */
+    NXFMF_MODIFY = 1 << 3,      /* Matching flows as they are changed. */
+
+    /* What to include in updates. */
+    NXFMF_ACTIONS = 1 << 4,     /* If set, actions are included. */
+    NXFMF_OWN = 1 << 5,         /* If set, include own changes in full. */
+};
+
+struct rule {
+    struct list ofproto_node;    /* Owned by ofproto base code. */
+    void *ofproto;     /* The ofproto that contains this rule. */
+    struct cls_rule cr;          /* In owning ofproto's classifier. */
+
+    void *pending; /* Operation now in progress, if nonnull. */
+
+    ovs_be64 flow_cookie;        /* Controller-issued identifier. */
+
+    long long int created;       /* Creation time. */
+    long long int modified;      /* Time of last modification. */
+    long long int used;          /* Last use; time created if never used. */
+    uint16_t hard_timeout;       /* In seconds from ->modified. */
+    uint16_t idle_timeout;       /* In seconds from ->used. */
+    uint8_t table_id;            /* Index in ofproto's 'tables' array. */
+    bool send_flow_removed;      /* Send a flow removed message? */
+
+    /* Eviction groups. */
+    #ifndef SGX
+    bool evictable;              /* If false, prevents eviction. */
+    struct heap_node evg_node;   /* In eviction_group's "rules" heap. */
+    struct eviction_group *eviction_group; /* NULL if not in any group. */
+    #endif
+
+    void *ofpacts;      /* Sequence of "struct ofpacts". */
+    unsigned int ofpacts_len;    /* Size of 'ofpacts', in bytes. */
+
+    /* Flow monitors. */
+    enum nx_flow_monitor_flags monitor_flags;
+    uint64_t add_seqno;         /* Sequence number when added. */
+    uint64_t modify_seqno;      /* Sequence number when changed. */
+
+    /* Optimisation for flow expiry. */
+    struct list expirable;      /* In ofproto's 'expirable' list if this rule
+                                 * is expirable, otherwise empty. */
+
+    uint16_t tmp_storage_vid;
+    uint8_t tmp_storage_vid_exist;
+    uint16_t tmp_storage_vid_mask;
+    uint8_t tmp_storage_vid_mask_exist;
+
+    bool *is_other_table;
+    int *table_update_taggable;
+};
+
 
 // Global data structures
 extern struct oftable * SGX_oftables[100];
@@ -440,7 +497,10 @@ ecall_add_flow(uint8_t bridge_id,
                   bool *rule_is_hidden,
                   uint32_t *rule_hashes,
                   unsigned int *rule_priorities,
-                  struct match *match, size_t n)
+                  struct match *match,
+                  int *table_update_taggable,
+                  uint8_t *is_other_table,
+                  size_t n)
 {
   for(int i = 0; i < n; ++i) {
       struct sgx_cls_rule * sgx_cls_rule;
@@ -453,6 +513,10 @@ ecall_add_flow(uint8_t bridge_id,
 
       ecall_cls_remove(bridge_id, rule_table_ids[i], sgx_cls_rule->o_cls_rule);
       ecall_evg_remove_rule(bridge_id, rule_table_ids[i], sgx_cls_rule->o_cls_rule);
+
+
+      table_update_taggable[i] = ecall_oftable_update_taggable(bridge_id, rule_table_ids[i]);
+      is_other_table[i] = ((ecall_oftable_is_other_table(bridge_id, rule_table_ids[i]) > UINT16_MAX) << 6);
   }
 }
 
@@ -463,7 +527,6 @@ ecall_add_flow(uint8_t bridge_id,
                               int ofproto_n_tables,
                               struct match *match,
                               unsigned int priority,
-                              bool *rule_is_hidden_buffer,
                               struct cls_rule **cls_rule_buffer,
                               bool *rule_is_modifiable,
                               size_t buffer_size)
@@ -476,8 +539,12 @@ ecall_add_flow(uint8_t bridge_id,
           struct cls_rule * cls_rule = classifier_find_rule_exactly(&table->cls, &cr);
           if(cls_rule) {
               struct sgx_cls_rule * sgx_cls_rule = CONTAINER_OF(cls_rule, struct sgx_cls_rule, cls_rule);
+              bool is_hidden = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule) > UINT16_MAX;
+              if(is_hidden) {
+                  continue;
+              }
               cls_rule_buffer[n] = sgx_cls_rule->o_cls_rule;
-              rule_is_hidden_buffer[n] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule) > UINT16_MAX;
+              //rule_is_hidden_buffer[n] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule) > UINT16_MAX;
               rule_is_modifiable[n] = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
               n++;
           }
@@ -495,7 +562,6 @@ ecall_add_flow(uint8_t bridge_id,
                             int ofproto_n_tables,
                             size_t start_index,
                             struct match *match,
-                            bool *rule_is_hidden_buffer,
                             struct cls_rule **cls_rule_buffer,
                             size_t buffer_size,
                             bool *rule_is_modifiable,
@@ -512,13 +578,16 @@ ecall_add_flow(uint8_t bridge_id,
 
            cls_cursor_init(&cursor, &table->cls, &cr);
            CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
+               bool is_hidden = ecall_cr_priority(bridge_id, rule->o_cls_rule) > UINT16_MAX;
+               if(is_hidden) {
+                   continue;
+               }
                if (n >= buffer_size || (count < start_index)) {
                    count++;
                    continue;
                }
                count++;
                cls_rule_buffer[n] = rule->o_cls_rule;
-               rule_is_hidden_buffer[n] = ecall_cr_priority(bridge_id, rule->o_cls_rule) > UINT16_MAX;
                rule_is_modifiable[n] = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
                n++;
            }

@@ -5834,7 +5834,7 @@ rule_destruct(struct rule *rule_)
         facet_revalidate(facet);
     }
 
-    complete_operation(rule, NULL, NULL);
+    complete_operation(rule, rule_->is_other_table, rule_->table_update_taggable);
 }
 
 static void
