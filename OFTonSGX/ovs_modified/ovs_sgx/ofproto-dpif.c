@@ -5894,7 +5894,9 @@ rule_modify_actions(struct rule *rule_)
 {
     struct rule_dpif *rule = rule_dpif_cast(rule_);
 
-    complete_operation(rule, NULL, NULL);
+    complete_operation(rule, rule_->is_other_table, rule_->table_update_taggable);
+    rule_->is_other_table = NULL;
+    rule_->table_update_taggable = NULL;
 }
 
 /* Sends 'packet' out 'ofport'.

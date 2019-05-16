@@ -516,7 +516,7 @@ ecall_add_flow(uint8_t bridge_id,
 
 
       table_update_taggable[i] = ecall_oftable_update_taggable(bridge_id, rule_table_ids[i]);
-      is_other_table[i] = ((ecall_oftable_is_other_table(bridge_id, rule_table_ids[i]) > UINT16_MAX) << 6);
+      is_other_table[i] = ecall_oftable_is_other_table(bridge_id, rule_table_ids[i]) > UINT16_MAX;
   }
 }
 
@@ -565,6 +565,9 @@ ecall_add_flow(uint8_t bridge_id,
                             struct cls_rule **cls_rule_buffer,
                             size_t buffer_size,
                             bool *rule_is_modifiable,
+                            bool *rule_is_hidden,
+                            int *table_update_tagable,
+                            uint8_t *is_other_table,
                             size_t *n_rules)
    {
        struct oftable * table;
@@ -578,17 +581,16 @@ ecall_add_flow(uint8_t bridge_id,
 
            cls_cursor_init(&cursor, &table->cls, &cr);
            CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
-               bool is_hidden = ecall_cr_priority(bridge_id, rule->o_cls_rule) > UINT16_MAX;
-               if(is_hidden) {
-                   continue;
-               }
                if (n >= buffer_size || (count < start_index)) {
                    count++;
                    continue;
                }
                count++;
+               rule_is_hidden[n] = ecall_cr_priority(bridge_id, rule->o_cls_rule) > UINT16_MAX;
                cls_rule_buffer[n] = rule->o_cls_rule;
                rule_is_modifiable[n] = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
+               table_update_tagable[n] = ecall_oftable_update_taggable(bridge_id, table_id);
+               is_other_table[n] = ecall_oftable_is_other_table(bridge_id, table_id) > UINT16_MAX;
                n++;
            }
        }

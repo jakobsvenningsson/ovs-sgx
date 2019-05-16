@@ -144,6 +144,9 @@ bool *is_read_only, bool *is_hidden, bool *is_other_table,
                         struct cls_rule **cls_rule_buffer,
                         size_t buffer_size,
 						bool *rule_is_modifiable,
+						bool *rule_is_hidden,
+						int *table_update_taggable,
+						uint8_t *is_other_table,
                         size_t *n_rules);
 
 void

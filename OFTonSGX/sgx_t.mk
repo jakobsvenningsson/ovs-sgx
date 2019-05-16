@@ -124,7 +124,7 @@ endif
 ######## enclave Objects ########
 
 trusted/enclave_t.c: $(SGX_EDGER8R) ./trusted/enclave.edl
-	@cd ./trusted && $(SGX_EDGER8R) --trusted ../trusted/enclave.edl --search-path ../trusted --search-path $(SGX_SDK)/include
+	@cd ./trusted && $(SGX_EDGER8R) --trusted ../trusted/enclave.edl --search-path ../trusted --search-path $(SGX_SDK)/include 
 	@echo "GEN  =>  $@"
 
 trusted/enclave_t.o: ./trusted/enclave_t.c

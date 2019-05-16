@@ -119,6 +119,9 @@ enclave {
 		 					   [user_check] struct cls_rule **cls_rule_buffer,
 		 					   size_t buffer_size,
 		 					   [user_check] bool *rule_is_modifiable,
+							   [user_check] bool *rule_is_hidden,
+			                   [user_check] int *table_update_tagable,
+			                   [user_check] uint8_t *is_other_table,
 		 					   [user_check] size_t *n_rules);
 
 

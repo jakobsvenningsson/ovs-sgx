@@ -26,6 +26,7 @@ static uint8_t bridge_counter = 0;
 static struct shared_memory_ctx sm_ctx;
 static struct preallocated_function_calls pfc;
 
+
 struct function_call *fc_;
 #define HCALL(f, async, ret, n_args, args) \
     printf("Calling func %s.\n", #f);\
@@ -37,6 +38,17 @@ struct function_call *fc_;
 #define ECALL(f, args ...) \
     f(global_eid, ## args)
 
+/*#ifdef HOTCALL123
+#define ECALL(f, fmt, async, has_return, args ...) \
+    prepare_hotcall_function(&sm_ctx.hcall, hotcall_ ## f, fmt, async, has_return, get_n_args(fmt), args); \
+    if(!async) { \
+        make_hotcall(&sm_ctx.hcall); \
+    }
+#else
+#define ECALL(f, args ...) \
+    f(global_eid, ## args)
+#endif
+*/
 #ifdef BATCHING
 #define ASYNC(X) X
 #else
@@ -1323,6 +1335,9 @@ SGX_collect_rules_loose(uint8_t bridge_id,
                        struct cls_rule **cls_rule_buffer,
                        size_t buffer_size,
                        bool *rule_is_modifiable,
+                       bool *rule_is_hidden,
+                       int *table_update_taggable,
+                       uint8_t *is_other_table,
                        size_t *n_rules)
 {
     size_t n;
@@ -1337,8 +1352,11 @@ SGX_collect_rules_loose(uint8_t bridge_id,
     args[5] = cls_rule_buffer;
     args[6] = &buffer_size;
     args[7] = rule_is_modifiable;
-    args[8] = n_rules;
-    HCALL(ecall_collect_rules_loose, async, &n, 9, args);
+    args[8] = rule_is_hidden;
+    args[9] = table_update_taggable;
+    args[10] = is_other_table;
+    args[11] = n_rules;
+    HCALL(ecall_collect_rules_loose, async, &n, 12, args);
     #else
     ECALL(
         ecall_collect_rules_loose,
@@ -1351,6 +1369,9 @@ SGX_collect_rules_loose(uint8_t bridge_id,
         cls_rule_buffer,
         buffer_size,
         rule_is_modifiable,
+        rule_is_hidden,
+        table_update_taggable,
+        is_other_table,
         n_rules
     );
     #endif

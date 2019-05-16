@@ -561,7 +561,10 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 (struct cls_rule **) args->args[5],
                 *(size_t *) args->args[6],
                 (bool *) args->args[7],
-                (size_t *) args->args[8]
+                (bool *) args->args[8],
+                args->args[9],
+                args->args[10],
+                (size_t *) args->args[11]
             );
             break;
         case hotcall_ecall_collect_rules_strict:
