@@ -110,7 +110,7 @@ SGX_add_flow(uint8_t bridge_id,
 			 int n_pending,
 			 bool has_timeout,
 			 uint16_t *state,
-			 int *table_update_taggable);
+			 int *table_update_taggable, unsigned int *evict_priority);
 #endif
 
 /*

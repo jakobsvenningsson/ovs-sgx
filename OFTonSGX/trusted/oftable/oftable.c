@@ -59,8 +59,8 @@ struct rule {
     uint16_t tmp_storage_vid_mask;
     uint8_t tmp_storage_vid_mask_exist;
 
-    bool *is_other_table;
-    int *table_update_taggable;
+    bool is_other_table;
+    int table_update_taggable;
 };
 
 
@@ -420,7 +420,8 @@ ecall_add_flow(uint8_t bridge_id,
              int n_pending,
              bool has_timout,
              uint16_t *state,
-             int *table_update_taggable)
+             int *table_update_taggable,
+             unsigned int *evict_priority)
  {
      if (ecall_oftable_is_readonly(bridge_id, table_id)){
          //is_read_only
@@ -471,6 +472,12 @@ ecall_add_flow(uint8_t bridge_id,
          *state |= (1 << 0);
          ecall_choose_rule_to_evict_p(bridge_id, table_id, evict, cr);
          if(*evict) {
+             bool rule_is_hidden = false;
+             ecall_ofproto_rule_send_removed(bridge_id, *evict, match, evict_priority, &rule_is_hidden);
+             struct rule *evict_rule;
+             evict_rule = CONTAINER_OF(*evict, struct rule, cr);
+             evict_rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, table_id);
+             evict_rule->is_other_table = ecall_oftable_is_other_table(bridge_id, table_id);
              ecall_cls_remove(bridge_id, table_id, *evict);
              ecall_evg_remove_rule(bridge_id, table_id, *evict);
              *evict_rule_hash = ecall_cls_rule_hash(bridge_id, *evict, table_id);
@@ -486,7 +493,7 @@ ecall_add_flow(uint8_t bridge_id,
      *table_update_taggable = ecall_oftable_update_taggable(bridge_id, table_id);
 
      //*is_other_table
-     *state |= ((ecall_oftable_is_other_table(bridge_id, table_id) > UINT16_MAX) << 6);
+     *state |= (ecall_oftable_is_other_table(bridge_id, table_id) << 6);
 
  }
 
@@ -516,7 +523,7 @@ ecall_add_flow(uint8_t bridge_id,
 
 
       table_update_taggable[i] = ecall_oftable_update_taggable(bridge_id, rule_table_ids[i]);
-      is_other_table[i] = ecall_oftable_is_other_table(bridge_id, rule_table_ids[i]) > UINT16_MAX;
+      is_other_table[i] = ecall_oftable_is_other_table(bridge_id, rule_table_ids[i]);
   }
 }
 
@@ -589,8 +596,12 @@ ecall_add_flow(uint8_t bridge_id,
                rule_is_hidden[n] = ecall_cr_priority(bridge_id, rule->o_cls_rule) > UINT16_MAX;
                cls_rule_buffer[n] = rule->o_cls_rule;
                rule_is_modifiable[n] = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
-               table_update_tagable[n] = ecall_oftable_update_taggable(bridge_id, table_id);
-               is_other_table[n] = ecall_oftable_is_other_table(bridge_id, table_id) > UINT16_MAX;
+               /*if(table_update_tagable) {
+                   table_update_tagable[n] = ecall_oftable_update_taggable(bridge_id, table_id);
+               }
+               if(is_other_table) {
+                   is_other_table[n] = ecall_oftable_is_other_table(bridge_id, table_id) > UINT16_MAX;
+               }*/
                n++;
            }
        }

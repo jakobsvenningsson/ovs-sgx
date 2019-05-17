@@ -87,7 +87,7 @@ enclave {
 					 int n_pending,
 					 bool has_timeout,
 					 [user_check] uint16_t *state,
-					 [user_check] int *table_update_taggable);
+					 [user_check] int *table_update_taggable, [user_check] unsigned int *evict_priority);
  		public void
  		ecall_delete_flows(uint8_t bridge_id,
  						 [user_check] uint8_t *rule_table_ids,

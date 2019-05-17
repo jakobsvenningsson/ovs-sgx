@@ -5805,8 +5805,8 @@ rule_construct(struct rule *rule_)
 		}else{
 			rule->tag=0;
 		}
-        rule_->is_other_table = NULL;
-        rule_->table_update_taggable = NULL;
+        rule_->is_other_table = 0;
+        rule_->table_update_taggable = 0;
 #else
         SGX_miniflow_expand(rule->up.ofproto->bridge_id, &rule->up.cr,&flow);
         uint32_t hash;
@@ -5818,9 +5818,9 @@ rule_construct(struct rule *rule_)
 		}
 #endif
     }
-    complete_operation(rule, rule_->is_other_table, rule_->table_update_taggable);
-    rule_->is_other_table = NULL;
-    rule_->table_update_taggable = NULL;
+    complete_operation(rule, &rule_->is_other_table, &rule_->table_update_taggable);
+    rule_->is_other_table = 0;
+    rule_->table_update_taggable = 0;
     return 0;
 }
 
@@ -5834,7 +5834,7 @@ rule_destruct(struct rule *rule_)
         facet_revalidate(facet);
     }
 
-    complete_operation(rule, rule_->is_other_table, rule_->table_update_taggable);
+    complete_operation(rule, &rule_->is_other_table, &rule_->table_update_taggable);
 }
 
 static void
@@ -5894,9 +5894,9 @@ rule_modify_actions(struct rule *rule_)
 {
     struct rule_dpif *rule = rule_dpif_cast(rule_);
 
-    complete_operation(rule, rule_->is_other_table, rule_->table_update_taggable);
-    rule_->is_other_table = NULL;
-    rule_->table_update_taggable = NULL;
+    complete_operation(rule, &rule_->is_other_table, &rule_->table_update_taggable);
+    rule_->is_other_table = 0;
+    rule_->table_update_taggable = 0;
 }
 
 /* Sends 'packet' out 'ofport'.

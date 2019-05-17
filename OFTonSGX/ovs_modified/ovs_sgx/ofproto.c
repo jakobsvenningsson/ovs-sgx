@@ -239,7 +239,7 @@ static void reinit_ports(struct ofproto *);
 
 /* rule. */
 static void ofproto_rule_destroy__(struct rule *);
-static void ofproto_rule_send_removed(struct rule *, uint8_t reason);
+static void ofproto_rule_send_removed(struct rule *, uint8_t reason, unsigned int *evict_priority, bool *is_hidden);
 static bool rule_is_modifiable(const struct rule *);
 
 /* OpenFlow. */
@@ -1357,7 +1357,9 @@ ofproto_run(struct ofproto *p)
     case S_EVICT:
         connmgr_run(p->connmgr, NULL);
         #ifdef BENCHMARK_EVICTION_BATCH
+        printf("BEGIN EVICT\n");
         BENCHMARK_NO_RETURN(ofproto_evict, p);
+        printf("END EVICT\n");
         #else
         ofproto_evict(p);
         #endif
@@ -2995,7 +2997,7 @@ exit:
         memcpy(extended_cls_rule_buffer, cls_rule_buffer, sizeof(cls_rule_buffer));
         rule_is_mod = realloc(rule_is_mod, sizeof(bool) * total_rules);
         rule_is_hidden = realloc(rule_is_hidden, sizeof(bool) * total_rules);
-        table_update_taggable = realloc(table_update_taggable, sizeof(bool) * total_rules);
+        table_update_taggable = realloc(table_update_taggable, sizeof(int) * total_rules);
         is_other_table = realloc(is_other_table, sizeof(uint8_t) * total_rules);
 
         size_t dummy;
@@ -3821,16 +3823,15 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     rule->add_seqno = 0;
     rule->modify_seqno = 0;
 
-    int n_pending = 0;
+    int n_pending = hmap_count(&ofproto->deletions);
     struct cls_rule *pending_deletions[n_pending];
-    /*int n_pending = hmap_count(&ofproto->deletions);
     if(n_pending > 0) {
         int i = 0;
         struct ofoperation *op;
         HMAP_FOR_EACH (op, hmap_node, &ofproto->deletions) {
             pending_deletions[i++] =  &op->rule->cr;
         }
-    }*/
+    }
 
     struct cls_rule *cls_rule_victim = NULL;
     struct cls_rule *cls_rule_evict = NULL;
@@ -3839,8 +3840,8 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
          is_other_table = false;
 
     uint32_t evict_rule_hash;
-
     int table_update_taggable;
+    unsigned int evict_priority;
 
     uint16_t state = 0;
     CLOSE
@@ -3873,6 +3874,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     args[14] = &has_timeout;
     args[15] = &state;
     args[16] = &table_update_taggable;
+    args[17] = &evict_priority;
 
     SGX_add_flow(args);
     #elif ARG_OPT_2
@@ -3914,7 +3916,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
                  n_pending,
                  (rule->idle_timeout || rule->hard_timeout),
                  &state,
-                 &table_update_taggable);
+                 &table_update_taggable, &evict_priority);
     #endif
     CLOSE
     ts[1] = GET_TIME
@@ -3950,8 +3952,8 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     rule->tmp_storage_vid_mask_exist = 1;
 
 
-    rule->is_other_table = &is_other_table;
-    rule->table_update_taggable = &table_update_taggable;
+    rule->is_other_table = is_other_table;
+    rule->table_update_taggable = table_update_taggable;
 
     bool may_expire = rule->hard_timeout || rule->idle_timeout;
 
@@ -4095,7 +4097,8 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         } else if (evict) {
             BEGIN
             // This method also contains enclave information which could be pre fetched!
-            ofproto_rule_send_removed(evict, OFPRR_DELETE);
+
+            ofproto_rule_send_removed(evict, OFPRR_DELETE, &evict_priority, &is_hidden);
 
             #ifndef OPTIMIZED
             ofoperation_create(group, evict, OFOPERATION_DELETE, OFPRR_DELETE, NULL);
@@ -4175,8 +4178,12 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
             continue;
         }
 
-        rule->is_other_table = is_other_table + i;
-        rule->table_update_taggable = table_update_taggable + i;
+        if(is_other_table) {
+            rule->is_other_table = is_other_table[i];
+        }
+        if(table_update_taggable) {
+            rule->table_update_taggable = table_update_taggable[i];
+        }
 
         actions_changed = !ofpacts_equal(fm->ofpacts, fm->ofpacts_len,
                                          rule->ofpacts, rule->ofpacts_len);
@@ -4196,8 +4203,8 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
             ofoperation_complete(op, 0);
         }
     }
-    ofopgroup_submit(group, NULL, NULL, rule_is_hidden + i);
 
+    ofopgroup_submit(group, NULL, NULL, rule_is_hidden ? rule_is_hidden + i : NULL);
     return error;
 }
 
@@ -4225,8 +4232,8 @@ modify_flows_loose(struct ofproto *ofproto, struct ofconn *ofconn,
     struct list rules;
     int error;
     bool *modifiable = NULL, *rule_is_hidden = NULL;
-    uint8_t *is_other_table;
-    int *table_update_taggable;
+    uint8_t *is_other_table = NULL;
+    int *table_update_taggable = NULL;
     error = collect_rules_loose(ofproto, fm->table_id, &fm->match,
                                 fm->cookie, fm->cookie_mask,
                                 OFPP_ANY, &rules, &modifiable, NULL, &rule_is_hidden, &table_update_taggable, &is_other_table);
@@ -4235,7 +4242,21 @@ modify_flows_loose(struct ofproto *ofproto, struct ofconn *ofconn,
     } else if (list_is_empty(&rules)) {
         return modify_flows_add(ofproto, ofconn, fm, request);
     } else {
-        return modify_flows__(ofproto, ofconn, fm, request, &rules, modifiable, rule_is_hidden, table_update_taggable, is_other_table);
+         enum ofperr err;
+         err = modify_flows__(ofproto, ofconn, fm, request, &rules, modifiable, rule_is_hidden, table_update_taggable, is_other_table);
+         if(rule_is_hidden) {
+             free(rule_is_hidden);
+         }
+         if(is_other_table) {
+             free(is_other_table);
+         }
+         if(table_update_taggable) {
+             free(table_update_taggable);
+         }
+         if(modifiable) {
+             free(modifiable);
+         }
+        return err;
     }
 }
 
@@ -4274,7 +4295,7 @@ delete_flow__(struct rule *rule, struct ofopgroup *group)
 {
     struct ofproto *ofproto = rule->ofproto;
 
-    ofproto_rule_send_removed(rule, OFPRR_DELETE);
+    ofproto_rule_send_removed(rule, OFPRR_DELETE, NULL, NULL);
 
     ofoperation_create(group, rule, OFOPERATION_DELETE, OFPRR_DELETE, NULL);
 
@@ -4353,8 +4374,8 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
             list_remove(&rule->expirable);
         }
 
-        rule->is_other_table = is_other_table + i;
-        rule->table_update_taggable = table_update_taggable + i;
+        rule->is_other_table = is_other_table[i];
+        rule->table_update_taggable = table_update_taggable[i];
 
         ofproto->ofproto_class->rule_destruct(rule);
         i++;
@@ -4412,7 +4433,7 @@ delete_flow_strict(struct ofproto *ofproto, struct ofconn *ofconn,
 }
 
 static void
-ofproto_rule_send_removed(struct rule *rule, uint8_t reason)
+ofproto_rule_send_removed(struct rule *rule, uint8_t reason, unsigned int *priority, bool *is_hidden)
 {
     struct ofputil_flow_removed fr;
 
@@ -4424,13 +4445,20 @@ ofproto_rule_send_removed(struct rule *rule, uint8_t reason)
     minimatch_expand(&rule->cr.match, &fr.match);
     fr.priority = rule->cr.priority;
 #elif OPTIMIZED
-    bool rule_is_hidden = false;
-    unsigned int priority;
-    SGX_ofproto_rule_send_removed(rule->ofproto->bridge_id, &rule->cr, &fr.match, &priority, &rule_is_hidden);
-    if(rule_is_hidden || !rule->send_flow_removed) {
-        return;
+    if(priority) {
+        if(*is_hidden || !rule->send_flow_removed) {
+            return;
+        }
+        fr.priority = *priority;
+    } else {
+        bool rule_is_hidden = false;
+        unsigned int prio;
+        SGX_ofproto_rule_send_removed(rule->ofproto->bridge_id, &rule->cr, &fr.match, &prio, &rule_is_hidden);
+        if(rule_is_hidden || !rule->send_flow_removed) {
+            return;
+        }
+        fr.priority = prio;
     }
-    fr.priority = priority;
 #else
     // rule_is_hidden contains SGX
     if (ofproto_rule_is_hidden(rule) || !rule->send_flow_removed) {
@@ -4488,7 +4516,7 @@ ofproto_rule_expire(struct rule *rule, uint8_t reason)
 
     ovs_assert(reason == OFPRR_HARD_TIMEOUT || reason == OFPRR_IDLE_TIMEOUT);
 
-    ofproto_rule_send_removed(rule, reason);
+    ofproto_rule_send_removed(rule, reason, NULL, NULL);
 
     group = ofopgroup_create_unattached(ofproto);
     ofoperation_create(group, rule, OFOPERATION_DELETE, reason, NULL);
@@ -4571,10 +4599,12 @@ handle_flow_mod__(struct ofproto *ofproto, struct ofconn *ofconn,
 
     switch (fm->command) {
     case OFPFC_ADD:
+        printf("ADD FLOW BEGIN\n");
         #ifdef BENCHMARK_ADD_FLOW
         {
             enum ofperr res;
             BENCHMARK(add_flow, res, ofproto, ofconn, fm, oh);
+            printf("ADD FLOW END\n");
             return res;
         }
         #else

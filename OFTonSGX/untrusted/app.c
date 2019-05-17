@@ -38,17 +38,6 @@ struct function_call *fc_;
 #define ECALL(f, args ...) \
     f(global_eid, ## args)
 
-/*#ifdef HOTCALL123
-#define ECALL(f, fmt, async, has_return, args ...) \
-    prepare_hotcall_function(&sm_ctx.hcall, hotcall_ ## f, fmt, async, has_return, get_n_args(fmt), args); \
-    if(!async) { \
-        make_hotcall(&sm_ctx.hcall); \
-    }
-#else
-#define ECALL(f, args ...) \
-    f(global_eid, ## args)
-#endif
-*/
 #ifdef BATCHING
 #define ASYNC(X) X
 #else
@@ -1204,7 +1193,7 @@ SGX_add_flow(uint8_t bridge_id,
              int n_pending,
              bool has_timeout,
              uint16_t *state,
-             int *table_update_taggable)
+             int *table_update_taggable, unsigned int *evict_priority)
 #endif
  {
 
@@ -1245,12 +1234,13 @@ SGX_add_flow(uint8_t bridge_id,
      args[14] = &has_timeout;
      args[15] = state;
      args[16] = table_update_taggable;
+     args[17] = evict_priority;
      #endif
 
      #ifdef ARG_OPT_2
      HCALL(ecall_add_flow, async, NULL, 1, args);
      #else
-     HCALL(ecall_add_flow, async, NULL, 17, args);
+     HCALL(ecall_add_flow, async, NULL, 18, args);
      #endif
      #else
      ECALL(
@@ -1271,7 +1261,8 @@ SGX_add_flow(uint8_t bridge_id,
          n_pending,
          has_timeout,
          state,
-         table_update_taggable
+         table_update_taggable,
+         evict_priority
      );
      #endif
  }
