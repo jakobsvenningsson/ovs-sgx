@@ -1285,6 +1285,7 @@ SGX_add_flow(uint8_t bridge_id,
                          unsigned int priority,
                          struct cls_rule **cls_rule_buffer,
                          bool *rule_is_modifiable,
+                         bool *rule_is_hidden,
                          size_t buffer_size)
 {
     size_t n;
@@ -1298,8 +1299,9 @@ SGX_add_flow(uint8_t bridge_id,
     args[4] = &priority;
     args[5] = cls_rule_buffer;
     args[6] = rule_is_modifiable;
-    args[7] = &buffer_size;
-    HCALL(ecall_collect_rules_strict, async, &n, 8, args);
+    args[7] = rule_is_hidden;
+    args[8] = &buffer_size;
+    HCALL(ecall_collect_rules_strict, async, &n, 9, args);
     #else
     ECALL(
         ecall_collect_rules_strict,
@@ -1311,6 +1313,7 @@ SGX_add_flow(uint8_t bridge_id,
         priority,
         cls_rule_buffer,
         rule_is_modifiable,
+        rule_is_hidden,
         buffer_size
     );
     #endif

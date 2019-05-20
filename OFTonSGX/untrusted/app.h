@@ -130,6 +130,7 @@ bool *is_read_only, bool *is_hidden, bool *is_other_table,
 						 unsigned int priority,
                          struct cls_rule **cls_rule_buffer,
 						 bool *rule_is_modifiable,
+						 bool *rule_is_hidden,
                          size_t buffer_size);
 
 

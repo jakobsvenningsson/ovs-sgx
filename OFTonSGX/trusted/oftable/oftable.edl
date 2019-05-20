@@ -108,6 +108,7 @@ enclave {
 		 						 unsigned int priority,
 		 						 [user_check] struct cls_rule **cls_rule_buffer,
 		 						 [user_check] bool *rule_is_modifiable,
+								 [user_check] bool *rule_is_hidden,
 		 						 size_t buffer_size);
 
 		 public size_t

@@ -577,7 +577,8 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(unsigned int *) args->args[4],
                 (struct cls_rule **) args->args[5],
                 (bool *) args->args[6],
-                *(size_t *) args->args[7]
+                (bool *) args->args[7],
+                *(size_t *) args->args[8]
             );
             break;
         case hotcall_ecall_delete_flows:

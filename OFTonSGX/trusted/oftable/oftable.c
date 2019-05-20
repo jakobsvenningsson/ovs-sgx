@@ -543,6 +543,7 @@ ecall_add_flow(uint8_t bridge_id,
                               unsigned int priority,
                               struct cls_rule **cls_rule_buffer,
                               bool *rule_is_modifiable,
+                              bool *rule_is_hidden,
                               size_t buffer_size)
   {
       struct oftable * table;
@@ -560,6 +561,7 @@ ecall_add_flow(uint8_t bridge_id,
               cls_rule_buffer[n] = sgx_cls_rule->o_cls_rule;
               //rule_is_hidden_buffer[n] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule) > UINT16_MAX;
               rule_is_modifiable[n] = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
+              rule_is_hidden[n] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule) > UINT16_MAX;
               n++;
           }
       }
