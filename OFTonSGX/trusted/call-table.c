@@ -523,9 +523,9 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
             *(size_t *) fc->return_value = ecall_ofproto_evict(
                 *(uint8_t *) args->args[0],
                 *(uint8_t *) args->args[1],
-                *(size_t *) args->args[2],
-                (uint32_t *) args->args[3],
-                (struct cls_rule **) args->args[4],
+                (uint32_t *) args->args[2],
+                (struct cls_rule **) args->args[3],
+                (uint8_t *) args->args[4],
                 *(size_t *) args->args[5],
                 (size_t *) args->args[6]
             );

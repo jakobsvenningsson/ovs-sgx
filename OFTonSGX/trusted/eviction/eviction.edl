@@ -43,9 +43,9 @@ enclave {
 		public size_t
 		ecall_ofproto_evict(uint8_t bridge_id,
 							int ofproto_n_tables,
-							size_t start_index,
 							[user_check] uint32_t *hashes,
 							[user_check] struct cls_rule ** cls_rules,
+							[user_check] uint8_t *is_hidden,
 							size_t buf_size,
 							[user_check] size_t *n_evictions);
 		public bool

@@ -395,11 +395,18 @@ ecall_oftable_configure(uint8_t bridge_id,
 
 void
 ecall_oftable_remove_rules(uint8_t bridge_id, uint8_t *table_ids, struct cls_rule **rules, bool *is_hidden, size_t n_rules) {
+    struct rule *rule = NULL;
     for(size_t i = 0; i < n_rules; ++i) {
         is_hidden[i] = ecall_cr_priority(bridge_id, rules[i]) > UINT16_MAX;
-        ecall_cls_remove(bridge_id, table_ids[i], rules[i]);
-        ecall_evg_remove_rule(bridge_id, table_ids[i], rules[i]);
-        ecall_cls_rule_destroy(bridge_id, rules[i]);
+        rule = CONTAINER_OF(rules[i], struct rule, cr);
+        if(rule) {
+            rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, table_ids[i]);
+            rule->is_other_table = ecall_oftable_is_other_table(bridge_id, table_ids[i]);
+        }
+        if(rules[i]) {
+            ecall_cls_remove(bridge_id, table_ids[i], rules[i]);
+            ecall_evg_remove_rule(bridge_id, table_ids[i], rules[i]);
+        }
     }
 }
 

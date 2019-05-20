@@ -84,9 +84,9 @@ SGX_ofproto_flush(uint8_t bridge_id,
 size_t
 SGX_ofproto_evict(uint8_t bridge_id,
                 int ofproto_n_tables,
-				size_t start_index,
                 uint32_t *hashes,
                 struct cls_rule **cls_rules,
+				uint8_t *eviction_is_hidden,
                 size_t buf_size,
                 size_t *n_evictions);
 

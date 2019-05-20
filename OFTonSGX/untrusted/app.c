@@ -36,6 +36,7 @@ struct function_call *fc_;
         make_hotcall(&sm_ctx.hcall); \
     }
 #define ECALL(f, args ...) \
+    printf("Calling func %s.\n", #f);\
     f(global_eid, ## args)
 
 #ifdef BATCHING
@@ -1147,9 +1148,9 @@ SGX_ofproto_flush(uint8_t bridge_id,
 size_t
 SGX_ofproto_evict(uint8_t bridge_id,
                   int ofproto_n_tables,
-                  size_t start_index,
                   uint32_t *hashes,
                   struct cls_rule **ut_crs,
+                  uint8_t *eviction_is_hidden,
                   size_t buf_size,
                   size_t *n_evictions)
 {
@@ -1159,14 +1160,14 @@ SGX_ofproto_evict(uint8_t bridge_id,
     void **args = pfc.args[pfc.idx];
     args[0] = &bridge_id;
     args[1] = &ofproto_n_tables;
-    args[2] = &start_index;
-    args[3] = hashes;
-    args[4] = ut_crs;
+    args[2] = hashes;
+    args[3] = ut_crs;
+    args[4] = eviction_is_hidden;
     args[5] = &buf_size;
     args[6] = n_evictions;
     HCALL(ecall_ofproto_evict, async, &n, 7, args);
     #else
-    ECALL(ecall_ofproto_evict, &n, bridge_id, ofproto_n_tables, start_index, hashes, ut_crs, buf_size, n_evictions);
+    ECALL(ecall_ofproto_evict, &n, bridge_id, ofproto_n_tables, hashes, ut_crs, eviction_is_hidden, buf_size, n_evictions);
     #endif
     return n;
 }
