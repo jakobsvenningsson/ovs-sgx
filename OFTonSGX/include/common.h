@@ -8,6 +8,7 @@
 
 #define hotcall_ecall_test 101
 #define hotcall_ecall_async_test 100
+#define hotcall_ecall_delete_flows_v2 99
 
 
 

@@ -128,9 +128,13 @@ bool *is_read_only, bool *is_hidden, bool *is_other_table,
 						 int n_tables,
 						 struct match *match,
 						 unsigned int priority,
+						 ovs_be64 cookie,
+						 ovs_be64 cookie_mask,
+						 uint16_t out_port,
                          struct cls_rule **cls_rule_buffer,
 						 bool *rule_is_modifiable,
 						 bool *rule_is_hidden,
+						 bool *ofproto_postpone,
                          size_t buffer_size);
 
 
@@ -149,19 +153,37 @@ bool *is_read_only, bool *is_hidden, bool *is_other_table,
 						int *table_update_taggable,
 						uint8_t *is_other_table,
                         size_t *n_rules);
-
+/*
 void
 SGX_delete_flows(uint8_t bridge_id,
-				 uint8_t *rule_table_ids,
+				 //uint8_t *rule_table_ids,
 				 struct cls_rule **cls_rules,
-				 bool *rule_is_hidden,
+				// bool *rule_is_hidden,
 				 uint32_t *rule_hashes,
 				 unsigned int *rule_priorities,
 				 struct match *match,
-				 int *table_update_taggable,
-				 uint8_t *is_other_table,
+				// int *table_update_taggable,
+				// uint8_t *is_other_table,
 				 size_t n);
+*/
 
+ size_t
+ SGX_delete_flows_v2(uint8_t bridge_id,
+                         uint8_t table_id,
+                         int ofproto_n_tables,
+                         struct match *match,
+                         unsigned int priority,
+                         ovs_be64 cookie,
+                         ovs_be64 cookie_mask,
+                         uint16_t out_port,
+                         struct cls_rule **cls_rule_buffer,
+                         uint32_t *rule_hashes,
+                         unsigned int *rule_priorities,
+                         struct match *matches,
+                         bool *rule_is_modifiable,
+                         bool *rule_is_hidden,
+                         bool *ofproto_postpone,
+                         size_t buffer_size);
 
  void
  SGX_configure_table(uint8_t bridge_id,

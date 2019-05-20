@@ -21,4 +21,13 @@ void
 ecall_add_flow_2(struct add_flow_args *args);
 #endif
 
+
+void
+delete_flows(uint8_t bridge_id,
+                 struct cls_rule **cls_rules,
+                 uint32_t *rule_hashes,
+                 unsigned int *rule_priorities,
+                 struct match *match,
+                 size_t n);
+
 #endif

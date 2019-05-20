@@ -88,17 +88,25 @@ enclave {
 					 bool has_timeout,
 					 [user_check] uint16_t *state,
 					 [user_check] int *table_update_taggable, [user_check] unsigned int *evict_priority);
- 		public void
+
+
+		public size_t
  		ecall_delete_flows(uint8_t bridge_id,
- 						 [user_check] uint8_t *rule_table_ids,
- 						 [user_check] struct cls_rule **cls_rules,
- 						 [user_check] bool *rule_is_hidden,
- 						 [user_check] uint32_t *rule_hashes,
- 						 [user_check] unsigned int *rule_priorities,
- 						 [user_check] struct match *match,
-						 [user_check] int *table_update_taggable,
-						 [user_check] uint8_t *is_other_table,
-						 size_t n);
+ 		                        uint8_t table_id,
+ 		                        int ofproto_n_tables,
+ 		                        [user_check] struct match *match,
+ 		                        unsigned int priority,
+ 		                        ovs_be64 cookie,
+ 		                        ovs_be64 cookie_mask,
+ 		                        uint16_t out_port,
+ 		                        [user_check] struct cls_rule **cls_rule_buffer,
+ 		                        [user_check] uint32_t *rule_hashes,
+ 		                        [user_check] unsigned int *rule_priorities,
+ 		                        [user_check] struct match *matches,
+ 		                        [user_check] bool *rule_is_modifiable,
+ 		                        [user_check] bool *rule_is_hidden,
+ 		                        [user_check] bool *ofproto_postpone,
+ 		                        size_t buffer_size);
 
 		 public size_t
 		 ecall_collect_rules_strict(uint8_t bridge_id,
@@ -106,9 +114,13 @@ enclave {
 		 						 int n_tables,
 		 						 [user_check] struct match *match,
 		 						 unsigned int priority,
+								 ovs_be64 cookie,
+								 ovs_be64 cookie_mask,
+								 uint16_t out_port,
 		 						 [user_check] struct cls_rule **cls_rule_buffer,
 		 						 [user_check] bool *rule_is_modifiable,
 								 [user_check] bool *rule_is_hidden,
+								 [user_check] bool *ofproto_postpone,
 		 						 size_t buffer_size);
 
 		 public size_t

@@ -1283,9 +1283,13 @@ SGX_add_flow(uint8_t bridge_id,
                          int n_tables,
                          struct match *match,
                          unsigned int priority,
+                         ovs_be64 cookie,
+                         ovs_be64 cookie_mask,
+                         uint16_t out_port,
                          struct cls_rule **cls_rule_buffer,
                          bool *rule_is_modifiable,
                          bool *rule_is_hidden,
+                         bool *ofproto_postpone,
                          size_t buffer_size)
 {
     size_t n;
@@ -1297,11 +1301,15 @@ SGX_add_flow(uint8_t bridge_id,
     args[2] = &n_tables;
     args[3] = match;
     args[4] = &priority;
-    args[5] = cls_rule_buffer;
-    args[6] = rule_is_modifiable;
-    args[7] = rule_is_hidden;
-    args[8] = &buffer_size;
-    HCALL(ecall_collect_rules_strict, async, &n, 9, args);
+    args[5] = &cookie;
+    args[6] = &cookie_mask;
+    args[7] = &out_port;
+    args[8] = cls_rule_buffer;
+    args[9] = rule_is_modifiable;
+    args[10] = rule_is_hidden;
+    args[11] = ofproto_postpone;
+    args[12] = &buffer_size;
+    HCALL(ecall_collect_rules_strict, async, &n, 13, args);
     #else
     ECALL(
         ecall_collect_rules_strict,
@@ -1311,9 +1319,13 @@ SGX_add_flow(uint8_t bridge_id,
         n_tables,
         match,
         priority,
+        cookie,
+        cookie_mask,
+        out_port,
         cls_rule_buffer,
         rule_is_modifiable,
         rule_is_hidden,
+        ofproto_postpone,
         buffer_size
     );
     #endif
@@ -1372,49 +1384,115 @@ SGX_collect_rules_loose(uint8_t bridge_id,
     #endif
     return n;
 }
-
+/*
 void
 SGX_delete_flows(uint8_t bridge_id,
-				 uint8_t *rule_table_ids,
+				// uint8_t *rule_table_ids,
 				 struct cls_rule **ut_crs,
-				 bool *rule_is_hidden,
+				// bool *rule_is_hidden,
 				 uint32_t *rule_hashes,
 				 unsigned int *rule_priorities,
 				 struct match *match,
-                 int *table_update_taggable,
-                 uint8_t *is_other_table,
+                // int *table_update_taggable,
+                // uint8_t *is_other_table,
                  size_t n)
  {
      #ifdef HOTCALL
      bool async = ASYNC(false);
      void **args = pfc.args[pfc.idx];
      args[0] = &bridge_id;
-     args[1] = rule_table_ids;
-     args[2] = ut_crs;
-     args[3] = rule_is_hidden;
-     args[4] = rule_hashes;
-     args[5] = rule_priorities;
-     args[6] = match;
-     args[7] = table_update_taggable;
-     args[8] = is_other_table;
-     args[9] = &n;
+     //args[1] = rule_table_ids;
+     args[1] = ut_crs;
+     //args[3] = rule_is_hidden;
+     args[2] = rule_hashes;
+     args[3] = rule_priorities;
+     args[4] = match;
+    // args[7] = table_update_taggable;
+    // args[8] = is_other_table;
+     args[5] = &n;
 
-     HCALL(ecall_delete_flows, async, NULL, 10, args);
+     HCALL(ecall_delete_flows, async, NULL, 6, args);
      #else
      ECALL(
          ecall_delete_flows,
          bridge_id,
-         rule_table_ids,
+        // rule_table_ids,
          ut_crs,
-         rule_is_hidden,
+        // rule_is_hidden,
          rule_hashes,
          rule_priorities,
          match,
-         table_update_taggable,
-         is_other_table,
+        // table_update_taggable,
+        // is_other_table,
          n
      );
      #endif
+ }*/
+
+
+ size_t
+ SGX_delete_flows(uint8_t bridge_id,
+                         uint8_t table_id,
+                         int ofproto_n_tables,
+                         struct match *match,
+                         unsigned int priority,
+                         ovs_be64 cookie,
+                         ovs_be64 cookie_mask,
+                         uint16_t out_port,
+                         struct cls_rule **cls_rule_buffer,
+                         uint32_t *rule_hashes,
+                         unsigned int *rule_priorities,
+                         struct match *matches,
+                         bool *rule_is_modifiable,
+                         bool *rule_is_hidden,
+                         bool *ofproto_postpone,
+                         size_t buffer_size)
+ {
+     size_t n;
+     #ifdef HOTCALL
+     bool async = ASYNC(false);
+     void **args = pfc.args[pfc.idx];
+     args[0] = &bridge_id;
+     args[1] = &table_id;
+     args[2] = &ofproto_n_tables;
+     args[3] = match;
+     args[4] = &priority;
+     args[5] = &cookie;
+     args[6] = &cookie_mask;
+     args[7] = &out_port;
+     args[8] = cls_rule_buffer;
+     args[9] = rule_hashes;
+     args[10] = rule_priorities;
+     args[11] = matches;
+     args[12] = rule_is_modifiable;
+     args[13] = rule_is_hidden;
+     args[14] = ofproto_postpone;
+     args[15] = &buffer_size;
+
+     HCALL(ecall_delete_flows, async, &n, 16, args);
+     #else
+     ECALL(
+         ecall_delete_flows,
+         &n,
+         bridge_id,
+         table_id,
+         ofproto_n_tables,
+         match,
+         priority,
+         cookie,
+         cookie_mask,
+         out_port,
+         cls_rule_buffer,
+         rule_hashes,
+         rule_priorities,
+         matches,
+         rule_is_modifiable,
+         rule_is_hidden,
+         ofproto_postpone,
+         buffer_size
+     );
+     #endif
+     return n;
  }
 
  void
