@@ -54,6 +54,7 @@ enclave {
     	                      unsigned int max_flows,
     	                      [user_check] struct mf_subfield *groups,
     	                      size_t n_groups,
+							  uint32_t time_boot_msec,
     	                      [user_check] bool *need_to_evict,
     	                      [user_check] bool *is_read_only);
 

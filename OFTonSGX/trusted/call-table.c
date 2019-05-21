@@ -472,7 +472,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 (size_t *) args->args[6]
             );
             break;
-        case hotcall_ecall_get_cls_rules_and_enable_eviction:
+        /*case hotcall_ecall_get_cls_rules_and_enable_eviction:
             *(size_t *) fc->return_value = ecall_get_cls_rules_and_enable_eviction(
                 *(uint8_t *) args->args[0],
                 *(uint8_t *) args->args[1],
@@ -484,8 +484,9 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 (const struct mf_subfield *) args->args[7],
                 *(size_t *) args->args[8],
                 *(uint32_t *) args->args[9],
-                (bool *) args->args[10],
-                (bool *) args->args[11]
+                *(uint32_t *) args->args[10],
+                (bool *) args->args[11],
+                (bool *) args->args[12]
             );
             break;
         case hotcall_ecall_eviction_group_add_rules:
@@ -494,9 +495,10 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(int *) args->args[1],
                 *(size_t *) args->args[2],
                 (struct cls_rule **) args->args[3],
-                (uint32_t *) args->args[4]
+                (uint32_t *) args->args[4],
+                *(uint32_t *) args->args[5]
             );
-            break;
+            break;*/
         case hotcall_ecall_ofproto_get_vlan_usage:
             *(size_t *) fc->return_value = ecall_ofproto_get_vlan_usage(
                 *(uint8_t *) args->args[0],
@@ -613,8 +615,9 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(unsigned int *) args->args[3],
                 (struct mf_subfield *) args->args[4],
                 *(size_t *) args->args[5],
-                (bool *) args->args[6],
-                (bool *) args->args[7]
+                *(uint32_t *) args->args[6],
+                (bool *) args->args[7],
+                (bool *) args->args[8]
             );
             break;
         case hotcall_ecall_need_to_evict:

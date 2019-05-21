@@ -57,25 +57,6 @@
 
 #ifdef SGX
 #include "app.h"
-struct add_flow_args {
-    uint8_t bridge_id;
-    uint8_t table_id;
-    struct cls_rule *ut_cr_insert;
-    struct cls_rule **ut_cr_victim;
-    struct cls_rule **ut_cr_evict;
-    struct match *match;
-    uint32_t *rule_hash;
-    uint16_t *tmp_storage_vid;
-    uint16_t *tmp_storage_vid_mask;
-    uint32_t priority;
-    uint16_t flags;
-    uint32_t rule_priority;
-    struct cls_rule **pending_deletions;
-    int n_pending;
-    uint8_t has_timeout;
-    uint16_t *state;
-    int *table_update_taggable;
-};
 #endif
 
 #include "ovs-benchmark.h"
@@ -1039,14 +1020,10 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
         && table->eviction_fields) {
 #elif OPTIMIZED
     bool is_read_only = false, need_to_evict = false;
-    SGX_configure_table(ofproto->bridge_id, table_id, s->name, s->max_flows, s->groups, s->n_groups, &need_to_evict, &is_read_only);
+    long long int t = time_boot_msec();
+    SGX_configure_table(ofproto->bridge_id, table_id, s->name, s->max_flows, s->groups, s->n_groups, t >> 10, &need_to_evict, &is_read_only);
     if(is_read_only) {
         return;
-    }
-    if (s->groups) {
-        oftable_enable_eviction(ofproto->bridge_id, table_id, s->groups, s->n_groups);
-        SGX_table_mflows_set(ofproto->bridge_id, table_id,s->max_flows);
-        need_to_evict = SGX_need_to_evict(ofproto->bridge_id, table_id);
     }
     if(need_to_evict) {
 #else
@@ -5801,70 +5778,6 @@ ofproto_evict(struct ofproto *ofproto)
         }
     }
 #elif OPTIMIZED
-    // Evict rules
-    /*size_t default_buffer_size = 32, total_evictions;
-    struct cls_rule **eviction_cls_rules;
-    struct cls_rule *eviction_rule_buffer[default_buffer_size];
-    eviction_cls_rules = eviction_rule_buffer;
-
-    uint32_t *eviction_hashes;
-    uint32_t hashes[default_buffer_size];
-    eviction_hashes = hashes;
-    size_t n = SGX_ofproto_evict(ofproto->bridge_id,
-                                 ofproto->n_tables,
-                                 0,
-                                 eviction_hashes,
-                                 eviction_cls_rules,
-                                 default_buffer_size,
-                                 &total_evictions);
-
-    size_t leftover_evictions = total_evictions - n;
-    struct cls_rule *extended_buf[total_evictions];
-    uint32_t extended_hashes[total_evictions];
-    if(leftover_evictions > 0) {
-        memcpy(extended_buf, eviction_rule_buffer, sizeof(eviction_rule_buffer));
-        memcpy(extended_hashes, hashes, sizeof(hashes));
-        size_t n_evictions;
-        size_t c = SGX_ofproto_evict(ofproto->bridge_id,
-                            ofproto->n_tables,
-                            n,
-                            extended_hashes + n,
-                            extended_buf + n,
-                            leftover_evictions,
-                            &n_evictions);
-
-        eviction_cls_rules = extended_buf;
-        eviction_hashes = extended_hashes;
-    }
-
-    struct cls_rule *remove_rules[total_evictions];
-    uint8_t table_ids[total_evictions];
-    bool is_hidden[total_evictions];
-    size_t n_remove_rules = 0;
-
-     for(size_t i = 0; i < total_evictions; ++i) {
-         struct rule *rule = rule_from_cls_rule(eviction_cls_rules[i]);
-         if (!rule || rule->pending) {
-             break;
-         }
-         remove_rules[n_remove_rules] = eviction_cls_rules[i];
-         table_ids[n_remove_rules] = rule->table_id;
-         n_remove_rules++;
-
-         ofoperation_create(group, rule,
-                          OFOPERATION_DELETE, OFPRR_EVICTION, (eviction_hashes + i));
-     }
-
-     SGX_remove_rules(ofproto->bridge_id, table_ids, remove_rules, is_hidden, n_remove_rules);
-
-    for(size_t i = 0; i < n_remove_rules; ++i) {
-        struct rule *rule = rule_from_cls_rule(remove_rules[i]);
-        if (!list_is_empty(&rule->expirable)) {
-            list_remove(&rule->expirable);
-        }
-        ofproto->ofproto_class->rule_destruct(rule);
-    }*/
-
 
     size_t default_buffer_size = 32, total_evictions;
     struct cls_rule **eviction_ut_crs;
@@ -6263,52 +6176,6 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
     CLS_CURSOR_FOR_EACH (rule, cr, &cursor) {
         eviction_group_add_rule(rule);
     }
-#elif OPTIMIZED
-    bool no_change = false, is_eviction_fields_enabled = false;
-    size_t default_buffer_size = 32, n_rules;
-    struct cls_rule *buf[default_buffer_size];
-    size_t n = SGX_get_cls_rules_and_enable_eviction(bridge_id,
-                                                     table_id,
-                                                     0,
-                                                     -1,
-                                                     buf,
-                                                     default_buffer_size,
-                                                     &n_rules,
-                                                     fields,
-                                                     n_fields,
-                                                     random_uint32(),
-                                                     &no_change,
-                                                     &is_eviction_fields_enabled);
-    if(no_change || !is_eviction_fields_enabled) {
-        return;
-    }
-
-
-    struct cls_rule **cls_rules = buf;
-    size_t leftover_rules = n_rules - n;
-    struct cls_rule *extended_buf[n_rules];
-    if(leftover_rules > 0) {
-        memcpy(extended_buf, buf, sizeof(buf));
-        SGX_get_cls_rules(bridge_id, table_id, n, -1, extended_buf + n, leftover_rules, &n_rules);
-        cls_rules = extended_buf;
-    }
-
-    struct cls_rule *eviction_cls_rules[n_rules];
-    //struct heap_node evg_nodes[n_rules];
-    uint32_t rule_priorities[n_rules];
-
-    size_t m = 0;
-    for(size_t i = 0; i < n_rules; ++i) {
-        struct rule *rule = rule_from_cls_rule(cls_rules[i]);
-        if(!(rule->hard_timeout || rule->idle_timeout)) {
-            continue;
-        }
-        eviction_cls_rules[m] = &rule->cr;
-        //evg_nodes[m] = rule->evg_node;
-        rule_priorities[m] = rule_eviction_priority(rule);
-        ++m;
-    }
-    SGX_eviction_group_add_rules(bridge_id, table_id, m, eviction_cls_rules, rule_priorities);
 #else
     bool no_change = false;
     SGX_oftable_enable_eviction(bridge_id, table_id, fields, n_fields, random_uint32(), &no_change);
@@ -6374,15 +6241,8 @@ oftable_replace_rule(struct rule *rule)
     SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id, &rule->cr, &sgx_cls_rule);
     victim = rule_from_cls_rule(sgx_cls_rule);
 #else
-    //BENCHMARK_NO_RETURN(SGX_async_test);
-    //SGX_async_test();
-    //BENCHMARK_NO_RETURN(SGX_classifier_replace, rule->ofproto->bridge_id, rule->table_id, &rule->cr, &sgx_cls_rule);
-    //BEGIN
     BEGIN
     SGX_classifier_replace(rule->ofproto->bridge_id, rule->table_id, &rule->cr, &sgx_cls_rule);
-    //CLOSE
-    //SHOWTIME5
-
     victim = rule_from_cls_rule(sgx_cls_rule);
     CLOSE
     ts[7] = GET_TIME

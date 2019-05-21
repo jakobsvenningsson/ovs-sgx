@@ -307,6 +307,36 @@ ecall_oftable_get_cls_rules(uint8_t bridge_id,
     return n;
 }
 
+static uint32_t
+rule_eviction_priority(struct rule *rule, uint32_t time_boot_msec)
+{
+    long long int hard_expiration;
+    long long int idle_expiration;
+    long long int expiration;
+    uint32_t expiration_offset;
+
+    /* Calculate time of expiration. */
+    hard_expiration = (rule->hard_timeout
+                       ? rule->modified + rule->hard_timeout * 1000
+                       : LLONG_MAX);
+    idle_expiration = (rule->idle_timeout
+                       ? rule->used + rule->idle_timeout * 1000
+                       : LLONG_MAX);
+    expiration = MIN(hard_expiration, idle_expiration);
+    if (expiration == LLONG_MAX) {
+        return 0;
+    }
+
+    /* Calculate the time of expiration as a number of (approximate) seconds
+     * after program startup.
+     *
+     * This should work OK for program runs that last UINT32_MAX seconds or
+     * less.  Therefore, please restart OVS at least once every 136 years. */
+    expiration_offset = (expiration >> 10) - (time_boot_msec);
+
+    /* Invert the expiration offset because we're using a max-heap. */
+    return UINT32_MAX - expiration_offset;
+}
 
 void
 ecall_oftable_configure(uint8_t bridge_id,
@@ -315,6 +345,7 @@ ecall_oftable_configure(uint8_t bridge_id,
                      unsigned int max_flows,
                      struct mf_subfield *groups,
                      size_t n_groups,
+                     uint32_t time_boot_msec,
                      bool *need_to_evict,
                      bool *is_read_only)
 {
@@ -327,11 +358,32 @@ ecall_oftable_configure(uint8_t bridge_id,
     }
 
     if (groups) {
-        return;
+        bool no_change = false;
+        ecall_oftable_enable_eviction(bridge_id, table_id, groups, n_groups, random_uint32(), &no_change);
+        if(no_change || !ecall_is_eviction_fields_enabled(bridge_id, table_id)) {
+            goto exit;
+        }
+
+        struct cls_cursor cursor;
+        struct sgx_cls_rule *sgx_rule;
+        struct rule *rule;
+        cls_cursor_init(&cursor, &SGX_oftables[bridge_id][table_id].cls, NULL);
+        CLS_CURSOR_FOR_EACH(sgx_rule, cls_rule, &cursor){
+            rule = CONTAINER_OF(sgx_rule->o_cls_rule, struct rule, cr);
+            if(!(rule->hard_timeout || rule->idle_timeout)) {
+                continue;
+            }
+            ecall_evg_add_rule(bridge_id,
+                               table_id,
+                               sgx_rule->o_cls_rule,
+                               NULL,
+                               rule_eviction_priority(rule, time_boot_msec));
+        }
     } else {
         ecall_oftable_disable_eviction(bridge_id, table_id);
     }
 
+    exit:
     ecall_oftable_mflows_set(bridge_id, table_id, max_flows);
     *need_to_evict = ecall_need_to_evict(bridge_id, table_id);
 }

@@ -1017,82 +1017,6 @@ SGX_get_cls_rules(uint8_t bridge_id,
     #endif
 }
 
-
-size_t
-SGX_get_cls_rules_and_enable_eviction(uint8_t bridge_id,
-									 uint8_t table_id,
-									 size_t start_index,
-									 size_t end_index,
-									 struct cls_rule ** buf,
-									 size_t buf_size,
-									 size_t *n_rules,
-								 	 const struct mf_subfield *fields,
-								 	 size_t n_fields,
-							 	 	 uint32_t random_v,
-						 		 	 bool *no_change,
-                                     bool *is_eviction_fields_enabled)
-{
-    size_t n;
-    #ifdef HOTCALL
-    bool async = ASYNC(false);
-    void **args = pfc.args[pfc.idx];
-    args[0] = &bridge_id;
-    args[1] = &table_id;
-    args[2] = &start_index;
-    args[3] = &end_index;
-    args[4] = buf;
-    args[5] = &buf_size;
-    args[6] = n_rules;
-    args[7] = (struct mf_subfield *) fields;
-    args[8] = &n_fields;
-    args[9] = &random_v;
-    args[10] = no_change;
-    args[11] = is_eviction_fields_enabled;
-
-    HCALL(ecall_get_cls_rules_and_enable_eviction, async, &n, 12, args);
-    #else
-    ECALL(
-        ecall_get_cls_rules_and_enable_eviction,
-        &n,
-        bridge_id,
-        table_id,
-        start_index,
-        end_index,
-        buf,
-        buf_size,
-        n_rules,
-        fields,
-        n_fields,
-        random_v,
-        no_change,
-        is_eviction_fields_enabled
-    );
-    #endif
-    return n;
-}
-
-void
-SGX_eviction_group_add_rules(uint8_t bridge_id,
-                             uint8_t table_id,
-                             size_t n,
-                             struct cls_rule **ut_crs,
-                             uint32_t *rule_priorities)
-{
-
-    #ifdef HOTCALL
-    bool async = ASYNC(false); // SHOULD MAYBE BE ASYNC!
-    void **args = pfc.args[pfc.idx];
-    args[0] = &bridge_id;
-    args[1] = &table_id;
-    args[2] = &n;
-    args[3] = ut_crs;
-    args[4] = rule_priorities;
-    HCALL(ecall_eviction_group_add_rules, async, NULL, 5, args);
-    #else
-    ECALL(ecall_eviction_group_add_rules, bridge_id, table_id, n, ut_crs, rule_priorities);
-    #endif
-}
-
 size_t
 SGX_ofproto_get_vlan_usage(uint8_t bridge_id,
                            size_t buf_size,
@@ -1502,6 +1426,7 @@ SGX_delete_flows(uint8_t bridge_id,
                      unsigned int max_flows,
                      struct mf_subfield *groups,
                      size_t n_groups,
+                     uint32_t time_boot_msec,
                      bool *need_to_evict,
                      bool *is_read_only)
 {
@@ -1514,9 +1439,10 @@ SGX_delete_flows(uint8_t bridge_id,
     args[3] = &max_flows;
     args[4] = groups;
     args[5] = &n_groups;
-    args[6] = need_to_evict;
-    args[7] = is_read_only;
-    HCALL(ecall_oftable_configure, async, NULL, 8, args);
+    args[6] = &time_boot_msec;
+    args[7] = need_to_evict;
+    args[8] = is_read_only;
+    HCALL(ecall_oftable_configure, async, NULL, 9, args);
     #else
     ECALL(
         ecall_oftable_configure,
@@ -1526,6 +1452,7 @@ SGX_delete_flows(uint8_t bridge_id,
         max_flows,
         groups,
         n_groups,
+        time_boot_msec,
         need_to_evict,
         is_read_only
     );

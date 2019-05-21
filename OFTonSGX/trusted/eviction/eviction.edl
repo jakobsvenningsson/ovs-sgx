@@ -48,27 +48,8 @@ enclave {
 							[user_check] uint8_t *is_hidden,
 							size_t buf_size,
 							[user_check] size_t *n_evictions);
+							
 		public bool
 		ecall_need_to_evict(uint8_t bridge_id, uint8_t table_id);
-
-		public size_t ecall_get_cls_rules_and_enable_eviction(uint8_t bridge_id,
-									   uint8_t table_id,
-									   size_t start_index,
-									   size_t end_index,
-									   [user_check] struct cls_rule ** buf,
-									   size_t buf_size,
-									   [user_check] size_t *n_rules,
-									   [user_check] const struct mf_subfield *fields,
-									   size_t n_fields,
-									   uint32_t random_v,
-									   [user_check] bool *no_change,
-									   [user_check] bool *is_eviction_fields_enabled);
-	   public void
-	   ecall_eviction_group_add_rules(uint8_t bridge_id,
-										  		   uint8_t table_id,
-												   size_t n,
-												   [user_check] struct cls_rule **cls_rules,
-										  		   [user_check] uint32_t *rule_priorities);
-
     };
 };

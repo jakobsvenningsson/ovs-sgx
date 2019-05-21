@@ -272,71 +272,6 @@ ecall_ofproto_evict(uint8_t bridge_id,
     *n_evictions = total_nr_evictions;
 
     return n;
-
-    /*size_t n = 0, total_nr_evictions = 0;
-
-    size_t size = start_index + buf_size;
-    uint32_t rule_prios[size];
-    uint32_t group_prios[size];
-    uint8_t table_ids[size];
-
-    struct cls_rule *skip_rules[start_index];
-
-    for(size_t table_id = 0; table_id < ofproto_n_tables; table_id++){
-        if(!ecall_is_eviction_fields_enabled(bridge_id, table_id)) {
-            continue;
-        }
-
-        int rules_in_table = ecall_oftable_cls_count(bridge_id, table_id);
-        int max_flows = ecall_oftable_mflows(bridge_id, table_id);
-        total_nr_evictions += (rules_in_table > max_flows ? rules_in_table - max_flows : 0);
-        int count = ecall_oftable_cls_count(bridge_id, table_id);
-
-        while(count > max_flows){
-
-            struct cls_rule *tmp;
-            ecall_choose_rule_to_evict(bridge_id, table_id, &tmp);
-            if(!tmp) {
-                break;
-            }
-
-            count--;
-
-            if(n >= start_index) {
-                rule_hashes[n - start_index] = ecall_cls_rule_hash(bridge_id, tmp, table_id);
-                cls_rules[n - start_index] = tmp;
-            } else {
-                skip_rules[n] = tmp;
-            }
-
-
-
-            struct sgx_cls_rule * sgx_cls_rule;
-            sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, tmp);
-
-            table_ids[n] = table_id;
-            group_prios[n] = sgx_cls_rule->evict_group->size_node.priority;
-            rule_prios[n] = sgx_cls_rule->rule_evg_node.priority;
-            n++;
-
-            ecall_evg_remove_rule(bridge_id, table_id, tmp);
-        }
-    }
-
-    for(int i = 0; i < n; ++i) {
-        struct sgx_cls_rule * sgx_cls_rule;
-        if(i >= start_index) {
-            sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, cls_rules[i - start_index]);
-            ecall_evg_add_rule(bridge_id, table_ids[i], cls_rules[i  - start_index], &group_prios[i], rule_prios[i]);
-        } else {
-            sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, skip_rules[i]);
-            ecall_evg_add_rule(bridge_id, table_ids[i], skip_rules[i], &group_prios[i], rule_prios[i]);
-        }
-    }
-
-     *n_evictions = total_nr_evictions;
-
-     return n - start_index;*/
 }
 
 bool
@@ -344,44 +279,6 @@ ecall_need_to_evict(uint8_t bridge_id, uint8_t table_id) {
     bool eviction_is_enabled = ecall_is_eviction_fields_enabled(bridge_id, table_id);
     bool overflow = ecall_oftable_cls_count(bridge_id, table_id) > ecall_oftable_mflows(bridge_id, table_id);
     return eviction_is_enabled && overflow;
-}
-
-size_t ecall_get_cls_rules_and_enable_eviction(uint8_t bridge_id,
-											 uint8_t table_id,
-											 size_t start_index,
-											 size_t end_index,
-											 struct cls_rule ** buf,
-											 size_t buf_size,
-											 size_t *n_rules,
-										 	 const struct mf_subfield *fields,
-										 	 size_t n_fields,
-									 	 	 uint32_t random_v,
-								 		 	 bool *no_change,
-                                             bool *is_eviction_fields_enabled)
-{
-    ecall_oftable_enable_eviction(bridge_id, table_id, fields, n_fields, random_v, no_change);
-    *is_eviction_fields_enabled = ecall_is_eviction_fields_enabled(bridge_id, table_id);
-    if(*no_change || !(*is_eviction_fields_enabled)) {
-      return 0;
-    }
-
-    return ecall_oftable_get_cls_rules(bridge_id, table_id, 0, -1, buf, buf_size, n_rules);
-}
-
-
-void ecall_eviction_group_add_rules(uint8_t bridge_id,
-                                           uint8_t table_id,
-                                           size_t n,
-                                           struct cls_rule **cls_rules,
-                                           uint32_t *rule_priorities)
-{
-    for(size_t i = 0; i < n; ++i) {
-        ecall_evg_add_rule(bridge_id,
-                           table_id,
-                           cls_rules[i],
-                           NULL,
-                           rule_priorities[i]);
-    }
 }
 
 // Helpers

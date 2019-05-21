@@ -55,6 +55,7 @@ size_t SGX_get_cls_rules_and_enable_eviction(uint8_t bridge_id,
 										 	 const struct mf_subfield *fields,
 										 	 size_t n_fields,
 									 	 	 uint32_t random_v,
+											 uint32_t time,
 								 		 	 bool *no_change,
 										 	 bool *is_eviction_fields_enabled);
 
@@ -62,7 +63,7 @@ void SGX_eviction_group_add_rules(uint8_t bridge_id,
 								  uint8_t table_id,
 								  size_t n,
 								  struct cls_rule **cls_rules,
-								  uint32_t *rule_priorities);
+								  uint32_t *rule_priorities, uint32_t time_boot_msec);
 
 size_t
 SGX_ofproto_get_vlan_usage(uint8_t bridge_id,
@@ -192,6 +193,7 @@ SGX_delete_flows(uint8_t bridge_id,
                      unsigned int max_flows,
                      struct mf_subfield *groups,
                      size_t n_groups,
+					 uint32_t time_boot_msec,
                      bool *need_to_evict,
                      bool *is_read_only);
 

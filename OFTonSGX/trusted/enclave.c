@@ -22,7 +22,6 @@ struct sgx_cls_table * SGX_hmap_table[100];
 const struct batch_allocator cr_ba;
 const struct batch_allocator evg_ba;
 
-
 void
 ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
     struct oftable * table;
