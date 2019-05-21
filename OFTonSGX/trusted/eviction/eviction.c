@@ -238,22 +238,30 @@ ecall_ofproto_evict(uint8_t bridge_id,
 
         int rules_in_table = ecall_oftable_cls_count(bridge_id, table_id);
         int max_flows = ecall_oftable_mflows(bridge_id, table_id);
-        total_nr_evictions += (rules_in_table > max_flows ? rules_in_table - max_flows : 0);
+        //total_nr_evictions += (rules_in_table > max_flows ? rules_in_table - max_flows : 0);
         int count = ecall_oftable_cls_count(bridge_id, table_id);
 
         while(count-- > max_flows){
+            total_nr_evictions++;
+            if(n >= buf_size) {
+                continue;
+            }
+
             struct cls_rule *tmp;
             ecall_choose_rule_to_evict(bridge_id, table_id, &tmp);
             if(!tmp) {
+                total_nr_evictions--;
                 break;
             }
-
             struct rule *rule;
             rule = CONTAINER_OF(tmp, struct rule, cr);
 
             if (!rule || rule->pending) {
-                goto exit;
+                total_nr_evictions--;
+                break;
             }
+
+
             rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, table_id);
             rule->is_other_table = ecall_oftable_is_other_table(bridge_id, table_id);
 
