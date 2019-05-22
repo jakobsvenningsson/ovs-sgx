@@ -501,8 +501,59 @@ ecall_add_flow(uint8_t bridge_id,
  }
 
 
+ size_t
+ ecall_delete_flows_loose(uint8_t bridge_id,
+                         uint8_t table_id,
+                         int n_tables,
+                         size_t offset,
+                         struct match *match,
+                         ovs_be64 cookie,
+                         ovs_be64 cookie_mask,
+                         uint16_t out_port,
+                         struct cls_rule **ut_crs,
+                         uint32_t *rule_hashes,
+                         unsigned int *rule_priorities,
+                         struct match *matches,
+                         size_t buffer_size,
+                         bool *rule_is_modifiable,
+                         bool *rule_is_hidden,
+                         bool *postpone,
+                         size_t *n_rules)
+ {
+     size_t n;
+     n = ecall_collect_rules_loose(
+         bridge_id, table_id, n_tables, offset, match, ut_crs, buffer_size, cookie, cookie_mask, out_port, postpone, n_rules
+     );
+     if(*postpone) {
+         return n;
+     }
+
+     struct rule *rule;
+     for(int i = 0; i < n; ++i) {
+         rule = CONTAINER_OF(ut_crs[i], struct rule, cr);
+         rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, rule->table_id);
+         rule->is_other_table = ecall_oftable_is_other_table(bridge_id, rule->table_id);
+
+         ecall_minimatch_expand(bridge_id, ut_crs[i], &matches[i]);
+
+         rule_priorities[i] = ecall_cr_priority(bridge_id, ut_crs[i]);
+         rule_hashes[i] = ecall_cls_rule_hash(bridge_id, ut_crs[i], table_id);
+
+         rule_is_hidden[i] = is_rule_hidden(bridge_id, ut_crs[i]);
+         rule_is_modifiable[i] = is_rule_modifiable(bridge_id, table_id);
+     }
+
+
+     delete_flows(
+         bridge_id, ut_crs, rule_hashes, rule_priorities, matches, n
+     );
+
+     return n;
+ }
+
+
 size_t
-ecall_delete_flows(uint8_t bridge_id,
+ecall_delete_flows_strict(uint8_t bridge_id,
                         uint8_t table_id,
                         int ofproto_n_tables,
                         struct match *match,
@@ -510,7 +561,7 @@ ecall_delete_flows(uint8_t bridge_id,
                         ovs_be64 cookie,
                         ovs_be64 cookie_mask,
                         uint16_t out_port,
-                        struct cls_rule **cls_rule_buffer,
+                        struct cls_rule **ut_crs,
                         uint32_t *rule_hashes,
                         unsigned int *rule_priorities,
                         struct match *matches,
@@ -521,16 +572,65 @@ ecall_delete_flows(uint8_t bridge_id,
 {
     size_t n;
     n = ecall_collect_rules_strict(
-        bridge_id, table_id, ofproto_n_tables, match, priority, cookie, cookie_mask, out_port, cls_rule_buffer, rule_is_modifiable, rule_is_hidden, ofproto_postpone, buffer_size
+        bridge_id, table_id, ofproto_n_tables, match, priority, cookie, cookie_mask, out_port, ut_crs, ofproto_postpone, buffer_size
     );
     if(*ofproto_postpone) {
         return n;
     }
 
+    struct rule *rule;
+    for(int i = 0; i < n; ++i) {
+        rule = CONTAINER_OF(ut_crs[i], struct rule, cr);
+        rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, rule->table_id);
+        rule->is_other_table = ecall_oftable_is_other_table(bridge_id, rule->table_id);
+
+        ecall_minimatch_expand(bridge_id, ut_crs[i], &matches[i]);
+
+        rule_priorities[i] = ecall_cr_priority(bridge_id, ut_crs[i]);
+        rule_hashes[i] = ecall_cls_rule_hash(bridge_id, ut_crs[i], rule->table_id);
+
+        rule_is_hidden[i] = is_rule_hidden(bridge_id, ut_crs[i]);
+        rule_is_modifiable[i] = is_rule_modifiable(bridge_id, table_id);
+    }
+
     delete_flows(
-        bridge_id, cls_rule_buffer, rule_hashes, rule_priorities, matches, n
+        bridge_id, ut_crs, rule_hashes, rule_priorities, matches, n
     );
 
+    return n;
+}
+
+size_t
+ecall_modify_flows_strict(uint8_t bridge_id,
+                        uint8_t table_id,
+                        int ofproto_n_tables,
+                        struct match *match,
+                        unsigned int priority,
+                        ovs_be64 cookie,
+                        ovs_be64 cookie_mask,
+                        uint16_t out_port,
+                        struct cls_rule **cls_rule_buffer,
+                        bool *rule_is_modifiable,
+                        bool *rule_is_hidden,
+                        bool *ofproto_postpone,
+                        size_t buffer_size)
+{
+    size_t n;
+    n = ecall_collect_rules_strict(
+        bridge_id, table_id, ofproto_n_tables, match, priority, cookie, cookie_mask, out_port, cls_rule_buffer, ofproto_postpone, buffer_size
+    );
+    if(*ofproto_postpone) {
+        return n;
+    }
+    struct rule *rule;
+    for(int i = 0; i < n; ++i) {
+        rule_is_modifiable[i] = is_rule_modifiable(bridge_id, table_id);
+        rule_is_hidden[i] = is_rule_hidden(bridge_id, cls_rule_buffer[i]);
+
+        rule = CONTAINER_OF(cls_rule_buffer[i], struct rule, cr);
+        rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, rule->table_id);
+        rule->is_other_table = ecall_oftable_is_other_table(bridge_id, rule->table_id);
+    }
     return n;
 }
 
@@ -544,8 +644,6 @@ ecall_delete_flows(uint8_t bridge_id,
                               ovs_be64 cookie_mask,
                               uint16_t out_port,
                               struct cls_rule **cls_rule_buffer,
-                              bool *rule_is_modifiable,
-                              bool *rule_is_hidden,
                               bool *ofproto_postpone,
                               size_t buffer_size)
   {
@@ -572,16 +670,49 @@ ecall_delete_flows(uint8_t bridge_id,
               }
 
               cls_rule_buffer[n] = sgx_cls_rule->o_cls_rule;
-              rule_is_modifiable[n] = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
-              rule_is_hidden[n] = is_hidden;
               n++;
           }
       }
       exit:
       cls_rule_destroy(&cr);
       return n;
-
   }
+
+size_t
+ecall_modify_flows_loose(uint8_t bridge_id,
+                        uint8_t table_id,
+                        int n_tables,
+                        size_t offset,
+                        struct match *match,
+                        struct cls_rule **cr_rules,
+                        size_t buffer_size,
+                        ovs_be64 cookie,
+                        ovs_be64 cookie_mask,
+                        uint16_t out_port,
+                        bool *rule_is_mod,
+                        bool *rule_is_hidden,
+                        bool *postpone,
+                        size_t *n_rules)
+{
+    size_t n;
+    n = ecall_collect_rules_loose(
+        bridge_id, table_id, n_tables, offset, match, cr_rules, buffer_size, cookie, cookie_mask, out_port, postpone, n_rules
+    );
+    if(*postpone) {
+        return n;
+    }
+
+    struct rule *rule;
+    for(int i = 0; i < n; ++i) {
+        rule_is_mod[i] = is_rule_modifiable(bridge_id, table_id);
+        rule_is_hidden[i] = is_rule_hidden(bridge_id, cr_rules[i]);
+
+        rule = CONTAINER_OF(cr_rules[i], struct rule, cr);
+        rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, rule->table_id);
+        rule->is_other_table = ecall_oftable_is_other_table(bridge_id, rule->table_id);
+    }
+    return n;
+}
 
 
 
@@ -593,10 +724,8 @@ ecall_delete_flows(uint8_t bridge_id,
                             struct match *match,
                             struct cls_rule **cls_rule_buffer,
                             size_t buffer_size,
-                            bool *rule_is_modifiable,
-                            bool *rule_is_hidden,
-                            int *table_update_tagable,
-                            uint8_t *is_other_table,
+                            ovs_be64 cookie, ovs_be64 cookie_mask, uint16_t out_port,
+                            bool *postpone,
                             size_t *n_rules)
    {
        struct oftable * table;
@@ -604,23 +733,36 @@ ecall_delete_flows(uint8_t bridge_id,
        sgx_cls_rule_init_i(bridge_id, &cr, match, 0);
        size_t n = 0, count = 0;
 
+       struct rule *rule;
        FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables){
            struct cls_cursor cursor;
-           struct sgx_cls_rule * rule;
+           struct sgx_cls_rule * sgx_rule;
 
            cls_cursor_init(&cursor, &table->cls, &cr);
-           CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
+           CLS_CURSOR_FOR_EACH(sgx_rule, cls_rule, &cursor){
+               rule = CONTAINER_OF(sgx_rule->o_cls_rule, struct rule, cr);
+               if (rule->pending) {
+                   *postpone = true;
+                   goto exit;
+               }
+               bool is_hidden = is_rule_hidden(bridge_id, sgx_rule->o_cls_rule);
+               if (is_hidden
+                   || !ofproto_rule_has_out_port(rule, out_port)
+                       || ((rule->flow_cookie ^ cookie) & cookie_mask)) {
+                   continue;
+               }
+
                if (n >= buffer_size || (count < start_index)) {
                    count++;
                    continue;
                }
                count++;
-               rule_is_hidden[n] = ecall_cr_priority(bridge_id, rule->o_cls_rule) > UINT16_MAX;
-               cls_rule_buffer[n] = rule->o_cls_rule;
-               rule_is_modifiable[n] = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
+               struct cls_rule *s = sgx_rule->o_cls_rule;
+               cls_rule_buffer[n] = s;
                n++;
            }
        }
+       exit:
        cls_rule_destroy(&cr);
        *n_rules = count;
        return n;
@@ -715,22 +857,10 @@ delete_flows(uint8_t bridge_id,
                  struct match *match,
                  size_t n)
 {
- for(int i = 0; i < n; ++i) {
-     struct sgx_cls_rule * sgx_cls_rule;
-     sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, cls_rules[i]);
-
-     struct rule *rule;
-     rule = CONTAINER_OF(sgx_cls_rule->o_cls_rule, struct rule, cr);
-     rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, rule->table_id);
-     rule->is_other_table = ecall_oftable_is_other_table(bridge_id, rule->table_id);
-
-     ecall_minimatch_expand(bridge_id, sgx_cls_rule->o_cls_rule, &match[i]);
-
-     rule_priorities[i] = ecall_cr_priority(bridge_id, sgx_cls_rule->o_cls_rule);
-     rule_hashes[i] = ecall_cls_rule_hash(bridge_id, sgx_cls_rule->o_cls_rule, rule->table_id);
-
-
-     ecall_cls_remove(bridge_id, rule->table_id, sgx_cls_rule->o_cls_rule);
-     ecall_evg_remove_rule(bridge_id, rule->table_id, sgx_cls_rule->o_cls_rule);
- }
+    struct rule *rule;
+    for(int i = 0; i < n; ++i) {
+        rule = CONTAINER_OF(cls_rules[i], struct rule, cr);
+        ecall_cls_remove(bridge_id, rule->table_id, cls_rules[i]);
+        ecall_evg_remove_rule(bridge_id, rule->table_id, cls_rules[i]);
+    }
 }

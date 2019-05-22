@@ -572,11 +572,46 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 (struct match *) args->args[4],
                 (struct cls_rule **) args->args[5],
                 *(size_t *) args->args[6],
-                (bool *) args->args[7],
-                (bool *) args->args[8],
+                *(ovs_be64 *) args->args[7],
+                *(ovs_be64 *) args->args[8],
+                *(uint16_t *) args->args[9],
+                (bool *) args->args[10],
+                (size_t *) args->args[11]
+            );
+            break;
+        case hotcall_ecall_modify_flows_strict:
+            *(size_t *) fc->return_value = ecall_modify_flows_strict(
+                *(uint8_t *) args->args[0],
+                *(uint8_t *) args->args[1],
+                *(int *) args->args[2],
+                args->args[3],
+                *(unsigned int *) args->args[4],
+                *(ovs_be64 *) args->args[5],
+                *(ovs_be64 *) args->args[6],
+                *(uint16_t *) args->args[7],
+                args->args[8],
                 args->args[9],
                 args->args[10],
-                (size_t *) args->args[11]
+                args->args[11],
+                *(size_t *) args->args[12]
+            );
+            break;
+        case hotcall_ecall_modify_flows_loose:
+            *(size_t *) fc->return_value = ecall_modify_flows_loose(
+                *(uint8_t *) args->args[0],
+                *(uint8_t *) args->args[1],
+                *(int *) args->args[2],
+                *(size_t *) args->args[3],
+                args->args[4],
+                args->args[5],
+                *(size_t *) args->args[6],
+                *(ovs_be64 *) args->args[7],
+                *(ovs_be64 *) args->args[8],
+                *(uint16_t *) args->args[9],
+                args->args[10],
+                args->args[11],
+                args->args[12],
+                args->args[13]
             );
             break;
         case hotcall_ecall_collect_rules_strict:
@@ -591,13 +626,32 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(uint16_t *) args->args[7],
                 (struct cls_rule **) args->args[8],
                 (bool *) args->args[9],
-                (bool *) args->args[10],
-                (bool *) args->args[11],
-                *(size_t *) args->args[12]
+                *(size_t *) args->args[10]
             );
             break;
-        case hotcall_ecall_delete_flows:
-            *(size_t *) fc->return_value = ecall_delete_flows(
+        case hotcall_ecall_delete_flows_loose:
+            *(size_t *) fc->return_value = ecall_delete_flows_loose(
+                *(uint8_t *) args->args[0],
+                *(uint8_t *) args->args[1],
+                *(int *) args->args[2],
+                *(size_t *) args->args[3],
+                args->args[4],
+                *(ovs_be64 *) args->args[5],
+                *(ovs_be64 *) args->args[6],
+                *(uint16_t *) args->args[7],
+                args->args[8],
+                args->args[9],
+                args->args[10],
+                args->args[11],
+                *(size_t *) args->args[12],
+                args->args[13],
+                args->args[14],
+                args->args[15],
+                args->args[16]
+            );
+            break;
+        case hotcall_ecall_delete_flows_strict:
+            *(size_t *) fc->return_value = ecall_delete_flows_strict(
                 *(uint8_t *) args->args[0],
                 *(uint8_t *) args->args[1],
                 *(int *) args->args[2],

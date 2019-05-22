@@ -169,6 +169,8 @@ static void oftable_set_name(struct oftable *, const char *name);
 static void oftable_disable_eviction(struct oftable *);
 #endif
 
+#ifndef OPTIMIZED
+
 #ifndef SGX
 static void oftable_enable_eviction(struct oftable *,
                                     const struct mf_subfield *fields,
@@ -179,6 +181,8 @@ static void oftable_enable_eviction(int bridge_id, int table_id,
                                     size_t n_fields);
 static uint32_t
 eviction_group_priority(size_t n_rules);
+#endif
+
 #endif
 
 static void oftable_remove_rule(struct rule *);
@@ -224,12 +228,13 @@ static void reinit_ports(struct ofproto *);
 static void ofproto_rule_destroy__(struct rule *);
 static void ofproto_rule_send_removed(struct rule *, uint8_t reason, unsigned int *evict_priority, bool *is_hidden);
 static bool rule_is_modifiable(const struct rule *);
-
 /* OpenFlow. */
 static enum ofperr add_flow(struct ofproto *, struct ofconn *,
                             const struct ofputil_flow_mod *,
                             const struct ofp_header *);
+#ifndef OPTIMIZED
 static void delete_flow__(struct rule *, struct ofopgroup *);
+#endif
 static bool handle_openflow(struct ofconn *, struct ofpbuf *);
 static enum ofperr handle_flow_mod__(struct ofproto *, struct ofconn *,
                                      const struct ofputil_flow_mod *,
@@ -1121,7 +1126,6 @@ ofproto_flush__(struct ofproto *ofproto)
             }
         }
     }
-#elif OPTIMIZED
 printf("FLUSH\n");
     size_t default_buffer_size = 32, n_rules;
     struct cls_rule *buf[default_buffer_size];
@@ -1174,12 +1178,7 @@ printf("FLUSH\n");
     }
 
 #endif
-
-    #ifdef OPTIMIZED
     ofopgroup_submit(group, NULL, NULL, NULL);
-    #else
-    ofopgroup_submit(group, NULL, NULL, NULL);
-    #endif
 }
 
 static void
@@ -2414,7 +2413,6 @@ rule_is_modifiable(const struct rule *rule)
     return !(SGX_rule_get_flags(rule->ofproto->bridge_id, rule->table_id) & OFTABLE_READONLY);
 #endif
 }
-
 static enum ofperr
 handle_echo_request(struct ofconn *ofconn, const struct ofp_header *oh)
 {
@@ -2857,6 +2855,7 @@ check_table_id(const struct ofproto *ofproto, uint8_t table_id)
 
 }
 
+#ifndef SGX
 static struct oftable *
 next_visible_table(const struct ofproto *ofproto, uint8_t table_id)
 {
@@ -2872,7 +2871,10 @@ next_visible_table(const struct ofproto *ofproto, uint8_t table_id)
 
     return NULL;
 }
+#endif
 
+
+#ifndef SGX
 static struct oftable *
 first_matching_table(const struct ofproto *ofproto, uint8_t table_id)
 {
@@ -2884,8 +2886,9 @@ first_matching_table(const struct ofproto *ofproto, uint8_t table_id)
         return NULL;
     }
 }
+#endif
 
-#
+#ifndef SGX
 static struct oftable *
 next_matching_table(const struct ofproto *ofproto,
                     const struct oftable *table, uint8_t table_id)
@@ -2894,7 +2897,7 @@ next_matching_table(const struct ofproto *ofproto,
             ? next_visible_table(ofproto, (table - ofproto->tables) + 1)
             : NULL);
 }
-
+#endif
 /* Assigns TABLE to each oftable, in turn, that matches TABLE_ID in OFPROTO:
  *
  *   - If TABLE_ID is 0xff, this iterates over every classifier table in
@@ -2930,7 +2933,7 @@ static enum ofperr
 collect_rules_loose(struct ofproto *ofproto, uint8_t table_id,
                     const struct match *match,
                     ovs_be64 cookie, ovs_be64 cookie_mask,
-                    uint16_t out_port, struct list *rules, bool **modifiable, size_t *nr_rules, bool **rule_is_hidden_, int **table_update_taggable_, uint8_t **is_other_table_)
+                    uint16_t out_port, struct list *rules)
 {
 
     enum ofperr error;
@@ -2968,86 +2971,6 @@ collect_rules_loose(struct ofproto *ofproto, uint8_t table_id,
 
 exit:
     cls_rule_destroy(&cr);
-    return error;
-#elif OPTIMIZED
-    // Retrieve the pending status of each rule in the bridge.
-    size_t buffer_size = 128, total_rules = 0;
-
-    struct cls_rule **cls_rule_addresses;
-    struct cls_rule *cls_rule_buffer[buffer_size];
-    cls_rule_addresses = cls_rule_buffer;
-
-    bool *rule_is_hidden = malloc(buffer_size * sizeof(bool));
-    bool *rule_is_mod = malloc(buffer_size * sizeof(bool));
-
-    int *table_update_taggable = malloc(buffer_size * sizeof(int));
-    uint8_t *is_other_table = malloc(buffer_size * sizeof(uint8_t));
-
-    size_t n = SGX_collect_rules_loose(ofproto->bridge_id,
-                                         table_id,
-                                         ofproto->n_tables,
-                                         0, match,
-                                         cls_rule_buffer,
-                                         buffer_size,
-                                         rule_is_mod,
-                                         rule_is_hidden,
-                                         table_update_taggable,
-                                         is_other_table,
-                                         &total_rules);
-
-    size_t leftovers = total_rules - n;
-    struct cls_rule *extended_cls_rule_buffer[total_rules];
-
-    if(leftovers > 0) {
-        memcpy(extended_cls_rule_buffer, cls_rule_buffer, sizeof(cls_rule_buffer));
-        rule_is_mod = realloc(rule_is_mod, sizeof(bool) * total_rules);
-        rule_is_hidden = realloc(rule_is_hidden, sizeof(bool) * total_rules);
-        table_update_taggable = realloc(table_update_taggable, sizeof(int) * total_rules);
-        is_other_table = realloc(is_other_table, sizeof(uint8_t) * total_rules);
-
-        size_t dummy;
-        SGX_collect_rules_loose(ofproto->bridge_id, table_id,
-                                             ofproto->n_tables, n,
-                                             match,
-                                             extended_cls_rule_buffer + n,
-                                             leftovers,
-                                             rule_is_mod + n,
-                                             rule_is_hidden + n,
-                                             table_update_taggable + n,
-                                             is_other_table + n,
-                                             &dummy);
-        cls_rule_addresses = extended_cls_rule_buffer;
-    }
-
-    for(int i = 0; i < total_rules; ++i) {
-        struct rule *rule = rule_from_cls_rule(cls_rule_addresses[i]);
-        if (rule->pending) {
-            error = OFPROTO_POSTPONE;
-            goto exit;
-        }
-        // rule_is_modifiable contains SGX
-        if (!rule_is_hidden[i]
-            && ofproto_rule_has_out_port(rule, out_port)
-                && !((rule->flow_cookie ^ cookie) & cookie_mask)) {
-            list_push_back(rules, &rule->ofproto_node);
-        }
-    }
-    exit:
-        if(modifiable) {
-            *modifiable = rule_is_mod;
-        }
-        if(rule_is_hidden_) {
-            *rule_is_hidden_ = rule_is_hidden;
-        }
-        if(is_other_table_) {
-            *is_other_table_ = is_other_table;
-        }
-        if(table_update_taggable_) {
-            *table_update_taggable_ = table_update_taggable;
-        }
-        if(nr_rules) {
-            *nr_rules = total_rules;
-        }
     return error;
 #else
     //1.It is needed to know the size of the buf to allocate.
@@ -3162,6 +3085,7 @@ collect_rules_loose_stats_request(struct ofproto *ofproto, uint8_t table_id,
 
 #endif
 
+#ifndef OPTIMIZED
 /* Searches 'ofproto' for rules in table 'table_id' (or in all tables, if
  * 'table_id' is 0xff) that match 'match' in the "strict" way required for
  * OpenFlow OFPFC_MODIFY_STRICT and OFPFC_DELETE_STRICT requests and puts them
@@ -3177,7 +3101,7 @@ static enum ofperr
 collect_rules_strict(struct ofproto *ofproto, uint8_t table_id,
                      const struct match *match, unsigned int priority,
                      ovs_be64 cookie, ovs_be64 cookie_mask,
-                     uint16_t out_port, struct list *rules, bool **modifiable, bool **is_hidden)
+                     uint16_t out_port, struct list *rules)
 {
 
     int error;
@@ -3213,44 +3137,6 @@ collect_rules_strict(struct ofproto *ofproto, uint8_t table_id,
 exit:
     cls_rule_destroy(&cr);
     return 0;
-#elif OPTIMIZED
-    size_t buffer_size = table_id == 0xff ? ofproto->n_tables : 1;
-    struct cls_rule *cls_rule_buffer[buffer_size];
-    bool *rule_is_mod = malloc(buffer_size * sizeof(bool));
-    bool *rule_is_hidden = malloc(buffer_size * sizeof(bool));
-    bool ofproto_postpone = false;
-
-    size_t n = SGX_collect_rules_strict(ofproto->bridge_id,
-                                        table_id,
-                                        ofproto->n_tables,
-                                        match, priority,
-                                        cookie,
-                                        cookie_mask,
-                                        out_port,
-                                        cls_rule_buffer,
-                                        rule_is_mod,
-                                        rule_is_hidden,
-                                        &ofproto_postpone,
-                                        buffer_size);
-
-    if(ofproto_postpone) {
-        error = OFPROTO_POSTPONE;
-    }
-
-
-    for(size_t i = 0; i < n; ++i) {
-        struct rule *rule;
-        rule = rule_from_cls_rule(cls_rule_buffer[i]);
-        list_push_back(rules, &rule->ofproto_node);
-    }
-    exit:
-        if(modifiable) {
-            *modifiable = rule_is_mod;
-        }
-        if(is_hidden) {
-            *is_hidden = rule_is_hidden;
-        }
-        return 0;
 #else
     int buf_size;
     buf_size=SGX_collect_rules_strict_c(ofproto->bridge_id, ofproto->n_tables, table_id, match, priority);
@@ -3278,6 +3164,8 @@ exit:
     return 0;
 #endif
 }
+
+#endif
 
 /* Returns 'age_ms' (a duration in milliseconds), converted to seconds and
  * forced into the range of a uint16_t. */
@@ -3318,7 +3206,7 @@ handle_flow_stats_request(struct ofconn *ofconn,
     #else
     error = collect_rules_loose(ofproto, fsr.table_id, &fsr.match,
                                 fsr.cookie, fsr.cookie_mask,
-                                fsr.out_port, &rules, NULL, NULL, NULL, NULL, NULL);
+                                fsr.out_port, &rules);
     #endif
 
 
@@ -3489,7 +3377,7 @@ handle_aggregate_stats_request(struct ofconn *ofconn,
 
     error = collect_rules_loose(ofproto, request.table_id, &request.match,
                                 request.cookie, request.cookie_mask,
-                                request.out_port, &rules, NULL, NULL, NULL, NULL, NULL);
+                                request.out_port, &rules);
     if (error) {
         return error;
     }
@@ -4163,7 +4051,7 @@ exit:
 static enum ofperr
 modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
                const struct ofputil_flow_mod *fm,
-               const struct ofp_header *request, struct list *rules, bool *modifiable, bool *rule_is_hidden, int *table_update_taggable, uint8_t *is_other_table)
+               const struct ofp_header *request, struct list *rules)
 {
     struct ofopgroup *group;
     struct rule *rule;
@@ -4179,22 +4067,148 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
 
         /* FIXME: Implement OFPFF12_RESET_COUNTS */
         // rule_is_modifiable contains SGX
-        #ifdef OPTIMIZED
-        if(modifiable[i++]) {
-        #else
         if (rule_is_modifiable(rule)) {
-        #endif
             /* At least one rule is modifiable, don't report EPERM error. */
             error = 0;
         } else {
             continue;
         }
 
-        if(is_other_table) {
-            rule->is_other_table = is_other_table[i];
+
+        actions_changed = !ofpacts_equal(fm->ofpacts, fm->ofpacts_len,
+                                         rule->ofpacts, rule->ofpacts_len);
+        new_cookie = (fm->new_cookie != htonll(UINT64_MAX)
+                      ? fm->new_cookie
+                      : rule->flow_cookie);
+
+        op = ofoperation_create(group, rule, OFOPERATION_MODIFY, 0, NULL);
+        rule->flow_cookie = new_cookie;
+        if (actions_changed) {
+            op->ofpacts = rule->ofpacts;
+            op->ofpacts_len = rule->ofpacts_len;
+            rule->ofpacts = xmemdup(fm->ofpacts, fm->ofpacts_len);
+            rule->ofpacts_len = fm->ofpacts_len;
+            rule->ofproto->ofproto_class->rule_modify_actions(rule);
+        } else {
+            ofoperation_complete(op, 0);
         }
-        if(table_update_taggable) {
-            rule->table_update_taggable = table_update_taggable[i];
+    }
+
+    ofopgroup_submit(group, NULL, NULL, NULL);
+    return error;
+}
+
+static enum ofperr
+modify_flows_add(struct ofproto *ofproto, struct ofconn *ofconn,
+                 const struct ofputil_flow_mod *fm,
+                 const struct ofp_header *request)
+{
+    if (fm->cookie_mask != htonll(0) || fm->new_cookie == htonll(UINT64_MAX)) {
+        return 0;
+    }
+    return add_flow(ofproto, ofconn, fm, request);
+}
+
+
+static enum ofperr
+modify_flows_loose_optimized(struct ofproto *ofproto, struct ofconn *ofconn,
+                               const struct ofputil_flow_mod *fm,
+                               const struct ofp_header *request)
+{
+
+    enum ofperr error;
+
+    size_t buffer_size = 128, total_rules = 0;
+
+    struct cls_rule **cr_rules;
+    struct cls_rule *cr_rules_[buffer_size];
+    cr_rules = cr_rules_;
+
+    bool *rule_is_hidden;
+    bool rule_is_hidden_[buffer_size];
+    rule_is_hidden = rule_is_hidden_;
+
+    bool *rule_is_mod;
+    bool rule_is_mod_[buffer_size];
+    rule_is_mod = rule_is_mod_;
+
+    bool postpone = false;
+
+    size_t n = SGX_modify_flows_loose(ofproto->bridge_id,
+                                         fm->table_id,
+                                         ofproto->n_tables,
+                                         0,
+                                         &fm->match,
+                                         cr_rules,
+                                         buffer_size,
+                                         fm->cookie,
+                                         fm->cookie_mask,
+                                         fm->out_port,
+                                         rule_is_mod,
+                                         rule_is_hidden,
+                                         &postpone,
+                                         &total_rules);
+    if(postpone) {
+        error = OFPROTO_POSTPONE;
+        goto exit;
+    } else {
+        size_t leftovers = total_rules - n;
+        struct cls_rule *extended_cr_rules[total_rules];
+        struct rule_is_mod *extended_rule_is_mod[total_rules];
+        struct rule_is_hidden *extended_rule_is_hidden[total_rules];
+        if(leftovers > 0) {
+            memcpy(extended_cr_rules, cr_rules_, sizeof(cr_rules_));
+            memcpy(extended_rule_is_mod, rule_is_mod_, sizeof(rule_is_mod_));
+            memcpy(extended_rule_is_hidden, rule_is_hidden_, sizeof(rule_is_hidden_));
+
+            size_t dummy;
+            SGX_modify_flows_loose(ofproto->bridge_id, fm->table_id,
+                                                 ofproto->n_tables,
+                                                 n,
+                                                 &fm->match,
+                                                 extended_cr_rules + n,
+                                                 leftovers,
+                                                 fm->cookie,
+                                                 fm->cookie_mask,
+                                                 fm->out_port,
+                                                 extended_rule_is_mod + n,
+                                                 extended_rule_is_hidden + n,
+                                                 &postpone,
+                                                 &dummy);
+
+
+            if(postpone) {
+                error = OFPROTO_POSTPONE;
+                goto exit;
+            }
+            cr_rules = extended_cr_rules;
+            rule_is_mod = extended_rule_is_mod;
+            rule_is_hidden = extended_rule_is_hidden;
+        }
+
+    }
+
+
+    if(total_rules == 0) {
+        return modify_flows_add(ofproto, ofconn, fm, request);
+    }
+
+    struct ofopgroup *group;
+    struct rule *rule;
+
+    group = ofopgroup_create(ofproto, ofconn, request, fm->buffer_id);
+    error = OFPERR_OFPBRC_EPERM;
+    for(int i = 0; i < total_rules; ++i) {
+        rule = CONTAINER_OF(cr_rules[i], struct rule, cr);
+        struct ofoperation *op;
+        bool actions_changed;
+        ovs_be64 new_cookie;
+
+        if(rule_is_mod[i]) {
+            /* At least one rule is modifiable, don't report EPERM error. */
+            error = 0;
+        } else {
+            continue;
         }
 
         actions_changed = !ofpacts_equal(fm->ofpacts, fm->ofpacts_len,
@@ -4216,19 +4230,10 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
         }
     }
 
-    ofopgroup_submit(group, NULL, NULL, rule_is_hidden ? rule_is_hidden + i : NULL);
-    return error;
-}
+    ofopgroup_submit(group, NULL, NULL, rule_is_hidden);
 
-static enum ofperr
-modify_flows_add(struct ofproto *ofproto, struct ofconn *ofconn,
-                 const struct ofputil_flow_mod *fm,
-                 const struct ofp_header *request)
-{
-    if (fm->cookie_mask != htonll(0) || fm->new_cookie == htonll(UINT64_MAX)) {
-        return 0;
-    }
-    return add_flow(ofproto, ofconn, fm, request);
+    exit:
+    return error;
 }
 
 /* Implements OFPFC_MODIFY.  Returns 0 on success or an OpenFlow error code on
@@ -4241,36 +4246,109 @@ modify_flows_loose(struct ofproto *ofproto, struct ofconn *ofconn,
                    const struct ofputil_flow_mod *fm,
                    const struct ofp_header *request)
 {
+    #ifdef OPTIMIZED
+    return modify_flows_loose_optimized(ofproto, ofconn, fm, request);
+    #else
+
     struct list rules;
     int error;
-    bool *modifiable = NULL, *rule_is_hidden = NULL;
-    uint8_t *is_other_table = NULL;
-    int *table_update_taggable = NULL;
     error = collect_rules_loose(ofproto, fm->table_id, &fm->match,
                                 fm->cookie, fm->cookie_mask,
-                                OFPP_ANY, &rules, &modifiable, NULL, &rule_is_hidden, &table_update_taggable, &is_other_table);
+                                OFPP_ANY, &rules);
     if (error) {
         return error;
     } else if (list_is_empty(&rules)) {
         return modify_flows_add(ofproto, ofconn, fm, request);
     } else {
          enum ofperr err;
-         err = modify_flows__(ofproto, ofconn, fm, request, &rules, modifiable, rule_is_hidden, table_update_taggable, is_other_table);
-         if(rule_is_hidden) {
-             free(rule_is_hidden);
-         }
-         if(is_other_table) {
-             free(is_other_table);
-         }
-         if(table_update_taggable) {
-             free(table_update_taggable);
-         }
-         if(modifiable) {
-             free(modifiable);
-         }
+         err = modify_flows__(ofproto, ofconn, fm, request, &rules);
         return err;
     }
+    #endif
 }
+
+static enum ofperr
+modify_flow_strict_optimized(struct ofproto *ofproto, struct ofconn *ofconn,
+                   const struct ofputil_flow_mod *fm,
+                   const struct ofp_header *request)
+{
+    size_t buffer_size = fm->table_id == 0xff ? ofproto->n_tables : 1;
+    struct cls_rule *cls_rule_buffer[buffer_size];
+    bool rule_is_mod[buffer_size];
+    bool rule_is_hidden[buffer_size];
+    bool ofproto_postpone = false;
+
+    size_t n = SGX_modify_flows_strict(ofproto->bridge_id,
+                                        fm->table_id,
+                                        ofproto->n_tables,
+                                        &fm->match,
+                                        fm->priority,
+                                        fm->cookie,
+                                        fm->cookie_mask,
+                                        fm->out_port,
+                                        cls_rule_buffer,
+                                        rule_is_mod,
+                                        rule_is_hidden,
+                                        &ofproto_postpone,
+                                        buffer_size);
+
+    if(ofproto_postpone) {
+        return OFPROTO_POSTPONE;
+    }
+
+
+    if(n == 0) {
+        return modify_flows_add(ofproto, ofconn, fm, request);
+    }
+
+    if(n != 1) {
+        return 0;
+    }
+
+    struct ofopgroup *group;
+    struct rule *rule;
+    enum ofperr error;
+
+    group = ofopgroup_create(ofproto, ofconn, request, fm->buffer_id);
+    error = OFPERR_OFPBRC_EPERM;
+    for(size_t i = 0; i < n; ++i) {
+        rule = CONTAINER_OF(cls_rule_buffer[i], struct rule, cr);
+        struct ofoperation *op;
+        bool actions_changed;
+        ovs_be64 new_cookie;
+
+        /* FIXME: Implement OFPFF12_RESET_COUNTS */
+        // rule_is_modifiable contains SGX
+        if(rule_is_mod[i]) {
+            /* At least one rule is modifiable, don't report EPERM error. */
+            error = 0;
+        } else {
+            continue;
+        }
+
+        actions_changed = !ofpacts_equal(fm->ofpacts, fm->ofpacts_len,
+                                         rule->ofpacts, rule->ofpacts_len);
+        new_cookie = (fm->new_cookie != htonll(UINT64_MAX)
+                      ? fm->new_cookie
+                      : rule->flow_cookie);
+
+        op = ofoperation_create(group, rule, OFOPERATION_MODIFY, 0, NULL);
+        rule->flow_cookie = new_cookie;
+        if (actions_changed) {
+            op->ofpacts = rule->ofpacts;
+            op->ofpacts_len = rule->ofpacts_len;
+            rule->ofpacts = xmemdup(fm->ofpacts, fm->ofpacts_len);
+            rule->ofpacts_len = fm->ofpacts_len;
+            rule->ofproto->ofproto_class->rule_modify_actions(rule);
+        } else {
+            ofoperation_complete(op, 0);
+        }
+    }
+
+    ofopgroup_submit(group, NULL, NULL, rule_is_hidden);
+    return error;
+}
+
 
 /* Implements OFPFC_MODIFY_STRICT.  Returns 0 on success or an OpenFlow error
  * code on failure.
@@ -4284,10 +4362,12 @@ modify_flow_strict(struct ofproto *ofproto, struct ofconn *ofconn,
 {
     struct list rules;
     int error;
-    bool *modifiable = NULL, *is_hidden = NULL;
+    #ifdef OPTIMIZED
+    return modify_flow_strict_optimized(ofproto, ofconn, fm, request);
+    #else
     error = collect_rules_strict(ofproto, fm->table_id, &fm->match,
                                  fm->priority, fm->cookie, fm->cookie_mask,
-                                 OFPP_ANY, &rules, &modifiable, &is_hidden);
+                                 OFPP_ANY, &rules);
 
     if (error) {
         return error;
@@ -4295,13 +4375,15 @@ modify_flow_strict(struct ofproto *ofproto, struct ofconn *ofconn,
         return modify_flows_add(ofproto, ofconn, fm, request);
     } else {
         return list_is_singleton(&rules) ? modify_flows__(ofproto, ofconn,
-                                                          fm, request, &rules, modifiable, is_hidden, NULL, NULL)
+                                                          fm, request, &rules)
                                          : 0;
     }
+    #endif
+
 }
 
+#ifndef OPTIMIZED
 /* OFPFC_DELETE implementation. */
-
 static void
 delete_flow__(struct rule *rule, struct ofopgroup *group)
 {
@@ -4315,6 +4397,7 @@ delete_flow__(struct rule *rule, struct ofopgroup *group)
 
     ofproto->ofproto_class->rule_destruct(rule);
 }
+#endif
 
 #ifdef OPTIMIZED
 static void
@@ -4341,6 +4424,7 @@ ofproto_rule_send_removed_del(struct rule *rule, uint8_t reason, bool rule_is_hi
 }
 #endif
 
+#ifndef OPTIMIZED
 /* Deletes the rules listed in 'rules'.
  *
  * Returns 0 on success, otherwise an OpenFlow error code. */
@@ -4352,60 +4436,137 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
 	struct rule *rule, *next;
     struct ofopgroup *group;
     group = ofopgroup_create(ofproto, ofconn, request, UINT32_MAX);
-    #ifdef OPTIMIZED123
-
-    /*size_t n = list_size(rules);
-
-    unsigned int rule_priorities[n];
-    bool rule_is_hidden[n];
-    uint32_t rule_hashes[n];
-    uint8_t rule_table_ids[n];
-    struct cls_rule *cls_rules[n];
-    struct match match[n];
-
-    int i = 0;
-    LIST_FOR_EACH_SAFE (rule, next, ofproto_node, rules) {
-        rule_table_ids[i] = rule->table_id;
-        cls_rules[i] = &rule->cr;
-        i++;
-    }
-
-    int table_update_taggable[n];
-    uint8_t is_other_table[n];
-
-    SGX_delete_flows(ofproto->bridge_id, rule_table_ids, cls_rules, rule_is_hidden, rule_hashes, rule_priorities, match, table_update_taggable, is_other_table, n);
-
-    i = 0;
-    LIST_FOR_EACH_SAFE (rule, next, ofproto_node, rules) {
-
-        ofproto_rule_send_removed_del(rule, OFPRR_DELETE, rule_is_hidden[i], rule_priorities[i], match[i]);
-
-        ofoperation_create(group, rule, OFOPERATION_DELETE, OFPRR_DELETE, rule_hashes + i);
-
-        if (!list_is_empty(&rule->expirable)) {
-            list_remove(&rule->expirable);
-        }
-
-        rule->is_other_table = is_other_table[i];
-        rule->table_update_taggable = table_update_taggable[i];
-        ofproto->ofproto_class->rule_destruct(rule);
-        i++;
-    }*/
-
-    #else
     LIST_FOR_EACH_SAFE (rule, next, ofproto_node, rules) {
         delete_flow__(rule, group);
     }
-    #endif
+    ofopgroup_submit(group, NULL, NULL, NULL);
+    return 0;
+}
+#endif
 
-    #ifdef OPTIMIZED
-    ofopgroup_submit(group, NULL, NULL, NULL);
-    #else
-    ofopgroup_submit(group, NULL, NULL, NULL);
-    #endif
+#ifdef OPTIMIZED
+static enum ofperr
+delete_flows_loose_optimized(struct ofproto *ofproto, const struct ofputil_flow_mod *fm, struct ofconn *ofconn, const struct ofp_header *request) {
+
+    int error;
+
+    error = check_table_id(ofproto, fm->table_id);
+    if (error) {
+        return error;
+    }
+
+    size_t buffer_size = 128, total_rules = 0;
+
+    struct cls_rule *cls_rule_buffer_[buffer_size];
+    struct cls_rule **cls_rule_buffer = cls_rule_buffer_;
+
+    bool rule_is_mod_[buffer_size];
+    bool *rule_is_mod = rule_is_mod_;
+
+    bool rule_is_hidden_[buffer_size];
+    bool *rule_is_hidden = rule_is_hidden_;
+
+    uint32_t rule_hashes_[buffer_size];
+    uint32_t *rule_hashes = rule_hashes_;
+
+    uint32_t rule_priorities_[buffer_size];
+    uint32_t *rule_priorities = rule_priorities_;
+
+    struct match matches_[buffer_size];
+    struct match *matches = matches_;
+
+    bool ofproto_postpone = false;
+
+    size_t n = SGX_delete_flows_loose(ofproto->bridge_id,
+                                        fm->table_id,
+                                        ofproto->n_tables,
+                                        0,
+                                        &fm->match,
+                                        fm->cookie,
+                                        fm->cookie_mask,
+                                        fm->out_port,
+                                        cls_rule_buffer,
+                                        rule_hashes,
+                                        rule_priorities,
+                                        matches,
+                                        buffer_size,
+                                        rule_is_mod,
+                                        rule_is_hidden,
+                                        &ofproto_postpone,
+                                        &total_rules);
+
+    error = ofproto_postpone ? OFPROTO_POSTPONE : error;
+    if(error) {
+        return error;
+    }
+
+    if(n == 0) {
+        return 0;
+    }
+
+    size_t leftovers = total_rules - n;
+    struct cls_rule *extended_cls_rule_buffer[total_rules];
+    bool extended_rule_is_mod[total_rules];
+    bool extended_rule_is_hidden[total_rules];
+    uint32_t extended_rule_hashes[total_rules];
+    uint32_t extended_rule_priorities[total_rules];
+    struct match extended_matches[total_rules];
+
+    if(leftovers > 0) {
+        memcpy(extended_cls_rule_buffer, cls_rule_buffer_, sizeof(cls_rule_buffer_));
+        memcpy(extended_rule_is_mod, rule_is_mod_, sizeof(rule_is_mod_));
+        memcpy(extended_rule_is_hidden, rule_is_hidden_, sizeof(rule_is_hidden_));
+        memcpy(extended_rule_hashes, rule_hashes_, sizeof(rule_hashes_));
+        memcpy(extended_rule_priorities, rule_priorities_, sizeof(rule_priorities_));
+        memcpy(extended_matches, matches_, sizeof(matches_));
+        size_t dummy;
+        size_t m = SGX_delete_flows_loose(ofproto->bridge_id,
+                                            fm->table_id,
+                                            ofproto->n_tables,
+                                            0,
+                                            &fm->match,
+                                            fm->cookie,
+                                            fm->cookie_mask,
+                                            fm->out_port,
+                                            extended_cls_rule_buffer + n,
+                                            extended_rule_hashes + n,
+                                            extended_rule_priorities + n,
+                                            extended_matches + n,
+                                            leftovers,
+                                            extended_rule_is_mod + n,
+                                            extended_rule_is_hidden + n,
+                                            &ofproto_postpone,
+                                            &dummy);
+        error = ofproto_postpone ? OFPROTO_POSTPONE : error;
+        if(error) {
+            return error;
+        }
+        cls_rule_buffer = extended_cls_rule_buffer;
+        rule_is_mod = extended_rule_is_mod;
+        rule_is_hidden = extended_rule_is_hidden;
+        rule_hashes = extended_rule_hashes;
+        rule_priorities = extended_rule_priorities;
+        matches = extended_matches;
+    }
+
+
+    struct rule *rule;
+    struct ofopgroup *group;
+    group = ofopgroup_create(ofproto, ofconn, request, UINT32_MAX);
+    for(int i = 0; i < total_rules; ++i) {
+        rule = rule_from_cls_rule(cls_rule_buffer[i]);
+        ofproto_rule_send_removed_del(rule, OFPRR_DELETE, rule_is_hidden[i], rule_priorities[i], matches[i]);
+        ofoperation_create(group, rule, OFOPERATION_DELETE, OFPRR_DELETE, rule_hashes + i);
+        if (!list_is_empty(&rule->expirable)) {
+            list_remove(&rule->expirable);
+        }
+        ofproto->ofproto_class->rule_destruct(rule);
+    }
+    ofopgroup_submit(group, NULL, NULL, rule_is_hidden);
 
     return 0;
 }
+#endif
 
 /* Implements OFPFC_DELETE. */
 static enum ofperr
@@ -4416,34 +4577,32 @@ delete_flows_loose(struct ofproto *ofproto, struct ofconn *ofconn,
 	struct list rules;
     enum ofperr error;
 
+    #ifdef OPTIMIZED
+    return delete_flows_loose_optimized(ofproto, fm, ofconn, request);
+    #else
     error = collect_rules_loose(ofproto, fm->table_id, &fm->match,
                                 fm->cookie, fm->cookie_mask,
-                                fm->out_port, &rules, NULL, NULL, NULL, NULL, NULL);
+                                fm->out_port, &rules);
     return (error ? error
             : !list_is_empty(&rules) ? delete_flows__(ofproto, ofconn, request,
                                                       &rules)
             : 0);
+    #endif
+
 }
 
-
-
-
-/* Implements OFPFC_DELETE_STRICT. */
+#ifdef OPTIMIZED
 static enum ofperr
-delete_flow_strict(struct ofproto *ofproto, struct ofconn *ofconn,
+delete_flow_strict_optimized(struct ofproto *ofproto, struct ofconn *ofconn,
                    const struct ofputil_flow_mod *fm,
                    const struct ofp_header *request)
 {
-    struct list rules;
     enum ofperr error;
-
-    #ifdef OPTIMIZED
 
     error = check_table_id(ofproto, fm->table_id);
     if (error) {
         return error;
     }
-    list_init(&rules);
 
     size_t buffer_size = fm->table_id == 0xff ? ofproto->n_tables : 1;
     struct cls_rule *cls_rule_buffer[buffer_size];
@@ -4454,7 +4613,7 @@ delete_flow_strict(struct ofproto *ofproto, struct ofconn *ofconn,
 
     struct match matches[buffer_size];
 
-    size_t n = SGX_delete_flows(ofproto->bridge_id,
+    size_t n = SGX_delete_flows_strict(ofproto->bridge_id,
                                         fm->table_id,
                                         ofproto->n_tables,
                                         &fm->match,
@@ -4495,11 +4654,28 @@ delete_flow_strict(struct ofproto *ofproto, struct ofconn *ofconn,
     ofopgroup_submit(group, NULL, NULL, rule_is_hidden);
 
     return 0;
+}
+#endif
+
+
+
+/* Implements OFPFC_DELETE_STRICT. */
+static enum ofperr
+delete_flow_strict(struct ofproto *ofproto, struct ofconn *ofconn,
+                   const struct ofputil_flow_mod *fm,
+                   const struct ofp_header *request)
+{
+    struct list rules;
+    enum ofperr error;
+
+    #ifdef OPTIMIZED
+
+    return delete_flow_strict_optimized(ofproto, ofconn, fm , request);
 
     #else
     error = collect_rules_strict(ofproto, fm->table_id, &fm->match,
                                  fm->priority, fm->cookie, fm->cookie_mask,
-                                 fm->out_port, &rules, NULL, NULL);
+                                 fm->out_port, &rules);
     return (error ? error
          : list_is_singleton(&rules) ? delete_flows__(ofproto, ofconn,
                                                       request, &rules)
@@ -5821,11 +5997,10 @@ ofproto_evict(struct ofproto *ofproto)
                                  &total_evictions);
 
     size_t leftover_evictions = total_evictions - n;
+    struct extended_cls_rule *extended_eviction_ut_crs[total_evictions];
+    uint32_t extended_eviction_hashes[total_evictions];
+    uint8_t extended_eviction_is_hidden[total_evictions];
     if(leftover_evictions > 0) {
-        printf("HAS LEFTOVER\n");
-        struct extended_cls_rule *extended_eviction_ut_crs[total_evictions];
-        uint32_t extended_eviction_hashes[total_evictions];
-        uint8_t extended_eviction_is_hidden[total_evictions];
         memcpy(extended_eviction_ut_crs, eviction_ut_crs, sizeof(eviction_ut_crs));
         memcpy(extended_eviction_hashes, eviction_hashes, sizeof(eviction_hashes));
         memcpy(extended_eviction_is_hidden, eviction_is_hidden, sizeof(eviction_is_hidden));
@@ -6163,6 +6338,9 @@ oftable_disable_eviction(struct oftable *table)
 static void
 #endif
 
+
+#ifndef OPTIMIZED
+
 #ifndef SGX
 oftable_enable_eviction(struct oftable *table,
                         const struct mf_subfield *fields, size_t n_fields)
@@ -6216,6 +6394,7 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
     }
 #endif
 }
+#endif
 
 /* Removes 'rule' from the oftable that contains it. */
 static void

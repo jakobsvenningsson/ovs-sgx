@@ -10,4 +10,8 @@ void
 node_delete(uint8_t bridge_id, struct cls_rule * out);
 struct sgx_cls_rule *
 sgx_rule_from_ut_cr(uint8_t bridge_id, const struct cls_rule * out);
+bool
+is_rule_hidden(uint8_t bridge_id, struct cls_rule *ut_cr);
+bool
+is_rule_modifiable(uint8_t bridge_id, uint8_t table_id);
 #endif

@@ -8,8 +8,11 @@
 
 #define hotcall_ecall_test 101
 #define hotcall_ecall_async_test 100
-#define hotcall_ecall_delete_flows_v2 99
+#define hotcall_ecall_delete_flows_strict 99
 #define hotcall_ecall_configure_tables 98
+#define hotcall_ecall_delete_flows_loose 97
+#define hotcall_ecall_modify_flows_strict 96
+#define hotcall_ecall_modify_flows_loose 95
 
 
 #define hotcall_ecall_myenclave_sample 0

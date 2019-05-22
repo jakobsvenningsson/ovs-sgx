@@ -213,3 +213,13 @@ sgx_rule_from_ut_cr(uint8_t bridge_id, const struct cls_rule * out){
     }
     return NULL;
 }
+
+bool
+is_rule_hidden(uint8_t bridge_id, struct cls_rule *ut_cr) {
+    return ecall_cr_priority(bridge_id, ut_cr) > UINT16_MAX;
+}
+
+bool
+is_rule_modifiable(uint8_t bridge_id, uint8_t table_id) {
+    return !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
+}

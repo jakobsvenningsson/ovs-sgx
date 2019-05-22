@@ -92,7 +92,7 @@ enclave {
 
 
 		public size_t
- 		ecall_delete_flows(uint8_t bridge_id,
+ 		ecall_delete_flows_strict(uint8_t bridge_id,
  		                        uint8_t table_id,
  		                        int ofproto_n_tables,
  		                        [user_check] struct match *match,
@@ -109,6 +109,56 @@ enclave {
  		                        [user_check] bool *ofproto_postpone,
  		                        size_t buffer_size);
 
+		public size_t
+		ecall_modify_flows_strict(uint8_t bridge_id,
+		                        uint8_t table_id,
+		                        int ofproto_n_tables,
+		                        [user_check] struct match *match,
+		                        unsigned int priority,
+		                        ovs_be64 cookie,
+		                        ovs_be64 cookie_mask,
+		                        uint16_t out_port,
+		                        [user_check] struct cls_rule **cls_rule_buffer,
+		                        [user_check] bool *rule_is_modifiable,
+		                        [user_check] bool *rule_is_hidden,
+		                        [user_check] bool *ofproto_postpone,
+		                        size_t buffer_size);
+
+		public size_t
+		ecall_modify_flows_loose(uint8_t bridge_id,
+	                              uint8_t table_id,
+	                              int n_tables,
+	                              size_t offset,
+	                              [user_check] struct match *match,
+	                              [user_check] struct cls_rule **cr_rules,
+	                              size_t buffer_size,
+	                              ovs_be64 cookie,
+	                              ovs_be64 cookie_mask,
+	                              uint16_t out_port,
+	                              [user_check] bool *rule_is_mod,
+	                              [user_check] bool *rule_is_hidden,
+	                              [user_check] bool *postpone,
+	                              [user_check] size_t *n_rules);
+
+		public size_t
+		ecall_delete_flows_loose(uint8_t bridge_id,
+							uint8_t table_id,
+							int n_tables,
+							size_t offset,
+							[user_check] struct match *match,
+							ovs_be64 cookie,
+							ovs_be64 cookie_mask,
+							uint16_t out_port,
+							[user_check] struct cls_rule **cls_rule_buffer,
+							[user_check] uint32_t *rule_hashes,
+							[user_check] unsigned int *rule_priorities,
+							[user_check] struct match *matches,
+							size_t buffer_size,
+							[user_check] bool *rule_is_modifiable,
+							[user_check] bool *rule_is_hidden,
+							[user_check] bool *ofproto_postpone,
+							[user_check] size_t *n_rules);
+
 		 public size_t
 		 ecall_collect_rules_strict(uint8_t bridge_id,
 		 						 uint8_t table_id,
@@ -119,8 +169,6 @@ enclave {
 								 ovs_be64 cookie_mask,
 								 uint16_t out_port,
 		 						 [user_check] struct cls_rule **cls_rule_buffer,
-		 						 [user_check] bool *rule_is_modifiable,
-								 [user_check] bool *rule_is_hidden,
 								 [user_check] bool *ofproto_postpone,
 		 						 size_t buffer_size);
 
@@ -132,10 +180,10 @@ enclave {
 		 					   [user_check] struct match *match,
 		 					   [user_check] struct cls_rule **cls_rule_buffer,
 		 					   size_t buffer_size,
-		 					   [user_check] bool *rule_is_modifiable,
-							   [user_check] bool *rule_is_hidden,
-			                   [user_check] int *table_update_tagable,
-			                   [user_check] uint8_t *is_other_table,
+							   ovs_be64 cookie,
+							   ovs_be64 cookie_mask,
+							   uint16_t out_port,
+							   [user_check] bool *postpone,
 		 					   [user_check] size_t *n_rules);
 
 		public void
