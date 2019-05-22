@@ -1,17 +1,7 @@
 #ifndef _APP_H_
 #define _APP_H_
 #include <stdint.h>
-
-/* API untrusted functions to trusted inside the enclave */
-struct match;
-struct cls_rule;
-struct heap_node;
-struct match;
-struct mf_subfield;
-struct minimatch;
-struct flow;
-struct flow_wildcards;
-
+#include "app.h"
 
 void SGX_async_test();
 void SGX_batch_flush();
@@ -33,6 +23,11 @@ SGX_backup_and_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, uint8_t 
 
 void
 SGX_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t eviction_rule_priority);
+
+void
+SGX_configure_tables(uint8_t bridge_id, int n_tables, uint32_t time_boot_msec, struct ofproto_table_settings *settings, bool *need_to_evict);
+
+
 
 // Optimized calls
 

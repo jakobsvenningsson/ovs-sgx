@@ -9,7 +9,7 @@
 #define hotcall_ecall_test 101
 #define hotcall_ecall_async_test 100
 #define hotcall_ecall_delete_flows_v2 99
-
+#define hotcall_ecall_configure_tables 98
 
 
 #define hotcall_ecall_myenclave_sample 0
@@ -110,6 +110,7 @@ struct mf_subfield;
 struct minimatch;
 struct flow;
 struct flow_wildcards;
+struct ofproto_table_settings;
 
 /* A hash map. */
 struct hmap {
@@ -163,6 +164,22 @@ typedef struct {
 #define ui32 "c"
 #define ui32_c 'c'
 
+/* Configuration of OpenFlow tables. */
+struct ofproto_table_settings {
+    char *name;                 /* Name exported via OpenFlow or NULL. */
+    unsigned int max_flows;     /* Maximum number of flows or UINT_MAX. */
+
+    /* These members determine the handling of an attempt to add a flow that
+     * would cause the table to have more than 'max_flows' flows.
+     *
+     * If 'groups' is NULL, overflows will be rejected with an error.
+     *
+     * If 'groups' is nonnull, an overflow will cause a flow to be removed.
+     * The flow to be removed is chosen to give fairness among groups
+     * distinguished by different values for the subfields within 'groups'. */
+    struct mf_subfield *groups;
+    size_t n_groups;
+};
 
 struct page {
     uint8_t *bytes;

@@ -238,7 +238,6 @@ ecall_ofproto_evict(uint8_t bridge_id,
 
         int rules_in_table = ecall_oftable_cls_count(bridge_id, table_id);
         int max_flows = ecall_oftable_mflows(bridge_id, table_id);
-        //total_nr_evictions += (rules_in_table > max_flows ? rules_in_table - max_flows : 0);
         int count = ecall_oftable_cls_count(bridge_id, table_id);
 
         while(count-- > max_flows){

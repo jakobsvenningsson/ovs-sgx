@@ -354,6 +354,7 @@ ecall_oftable_configure(uint8_t bridge_id,
 
     if(ecall_oftable_is_readonly(bridge_id, table_id)){
         *is_read_only = true;
+        *need_to_evict = false;
         return;
     }
 
@@ -617,12 +618,6 @@ ecall_delete_flows(uint8_t bridge_id,
                rule_is_hidden[n] = ecall_cr_priority(bridge_id, rule->o_cls_rule) > UINT16_MAX;
                cls_rule_buffer[n] = rule->o_cls_rule;
                rule_is_modifiable[n] = !(ecall_oftable_get_flags(bridge_id, table_id) & OFTABLE_READONLY);
-               /*if(table_update_tagable) {
-                   table_update_tagable[n] = ecall_oftable_update_taggable(bridge_id, table_id);
-               }
-               if(is_other_table) {
-                   is_other_table[n] = ecall_oftable_is_other_table(bridge_id, table_id) > UINT16_MAX;
-               }*/
                n++;
            }
        }
@@ -632,6 +627,17 @@ ecall_delete_flows(uint8_t bridge_id,
    }
 
 
+
+void
+ecall_configure_tables(uint8_t bridge_id, int n_tables, uint32_t time_boot_msec, struct ofproto_table_settings *settings, bool *need_to_evict) {
+    bool is_read_only = false;
+    struct ofproto_table_settings s;
+    for(int table_id = 0; table_id < n_tables; table_id++) {
+        ovs_assert(table_id >= 0 && table_id < n_tables);
+        s = settings[table_id];
+        ecall_oftable_configure(bridge_id, table_id, s.name, s.max_flows, s.groups, s.n_groups, time_boot_msec, &need_to_evict[table_id], &is_read_only);
+    }
+}
 
 // Helpers
 

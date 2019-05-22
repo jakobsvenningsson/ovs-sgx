@@ -992,6 +992,34 @@ ofproto_get_n_tables(const struct ofproto *ofproto)
     return ofproto->n_tables;
 }
 
+
+#ifdef OPTIMIZED
+void
+ofproto_configure_tables(struct ofproto *ofproto, int n_tables,
+                        const struct ofproto_table_settings *s)
+{
+    bool need_to_evict[n_tables];
+    long long int boot_msec = time_boot_msec();
+    SGX_configure_tables(ofproto->bridge_id, n_tables, boot_msec >> 10, s, need_to_evict);
+
+    for (int table_id = 0; table_id < n_tables; table_id++) {
+        if(need_to_evict[table_id]) {
+            switch (ofproto->state) {
+            case S_OPENFLOW:
+                ofproto->state = S_EVICT;
+                break;
+            case S_EVICT:
+            case S_FLUSH:
+                /* We're already deleting flows, nothing more to do. */
+                break;
+            }
+        }
+    }
+}
+#endif
+
+
+#ifndef OPTIMIZED
 /* Configures the OpenFlow table in 'ofproto' with id 'table_id' with the
  * settings from 's'.  'table_id' must be in the range 0 through the number of
  * OpenFlow tables in 'ofproto' minus 1, inclusive.
@@ -1018,18 +1046,8 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
     table->max_flows = s->max_flows;
     if (classifier_count(&table->cls) > table->max_flows
         && table->eviction_fields) {
-#elif OPTIMIZED
-    bool is_read_only = false, need_to_evict = false;
-    long long int t = time_boot_msec();
-    SGX_configure_table(ofproto->bridge_id, table_id, s->name, s->max_flows, s->groups, s->n_groups, t >> 10, &need_to_evict, &is_read_only);
-    if(is_read_only) {
-        return;
-    }
-    if(need_to_evict) {
 #else
-    //This function will configure the table name
     SGX_oftable_set_name(ofproto->bridge_id, table_id,s->name);
-    //Is the table read-only?????
     if(SGX_istable_readonly(ofproto->bridge_id, table_id)){
         return;
     }
@@ -1057,6 +1075,8 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
         }
     }
 }
+
+#endif
 
 bool
 ofproto_has_snoops(const struct ofproto *ofproto)
@@ -5802,6 +5822,7 @@ ofproto_evict(struct ofproto *ofproto)
 
     size_t leftover_evictions = total_evictions - n;
     if(leftover_evictions > 0) {
+        printf("HAS LEFTOVER\n");
         struct extended_cls_rule *extended_eviction_ut_crs[total_evictions];
         uint32_t extended_eviction_hashes[total_evictions];
         uint8_t extended_eviction_is_hidden[total_evictions];

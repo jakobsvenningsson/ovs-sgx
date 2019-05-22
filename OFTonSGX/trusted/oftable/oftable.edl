@@ -138,6 +138,9 @@ enclave {
 			                   [user_check] uint8_t *is_other_table,
 		 					   [user_check] size_t *n_rules);
 
+		public void
+		ecall_configure_tables(uint8_t bridge_id, int n_tables, uint32_t time_boot_msec, [user_check] struct ofproto_table_settings *settings, [user_check] bool *need_to_evict);
+
 
 
     };

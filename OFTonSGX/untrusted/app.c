@@ -29,10 +29,10 @@ static struct preallocated_function_calls pfc;
 
 struct function_call *fc_;
 #define HCALL(f, async, ret, n_args, args) \
-    printf("Calling func %s.\n", #f);\
     fc_ = get_fcall(&pfc, hotcall_ ## f, ret, n_args, args); \
     list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node); \
     if(!async) { \
+        printf("Calling func %s.\n", #f);\
         make_hotcall(&sm_ctx.hcall); \
     }
 #define ECALL(f, args ...) \
@@ -1733,5 +1733,21 @@ SGX_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t evictio
     HCALL(ecall_rule_update_used, async, NULL, 3, args);
     #else
     ECALL(ecall_rule_update_used, bridge_id, ut_cr, eviction_rule_priority);
+    #endif
+}
+
+void
+SGX_configure_tables(uint8_t bridge_id, int n_tables, uint32_t time_boot_msec, struct ofproto_table_settings *settings, bool *need_to_evict) {
+    #ifdef HOTCALL
+    bool async = ASYNC(false);
+    void **args = pfc.args[pfc.idx];
+    args[0] = &bridge_id;
+    args[1] = &n_tables;
+    args[2] = &time_boot_msec;
+    args[3] = settings;
+    args[4] = need_to_evict;
+    HCALL(ecall_configure_tables, async, NULL, 5, args);
+    #else
+    ECALL(ecall_configure_tables, bridge_id, n_tables, time_boot_msec, settings, need_to_evict);
     #endif
 }
