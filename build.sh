@@ -3,6 +3,11 @@
 ROOT_FOLDER=$PWD
 FLAGS=$1
 source /opt/intel/sgxsdk/environment
+echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING HOTCALL BUNDLER TRUSTED"
+make -C hotcall_bundler/trusted
+
+echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING HOTCALL BUNDLER UNTRUSTED"
+make -C hotcall_bundler/untrusted
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OFTonSGX"
 make -C OFTonSGX/ clean
@@ -18,9 +23,19 @@ cp TLSonSGX/tls_enclave.signed.so ./ovs
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OvS"
 cd ovs
 ./boot.sh
-./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted -I${ROOT_FOLDER}/TLSonSGX/App  -I${ROOT_FOLDER}/OFTonSGX/untrusted -I${ROOT_FOLDER}/benchmark/include -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
-            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ -L$ROOT_FOLDER/OFTonSGX -L${ROOT_FOLDER}/TLSonSGX/mbedtls/library -L$ROOT_FOLDER/TLSonSGX" \
-            	LIBS="-lOFTonSGX -lTLSonSGX -lmbedtls -lmbedx509 -lmbedcrypto -lpthread -lstdc++"
+./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted \
+                           -I${ROOT_FOLDER}/TLSonSGX/App \
+                           -I${ROOT_FOLDER}/OFTonSGX/untrusted \
+                           -I${ROOT_FOLDER}/benchmark/include \
+                           -I${ROOT_FOLDER}/hotcall_bundler/include \
+                           -I${ROOT_FOLDER}/hotcall_bundler/untrusted \
+                           -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
+            	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
+                         -L$ROOT_FOLDER/hotcall_bundler/untrusted \
+                         -L$ROOT_FOLDER/OFTonSGX \
+                         -L${ROOT_FOLDER}/TLSonSGX/mbedtls/library \
+                         -L$ROOT_FOLDER/TLSonSGX" \
+            	LIBS=" -lOFTonSGX -lTLSonSGX  -lhotcall_bundler_untrusted -lmbedtls -lmbedx509 -lmbedcrypto -lpthread -lstdc++ "
 
 
 make clean
