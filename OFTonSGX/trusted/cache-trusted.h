@@ -24,6 +24,8 @@ void
 flow_map_cache_insert_rule(flow_map_cache *flow_cache, struct cls_rule *t_cr, struct cls_rule *ut_cr, int bridge_id, int table_id);
 void
 flow_map_cache_flush(flow_map_cache *flow_cache);
+void
+flow_map_cache_validate(void *shared_mem_ptr);
 
 static inline uint32_t
 ut_cr_addr_hash(struct cls_rule *ut_cr) {

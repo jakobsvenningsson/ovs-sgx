@@ -7,11 +7,13 @@
 #include "ofproto-provider.h"
 
 #include "call-table.h"
-#include "hotcall-trusted.h"
 #include "openflow-common.h"
 #include <sgx_spinlock.h>
 #include "oftable.h"
 #include "enclave-batch-allocator.h"
+#include "hotcall.h"
+#include "hotcall-trusted.h"
+#include "cache-trusted.h"
 
 
 // Global data structures
@@ -23,7 +25,23 @@ const struct batch_allocator cr_ba;
 const struct batch_allocator evg_ba;
 
 void
+configure_hotcall() {
+    struct hotcall_config conf = {
+        .execute_function = execute_function,
+        .n_spinlock_jobs = 1,
+        .spin_lock_tasks = { &flow_map_cache_validate },
+        .spin_lock_task_timeouts = { 99999999 },
+        .spin_lock_task_count = { 0 }
+    };
+    struct hotcall_config *config = malloc(sizeof(struct hotcall_config));
+    memcpy(config, &conf, sizeof(struct hotcall_config));
+    hotcall_register_config(config);
+}
+
+
+void
 ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
+
     struct oftable * table;
 
     SGX_n_tables[bridge_id] = n_tables;
@@ -44,4 +62,7 @@ ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
     batch_allocator_add_block(&evg_ba);
 
     #endif
+
+
+    configure_hotcall();
 }

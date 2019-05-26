@@ -1,61 +1,53 @@
-#ifndef _H_HOTCALL_PRODUCER_H
-#define _H_HOTCALL_PRODUCER_H
+#ifndef _H_HOTCALL_UNTRUSTED__
+#define _H_HOTCALL_UNTRUSTED__
 
-#include "common.h"
 #include "stdbool.h"
 #include <stdlib.h>
 #include <string.h>
-#include "enclave_u.h"
+#include <stdint.h>
+#include <hotcall.h>
 
-#define MAX_FCS 1000
-#define MAX_TS 1000
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#define HCALL(sm_ctx_, f, async, ret, n_args, args) \
+    struct ecall_queue_item *fc_; \
+    fc_ = get_fcall(&sm_ctx_.pfc, hotcall_ ## f, ret, n_args, args); \
+    list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node); \
+    if(!async) { \
+        make_hotcall(&sm_ctx.hcall); \
+    }
+void hotcall_flush(struct shared_memory_ctx *sm_ctx);
 
-struct preallocated_function_calls {
-    struct ecall_queue_item fcs[MAX_FCS];
-    void *args[MAX_FCS][HOTCALL_MAX_ARG];
-    size_t idx;
-    size_t len;
+bool
+is_transaction_in_progress(struct hotcall *hcall);
+int
+first_call_of_transaction(struct hotcall *hcall);
+void
+hotcall_init(struct shared_memory_ctx *sm_ctx);
+void
+hotcall_flush(struct shared_memory_ctx *sm_ctx);
+void
+hotcall_bundle_begin(struct shared_memory_ctx *sm_ctx, int *transaction_error);
+void
+hotcall_bundle_end(struct shared_memory_ctx *sm_ctx);
+void
+hotcall_bundle_assert_false(struct preallocated_function_calls *pfc, int condition, int error_code, uint8_t cleanup_function);
+void
+hotcall_bundle_expected_value(struct preallocated_function_calls *pfc, int expected, int error_code, bool has_else);
+void
+hotcall_bundle_if_(struct preallocated_function_calls *pfc, int expected, int **conditions, char *type, int n_conditions, int if_len, int else_len);
+void
+hotcall_bundle_if_null_(struct preallocated_function_calls *pfc, void *condition, int if_len, int else_len);
 
-    size_t idx_uint8;
-    uint8_t uint8_ts[MAX_TS];
-
-    size_t idx_sizet;
-    size_t size_ts[MAX_TS];
-
-    size_t idx_unsigned;
-    unsigned int unsigned_ts[MAX_TS];
-
-    size_t idx_void;
-    void *void_ts[MAX_TS];
-
-    size_t idx_uint32;
-    uint32_t uint32_ts[MAX_TS];
-
-    size_t idx_bool;
-    bool bool_ts[MAX_TS];
-
-
-    size_t idx_int;
-    int int_ts[MAX_TS];
-};
-
-static void
+inline void
 make_hotcall(struct hotcall *hcall) {
     struct function_call *fcall, *next;
     hcall->is_done  = false;
     hcall->run      = true;
 
     while (1) {
-        #ifdef TIMEOUT
-        if (hcall->sleeping) {
-            pthread_mutex_lock(&mutex);
-            pthread_cond_signal(&cond);
-            pthread_mutex_unlock(&mutex);
-            continue;
-        }
-        #endif
-
         sgx_spin_lock(&hcall->spinlock);
         if (hcall->is_done) {
             sgx_spin_unlock(&hcall->spinlock);
@@ -69,13 +61,6 @@ make_hotcall(struct hotcall *hcall) {
             );
         }
     }
-}
-
-inline size_t
-get_n_args(char *fmt) {
-    size_t i = 0;
-    for (i=0; fmt[i]; fmt[i]!=',' ? i++ : *fmt)
-    return i;
 }
 
 inline
@@ -189,5 +174,10 @@ next_int(struct preallocated_function_calls *pfc, int x) {
     pfc->int_ts[pfc->idx_int] = x;
     return &pfc->int_ts[pfc->idx_int++];
 }
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

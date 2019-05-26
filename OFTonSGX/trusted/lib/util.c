@@ -36,8 +36,6 @@ ovs_assert_failure(const char *where, const char *function,
 
 
 
-
-
 void *
 xcalloc(size_t count, size_t size)
 {

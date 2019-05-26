@@ -41,19 +41,22 @@ ifneq ($(SGX_MODE), HW)
 else
 	Urts_Library_Name := sgx_urts
 endif
-
+# $(UNTRUSTED_DIR)/hotcall-untrusted.c
 App_C_Files := $(UNTRUSTED_DIR)/app.c  \
 				 $(UNTRUSTED_DIR)/sgx-utils.c \
 				 $(UNTRUSTED_DIR)/ocall.c \
 				 $(UNTRUSTED_DIR)/shared-memory-untrusted.c \
-				 $(UNTRUSTED_DIR)/cache-untrusted.c \
-				 $(UNTRUSTED_DIR)/hotcall-untrusted.c \
-				 $(UNTRUSTED_DIR)/spinlock.c
+				 $(UNTRUSTED_DIR)/cache-untrusted.c
 
-App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include -I$(HOME)/ovs-sgx/ovs/lib -I$(HOME)/ovs-sgx/benchmark/include
+App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) \
+					 -I$(SGX_SDK)/include \
+					 -I$(HOME)/ovs-sgx/ovs/lib \
+					 -I$(HOME)/ovs-sgx/benchmark/include \
+					 -I/home/jakob/ovs-sgx/hotcall_bundler/include \
+					 -I/home/jakob/ovs-sgx/hotcall_bundler/untrusted
 
-App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths) $(LFLAGS)
-
+App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths) $(LFLAGS) \
+	-L/home/jakob/ovs-sgx/hotcall_bundler/untrusted -lhotcall_bundler_untrusted
 
 # Three configuration modes - Debug, prerelease, release
 #   Debug - Macro DEBUG enabled.
@@ -67,7 +70,9 @@ else
         App_C_Flags += -DNDEBUG -UEDEBUG -UDEBUG
 endif
 
-App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -lpthread
+App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) \
+	-L/home/jakob/ovs-sgx/hotcall_bundler/untrusted -lho123132all_bundler_untrusted \
+	-lpth2read
 
 ifneq ($(SGX_MODE), HW)
 	App_Link_Flags += -lsgx_uae_service_sim
@@ -129,11 +134,10 @@ link : $(UNTRUSTED_DIR)/enclave_u.o $(App_C_Objects)
 	@ar rcsv libOFTonSGX.a \
 						$(UNTRUSTED_DIR)/enclave_u.o \
 						$(UNTRUSTED_DIR)/app.o \
-						$(UNTRUSTED_DIR)/spinlock.o \
 						$(UNTRUSTED_DIR)/sgx-utils.o \
 						$(UNTRUSTED_DIR)/cache-untrusted.o \
 						$(UNTRUSTED_DIR)/shared-memory-untrusted.o \
-						$(UNTRUSTED_DIR)/hotcall-untrusted.o \
+						$(UNTRUSTED_DIR)/ocall.o \
 						$(UNTRUSTED_DIR)/ocall.o \
 						/opt/intel/sgxsdk/lib64/libsgx_urts.so \
 						/opt/intel/sgxsdk/lib64/libsgx_uae_service.so

@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <sgx_thread.h>
-
+#include "/home/jakob/ovs-sgx/OFTonSGX/trusted/lib/list.h"
 
 #define hotcall_ecall_myenclave_sample 0
 #define hotcall_ecall_ofproto_init_tables 1
@@ -102,12 +102,12 @@
 #define hotcall_ecall_configure_tables 88
 #define hotcall_ecall_delete_flows_strict 89
 
-
+/*
 #define hotcall_transaction_if_null 200
 #define hotcall_transaction_assert_true_ 201
 #define hotcall_transaction_assert_false_ 202
 #define hotcall_transaction_guard 203
-#define hotcall_transaction_if 204
+#define hotcall_transaction_if 204*/
 
 
 #define hotcall_ecall_test 240
@@ -139,10 +139,10 @@ struct hmap_node {
     struct hmap_node *next;     /* Next in linked list. */
 };
 
-struct list {
-    struct list *prev;     /* Previous list element. */
-    struct list *next;     /* Next list element. */
-};
+//struct list {
+//    struct list *prev;     /* Previous list element. */
+//    struct list *next;     /* Next list element. */
+//};
 
 /* Configuration of OpenFlow tables. */
 struct ofproto_table_settings {
@@ -162,7 +162,7 @@ struct ofproto_table_settings {
 };
 
 /* HOTCALL STRUCTURES */
-
+/*
 #define HOTCALL_MAX_ARG 25
 
 typedef struct {
@@ -174,7 +174,7 @@ typedef struct {
 typedef struct {
   size_t allocated_size;
   void *val;
-} return_value;
+} return_value;*/
 
 typedef struct {
     struct cls_rule * cr;
@@ -232,7 +232,7 @@ typedef struct {
     shared_memory shared_memory;
 } flow_map_cache;
 
-
+/*
 struct function_call {
     uint8_t id;
     argument_list args;
@@ -303,6 +303,6 @@ struct hotcall {
 struct shared_memory_ctx {
   struct hotcall hcall;
   flow_map_cache flow_cache;
-};
+};*/
 
 #endif

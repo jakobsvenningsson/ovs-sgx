@@ -1,0 +1,14 @@
+/* libhotcall_bundler.edl - Top EDL file. */
+
+enclave {
+
+    include "/home/jakob/ovs-sgx/hotcall_bundler/include/hotcall.h"
+
+    untrusted {
+    };
+
+    trusted {
+            include "hotcall-trusted.h"
+    	    public int ecall_start_poller([user_check] struct shared_memory_ctx *sm_ctx);
+    };
+};

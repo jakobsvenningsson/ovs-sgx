@@ -18,7 +18,6 @@ flow_map_cache_hash(flow_map_cache *flow_cache) {
     cls_cache_entry *cache_entry;
     sgx_spin_lock(&flow_cache->shared_memory.spinlock);
     HMAP_FOR_EACH(cache_entry, hmap_node, &flow_cache->entries) {
-        //printf("Addr of hmap_node: %p, hash: %zu.\n", &cache_entry->hmap_node, cache_entry->hmap_node.hash);
         hash += (unsigned long) cache_entry_hash(cache_entry, 0);
     }
     sgx_spin_unlock(&flow_cache->shared_memory.spinlock);
@@ -43,34 +42,6 @@ flow_map_cache_update_hash(cls_cache_entry *cache_entry, int update_type) {
             return 0;
     }
 }
-
-/*void
-flow_map_cache_remove_with_hash(flow_map_cache *flow_cache, const struct cls_rule *t_cr, int bridge_id, int table_id) {
-    struct flow flow;
-    miniflow_expand(&t_cr->match.flow, &flow);
-    struct flow_wildcards wc;
-    minimask_expand(&t_cr->match.mask, &wc);
-
-    size_t hash;
-    hash = flow_map_cache_calculate_hash(&flow, &wc, bridge_id, table_id);
-    cls_cache_entry *cache_entry;
-    HMAP_FOR_EACH_WITH_HASH(cache_entry, hmap_node, hash, &flow_cache->entries) {
-        sgx_spin_lock(&flow_cache->shared_memory.spinlock);
-        flow_cache_hash_checksum = flow_map_cache_update_hash(cache_entry, FLOW_CACHE_UPDATE_TYPE_DELETE);
-        hmap_remove(&flow_cache->entries, &cache_entry->hmap_node);
-        //hmap_remove(&flow_cache->ut_crs, &cache_entry->hmap_node_ut_crs);
-        cache_entry->cr = NULL;
-        list_remove(&cache_entry->list_node);
-        list_insert(&flow_cache->lru_list, &cache_entry->list_node);
-        sgx_spin_unlock(&flow_cache->shared_memory.spinlock);
-        //flow_cache_hash_checksum = flow_map_cache_hash(&flow_cache->entries);
-
-        break;
-    }
-}*/
-
-
-
 
 void
 flow_map_cache_remove_ut_cr(flow_map_cache *flow_cache, struct cls_rule *ut_cr) {
@@ -143,6 +114,17 @@ flow_map_cache_calculate_hash(const struct flow *flow, const struct flow_wildcar
     return hash;
 }
 
+void
+flow_map_cache_validate(void *_flow_cache) {
+    flow_map_cache * flow_cache = (flow_map_cache *) _flow_cache;
+    //cache_validation_timeout = INIT_CACHE_VALIDATION_VALUE;
+    if(!flow_map_cache_is_valid(flow_cache)) {
+        printf("VARNING: Flow cache hash is incorrect.\nFlushing cache and reporting the incident.\n");
+        flow_map_cache_flush(flow_cache);
+    } else {
+        printf("FLOW CACHE IS VALID!\n");
+    }
+}
 
 // Helper functions
 

@@ -52,7 +52,6 @@ Enclave_C_Files := trusted/enclave.c \
 										 trusted/lib/flow.c \
 										 trusted/lib/hash.c \
 										 trusted/lib/match.c \
-										 trusted/hotcall-trusted.c \
 										 trusted/enclave-utils.c \
 										 trusted/call-table.c \
 										 trusted/shared-memory-trusted.c \
@@ -76,7 +75,11 @@ Enclave_Include_Paths := -Iinclude \
 														-I$(SGX_SDK)/include/tlibc \
 														-I$(SGX_SDK)/include/libcxx \
 														-Itrusted/lib \
-														-Itrusted/include
+														-Itrusted/include \
+														-I/home/jakob/eclipse-workspace/hotcall_lib/sgx/trustedlib_lib/static_trusted \
+														-I/home/jakob/ovs-sgx/hotcall_bundler/include \
+														-I/home/jakob/ovs-sgx/hotcall_bundler/trusted/static_trusted
+
 
 Flags_Just_For_C := -Wno-implicit-function-declaration -std=c11
 Common_C_Cpp_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(Enclave_Include_Paths) -fno-builtin-printf -I.
@@ -88,7 +91,8 @@ Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefau
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
-	-Wl,--version-script=trusted/enclave.lds
+	-Wl,--version-script=trusted/enclave.lds \
+	-L/home/jakob/ovs-sgx/hotcall_bundler/trusted -lhotcall_bundler_trusted
 
 Enclave_C_Objects := $(Enclave_C_Files:.c=.o)
 

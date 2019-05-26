@@ -1,15 +1,15 @@
 #include "call-table.h"
 #include "ofproto-provider.h"
 #include "enclave_t.h"
-#include "common.h"
+#include "hotcall.h"
 #include "enclave.h"
 #include "cache-trusted.h"
 #include "flow.h"
 
 void
-execute_function(struct function_call *fc, flow_map_cache *flow_cache){
+execute_function(struct function_call *fc){
+    
     cls_cache_entry * cache_entry, * next;
-
     argument_list * args;
     args       = &fc->args;
 
@@ -89,7 +89,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
         {
             struct cls_rule * ut_cr = (struct cls_rule *) args->args[1];
             ecall_cls_rule_destroy(*((int *) args->args[0]), ut_cr);
-            flow_map_cache_remove_ut_cr(flow_cache, ut_cr);
+            //flow_map_cache_remove_ut_cr(flow_cache, ut_cr);
             break;
         }
         case hotcall_ecall_cr_rule_overlaps:
@@ -345,7 +345,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
             struct cls_rule * ut_cr = (struct cls_rule *) args->args[2];
 
             ecall_cls_remove(bridge_id, table_id, ut_cr);
-            flow_map_cache_remove_ut_cr(flow_cache, ut_cr);
+            //flow_map_cache_remove_ut_cr(flow_cache, ut_cr);
             break;
         }
         case hotcall_ecall_oftable_classifier_replace:
@@ -360,7 +360,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
             if (!*ut_cr_remove) {
                 return;
             }
-            flow_map_cache_remove_ut_cr(flow_cache, *ut_cr_remove);
+            //flow_map_cache_remove_ut_cr(flow_cache, *ut_cr_remove);
             break;
         }
         case hotcall_ecall_ofproto_get_vlan_c:
@@ -430,7 +430,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(uint8_t *) args->args[1]
             );
             if (*ret_value == 4) {
-                flow_map_cache_flush(flow_cache);
+                //flow_map_cache_flush(flow_cache);
             }
         }
         break;
@@ -455,7 +455,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
               wc);
 
             if (*ut_cr) {
-                flow_map_cache_insert(flow_cache, flow, wc, *ut_cr, bridge_id, table_id);
+                //flow_map_cache_insert(flow_cache, flow, wc, *ut_cr, bridge_id, table_id);
             }
             break;
         }
@@ -545,7 +545,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(size_t *) args->args[5],
                 (size_t *) args->args[6]
             );
-            flow_map_cache_flush(flow_cache);
+            //flow_map_cache_flush(flow_cache);
             break;
         case hotcall_ecall_ofproto_evict:
             *(size_t *) fc->return_value = ecall_ofproto_evict(
@@ -741,7 +741,7 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(size_t *) args->args[4]
              );
             for (size_t i = 0; i < n; ++i) {
-                flow_map_cache_remove_ut_cr(flow_cache, ut_crs[i]);
+                //flow_map_cache_remove_ut_cr(flow_cache, ut_crs[i]);
             }
             break;
         }
