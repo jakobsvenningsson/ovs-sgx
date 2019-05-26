@@ -6,14 +6,6 @@
 #include <stdarg.h>
 #include <sgx_thread.h>
 
-#define hotcall_ecall_test 101
-#define hotcall_ecall_async_test 100
-#define hotcall_ecall_delete_flows_strict 99
-#define hotcall_ecall_configure_tables 98
-#define hotcall_ecall_delete_flows_loose 97
-#define hotcall_ecall_modify_flows_strict 96
-#define hotcall_ecall_modify_flows_loose 95
-
 
 #define hotcall_ecall_myenclave_sample 0
 #define hotcall_ecall_ofproto_init_tables 1
@@ -103,6 +95,23 @@
 #define hotcall_ecall_rule_update_used 82
 #define hotcall_ecall_backup_and_set_evictable 83
 
+#define hotcall_ecall_ofproto_is_flow_deletion_pending 84
+#define hotcall_ecall_modify_flows_loose 85
+#define hotcall_ecall_modify_flows_strict 86
+#define hotcall_ecall_delete_flows_loose 87
+#define hotcall_ecall_configure_tables 88
+#define hotcall_ecall_delete_flows_strict 89
+
+
+#define hotcall_transaction_if_null 200
+#define hotcall_transaction_assert_true_ 201
+#define hotcall_transaction_assert_false_ 202
+#define hotcall_transaction_guard 203
+#define hotcall_transaction_if 204
+
+
+#define hotcall_ecall_test 240
+#define hotcall_ecall_async_test 241
 
 /* API untrusted functions to trusted inside the enclave */
 struct match;
@@ -114,6 +123,7 @@ struct minimatch;
 struct flow;
 struct flow_wildcards;
 struct ofproto_table_settings;
+
 
 /* A hash map. */
 struct hmap {
@@ -134,39 +144,6 @@ struct list {
     struct list *next;     /* Next list element. */
 };
 
-
-#define HOTCALL_MAX_ARG 25
-typedef struct {
-    int n_args;
-    void *args[HOTCALL_MAX_ARG];
-} argument_list;
-
-
-typedef struct {
-  size_t allocated_size;
-  void *val;
-} return_value;
-
-
-typedef struct {
-    struct cls_rule * cr;
-    struct hmap_node hmap_node;
-    struct hmap_node hmap_node_ut_crs;
-    struct list list_node;
-    int nr;
-} cls_cache_entry;
-
-
-#define PAGE_STATUS_FREE 0
-#define PAGE_STATUS_ALLOCATED 1
-
-#define ui8 "a"
-#define ui8_c 'a'
-#define ui16 "f"
-#define ui16_c 'f'
-#define ui32 "c"
-#define ui32_c 'c'
-
 /* Configuration of OpenFlow tables. */
 struct ofproto_table_settings {
     char *name;                 /* Name exported via OpenFlow or NULL. */
@@ -184,6 +161,44 @@ struct ofproto_table_settings {
     size_t n_groups;
 };
 
+/* HOTCALL STRUCTURES */
+
+#define HOTCALL_MAX_ARG 25
+
+typedef struct {
+    int n_args;
+    void *args[HOTCALL_MAX_ARG];
+} argument_list;
+
+
+typedef struct {
+  size_t allocated_size;
+  void *val;
+} return_value;
+
+typedef struct {
+    struct cls_rule * cr;
+    struct hmap_node hmap_node;
+    struct hmap_node hmap_node_ut_crs;
+    struct list list_node;
+    int nr;
+} cls_cache_entry;
+
+
+
+/* SHARED MEMORY */
+
+#define PAGE_STATUS_FREE 0
+#define PAGE_STATUS_ALLOCATED 1
+
+#define ui8 "a"
+#define ui8_c 'a'
+#define ui16 "f"
+#define ui16_c 'f'
+#define ui32 "c"
+#define ui32_c 'c'
+
+
 struct page {
     uint8_t *bytes;
     size_t size;
@@ -198,6 +213,8 @@ typedef struct {
     size_t default_page_sz;
     sgx_spinlock_t spinlock;
 } shared_memory;
+
+/* CACHE */
 
 typedef struct {
     size_t cap;
@@ -215,13 +232,57 @@ typedef struct {
     shared_memory shared_memory;
 } flow_map_cache;
 
+
 struct function_call {
     uint8_t id;
     argument_list args;
     void *return_value;
     char *fmt;
     bool async;
+};
+
+struct transaction_assert {
+    int expected;
+    int *transaction_error;
+    int error;
+    bool has_else;
+};
+
+struct numertic_type {
+    void *conditions[5];
+    char type[5];
+
+    unsigned int n_clauses;
+    unsigned int n_conditions;
+    unsigned int expected;
+};
+
+struct null_type {
+    void *condition;
+};
+
+union predicate {
+    struct null_type null_type;
+    struct numertic_type num_type;
+};
+
+struct transaction_if {
+    uint8_t predicate_type;
+    union predicate predicate;
+    unsigned int else_len;
+    unsigned int if_len;
+};
+
+union fcall {
+    struct transaction_assert ta;
+    struct function_call fc;
+    struct transaction_if tif;
+};
+
+struct ecall_queue_item {
     struct list list_node;
+    uint8_t type;
+    union fcall call;
 };
 
 struct hotcall {
@@ -234,6 +295,9 @@ struct hotcall {
     bool sleeping;
     int timeout_counter;
     struct list ecall_queue;
+
+    bool transaction_in_progress;
+    int first_call_of_transaction;
 };
 
 struct shared_memory_ctx {

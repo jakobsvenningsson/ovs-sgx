@@ -14,6 +14,9 @@ enclave {
 	from "ofproto/ofproto.edl" import *;
 
 
+	from "/home/jakob/eclipse-workspace/hotcall_lib/sgx/trustedlib_lib/static_trusted/lib.edl" import *;
+
+
 	untrusted {
 		include "ocall.h"
 		include "hotcall-untrusted.h"

@@ -42,5 +42,12 @@ enclave {
 										[user_check] unsigned int *priority,
 										[user_check] bool *rule_is_hidden);
 
+
+		public bool
+		ecall_ofproto_is_flow_deletion_pending(uint8_t bridge_id,
+											  uint8_t table_id,
+											  [user_check] struct hmap *deletions,
+											  [user_check] const struct cls_rule *cls_rule);
+
     };
 };

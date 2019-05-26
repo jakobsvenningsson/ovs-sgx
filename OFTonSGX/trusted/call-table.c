@@ -15,6 +15,14 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
 
 
     switch (fc->id) {
+        case hotcall_ecall_ofproto_is_flow_deletion_pending:
+            *(bool *) fc->return_value = ecall_ofproto_is_flow_deletion_pending(
+                *(uint8_t *) args->args[0],
+                *(uint8_t *) args->args[1],
+                (struct hmap *) args->args[2],
+                (struct cls_rule *) args->args[3]
+            );
+            break;
         case hotcall_ecall_configure_tables:
             ecall_configure_tables(
                 *(uint8_t *) args->args[0],
@@ -481,6 +489,11 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 (size_t *) args->args[6]
             );
             break;
+
+
+
+
+
         /*case hotcall_ecall_get_cls_rules_and_enable_eviction:
             *(size_t *) fc->return_value = ecall_get_cls_rules_and_enable_eviction(
                 *(uint8_t *) args->args[0],
@@ -508,6 +521,10 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(uint32_t *) args->args[5]
             );
             break;*/
+
+
+
+
         case hotcall_ecall_ofproto_get_vlan_usage:
             *(size_t *) fc->return_value = ecall_ofproto_get_vlan_usage(
                 *(uint8_t *) args->args[0],
@@ -744,6 +761,9 @@ execute_function(struct function_call *fc, flow_map_cache *flow_cache){
                 *(uint8_t *) args->args[3]
             );
             break;
+
+
+
         /*case hotcall_ecall_ofproto_evict_get_rest:
          *  ecall_ofproto_evict_get_rest(
          *      (uint32_t *) args->args[0],

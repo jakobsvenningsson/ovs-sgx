@@ -26,23 +26,26 @@ static uint8_t bridge_counter = 0;
 static struct shared_memory_ctx sm_ctx;
 static struct preallocated_function_calls pfc;
 
-
-struct function_call *fc_;
+//struct function_call *fc_;
+struct ecall_queue_item *fc_;
+//        printf("Calling func %s.\n", #f);
 #define HCALL(f, async, ret, n_args, args) \
     fc_ = get_fcall(&pfc, hotcall_ ## f, ret, n_args, args); \
     list_insert(&sm_ctx.hcall.ecall_queue, &fc_->list_node); \
     if(!async) { \
-        printf("Calling func %s.\n", #f);\
         make_hotcall(&sm_ctx.hcall); \
     }
+
 #define ECALL(f, args ...) \
     printf("Calling func %s.\n", #f);\
     f(global_eid, ## args)
 
+
+
 #ifdef BATCHING
-#define ASYNC(X) X
+#define ASYNC(X) X || is_transaction_in_progress(&sm_ctx.hcall)
 #else
-#define ASYNC(X) false
+#define ASYNC(X) false || is_transaction_in_progress(&sm_ctx.hcall)
 #endif
 
 void *
@@ -56,6 +59,7 @@ start_enclave_thread(void * vargp){
     }
 }
 
+
 void hotcall_init() {
     list_init(&sm_ctx.hcall.ecall_queue);
     pfc.len = 20;
@@ -64,15 +68,96 @@ void hotcall_init() {
     pfc.idx_unsigned = 0;
     pfc.idx_sizet = 0;
 
+    sm_ctx.hcall.transaction_in_progress = false;
+    sm_ctx.hcall.first_call_of_transaction = -1;
+
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, start_enclave_thread, NULL);
 }
 
 
-void SGX_batch_flush() {
+void
+SGX_batch_flush() {
+    printf("flushing %d calls..\n", list_size(&sm_ctx.hcall.ecall_queue));
     make_hotcall(&sm_ctx.hcall);
 }
 
+
+bool
+is_transaction_in_progress(struct hotcall *hcall) {
+    return hcall->transaction_in_progress;
+}
+
+int
+first_call_of_transaction(struct hotcall *hcall) {
+    return hcall->first_call_of_transaction;
+}
+
+static int *transaction_err;
+
+void
+hotcall_transaction_expected_value(int expected, int error_code, bool has_else) {
+    #ifdef HOTCALL
+    void **args = pfc.args[pfc.idx];
+    args[0] = next_int(&pfc, expected);
+    args[1] = next_int(&pfc, error_code);
+    args[2] = transaction_err;
+    args[3] = next_bool(&pfc, has_else);
+    HCALL(transaction_guard, true, NULL, 4, args);
+    #endif
+}
+
+void
+hotcall_transaction_if_(int expected, int **conditions, char *type, int n_conditions, int if_len, int else_len) {
+    #ifdef HOTCALL
+    void **args = pfc.args[pfc.idx];
+    args[0] = next_int(&pfc, expected);
+    args[1] = (void **) conditions;
+    args[2] = next_int(&pfc, n_conditions);
+    args[3] = next_int(&pfc, if_len);
+    args[4] = next_int(&pfc, else_len);
+    args[5] = type;
+    HCALL(transaction_if, true, NULL, 6, args);
+    #endif
+}
+
+void
+hotcall_transaction_if_null_(void *condition, int if_len, int else_len) {
+    #ifdef HOTCALL
+    void **args = pfc.args[pfc.idx];
+    args[0] = condition;
+    args[1] = next_int(&pfc, if_len);
+    args[2] = next_int(&pfc, else_len);
+    HCALL(transaction_if_null, true, NULL, 3, args);
+    #endif
+}
+
+void
+hotcall_transaction_begin(int *transaction_error) {
+    transaction_err = transaction_error;
+    sm_ctx.hcall.transaction_in_progress = true;
+    sm_ctx.hcall.first_call_of_transaction = -1;
+}
+
+
+void
+hotcall_transaction_end() {
+    SGX_batch_flush();
+    transaction_err = NULL;
+    sm_ctx.hcall.transaction_in_progress = false;
+    sm_ctx.hcall.first_call_of_transaction = -1;
+}
+
+void
+hotcall_transaction_assert_false(int condition, int error_code, uint8_t cleanup_function) {
+    #ifdef HOTCALL
+    *transaction_err = error_code;
+    void **args = pfc.args[pfc.idx];
+    args[0] = next_int(&pfc, condition);
+    args[1] = next_uint8(&pfc, cleanup_function);
+    HCALL(transaction_assert_false_, true, NULL, 2, args);
+    #endif
+}
 // 1. Creation and Initialization of tables
 int
 sgx_ofproto_init_tables(int n_tables){
@@ -86,7 +171,7 @@ sgx_ofproto_init_tables(int n_tables){
 
         #ifdef HOTCALL
         printf("HOTCALLS ENABLED.\n");
-        flow_map_cache_init(&sm_ctx.flow_cache);
+        //flow_map_cache_init(&sm_ctx.flow_cache);
         hotcall_init();
         #endif
 
@@ -104,6 +189,10 @@ sgx_ofproto_init_tables(int n_tables){
     }
     uint8_t this_bridge_id = bridge_counter++;
     ecall_ofproto_init_tables(global_eid, this_bridge_id, n_tables);
+
+    int x;
+    start_poller_v3(global_eid, &x);
+
 
     return this_bridge_id;
 }
@@ -124,20 +213,19 @@ SGX_readonly_set(uint8_t bridge_id, uint8_t table_id){
     #endif
 }
 
-int
-SGX_istable_readonly(uint8_t bridge_id, uint8_t table_id){
-    int ecall_return;
+void
+SGX_is_table_readonly(uint8_t bridge_id, uint8_t table_id, int *ecall_return) {
     #ifdef HOTCALL
     bool async = ASYNC(false);
     void **args = pfc.args[pfc.idx];
-    args[0] = &bridge_id;
-    args[1] = &table_id;
-    HCALL(ecall_oftable_is_readonly, async, &ecall_return, 2, args);
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    HCALL(ecall_oftable_is_readonly, async, ecall_return, 2, args);
     #else
-    ECALL(ecall_oftable_is_readonly, &ecall_return, bridge_id, table_id);
+    ECALL(ecall_oftable_is_readonly, ecall_return, bridge_id, table_id);
     #endif
-    return ecall_return;
 }
+
 
 void
 SGX_cls_rule_init(uint8_t bridge_id, struct cls_rule * o_cls_rule,
@@ -222,10 +310,10 @@ SGX_classifier_replace(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut
     #ifdef HOTCALL
     bool async = ASYNC(false);
     void **args = pfc.args[pfc.idx];
-    args[0] = &bridge_id;
-    args[1] = &table_id;
-    args[2] = ut_cr_insert;
-    args[3] = ut_cr_remove;
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    args[2] = async ? next_voidptr(&pfc, ut_cr_insert) : ut_cr_insert;
+    args[3] = async ? next_voidptr(&pfc, ut_cr_remove) : ut_cr_remove;
     HCALL(ecall_oftable_classifier_replace, async, NULL, 4, args);
     #else
     ECALL(ecall_oftable_classifier_replace, bridge_id, table_id, ut_cr_insert, ut_cr_remove);
@@ -247,6 +335,19 @@ SGX_rule_get_flags(uint8_t bridge_id, uint8_t table_id){
     return ecall_return;
 }
 
+void
+SGX_rule_get_flags_(uint8_t bridge_id, uint8_t table_id, enum oftable_flags *ecall_return){
+    #ifdef HOTCALL
+    bool async = ASYNC(false);
+    void **args = pfc.args[pfc.idx];
+    args[0] = &bridge_id;
+    args[1] = &table_id;
+    HCALL(ecall_oftable_get_flags, async, ecall_return, 2, args);
+    #else
+    ECALL(ecall_oftable_get_flags, ecall_return, bridge_id, table_id);
+    #endif
+}
+
 int
 SGX_cls_count(uint8_t bridge_id, uint8_t table_id){
     int ecall_return;
@@ -262,6 +363,20 @@ SGX_cls_count(uint8_t bridge_id, uint8_t table_id){
     return ecall_return;
 }
 
+void
+SGX_cls_count_(uint8_t bridge_id, uint8_t table_id, int *ecall_return){
+    #ifdef HOTCALL
+    bool async = ASYNC(false);
+    void **args = pfc.args[pfc.idx];
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    HCALL(ecall_oftable_cls_count, async, ecall_return, 2, args);
+    #else
+    ECALL(ecall_oftable_cls_count, ecall_return, bridge_id, table_id);
+    #endif
+}
+
+
 int
 SGX_eviction_fields_enable(uint8_t bridge_id, uint8_t table_id){
     int ecall_return;
@@ -275,6 +390,19 @@ SGX_eviction_fields_enable(uint8_t bridge_id, uint8_t table_id){
     ECALL(ecall_is_eviction_fields_enabled, &ecall_return, bridge_id, table_id);
     #endif
     return ecall_return;
+}
+
+int
+SGX_eviction_fields_enable_(uint8_t bridge_id, uint8_t table_id, unsigned int *ecall_return){
+    #ifdef HOTCALL
+    bool async = ASYNC(false);
+    void **args = pfc.args[pfc.idx];
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    HCALL(ecall_is_eviction_fields_enabled, async, ecall_return, 2, args);
+    #else
+    ECALL(ecall_is_eviction_fields_enabled, ecall_return, bridge_id, table_id);
+    #endif
 }
 
 void
@@ -348,8 +476,8 @@ SGX_choose_rule_to_evict_p(uint8_t bridge_id, uint8_t table_id, struct cls_rule 
     #ifdef HOTCALL
     bool async = ASYNC(false);
     void **args = pfc.args[pfc.idx];
-    args[0] = &bridge_id;
-    args[1] = &table_id;
+    args[0] = async ? next_int(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_int(&pfc, table_id) : &table_id;
     args[2] = ut_cr_victim;
     args[3] = ut_cr_replacer;
     HCALL(ecall_choose_rule_to_evict_p, async, NULL, 4, args);
@@ -371,6 +499,19 @@ SGX_table_mflows(uint8_t bridge_id, uint8_t table_id){
     ECALL(ecall_oftable_mflows, &ecall_return, bridge_id, table_id);
     #endif
     return ecall_return;
+}
+
+void
+SGX_table_mflows_(uint8_t bridge_id, uint8_t table_id, unsigned int *ecall_return){
+    #ifdef HOTCALL
+    bool async = ASYNC(false);
+    void **args = pfc.args[pfc.idx];
+    args[0] = async ? next_uint8(&pfc, bridge_id) : &bridge_id;
+    args[1] = async ? next_uint8(&pfc, table_id) : &table_id;
+    HCALL(ecall_oftable_mflows, async, ecall_return, 2, args);
+    #else
+    ECALL(ecall_oftable_mflows, ecall_return, bridge_id, table_id);
+    #endif
 }
 
 void
@@ -1925,5 +2066,20 @@ SGX_configure_tables(uint8_t bridge_id, int n_tables, uint32_t time_boot_msec, s
     HCALL(ecall_configure_tables, async, NULL, 5, args);
     #else
     ECALL(ecall_configure_tables, bridge_id, n_tables, time_boot_msec, settings, need_to_evict);
+    #endif
+}
+
+void
+SGX_is_flow_deletion_pending(uint8_t bridge_id, uint8_t table_id, struct hmap *deletions, struct cls_rule *cr, bool *pending) {
+    #ifdef HOTCALL
+    bool async = ASYNC(false);
+    void **args = pfc.args[pfc.idx];
+    args[0] = &bridge_id;
+    args[1] = &table_id;
+    args[2] = deletions;
+    args[3] = cr;
+    HCALL(ecall_ofproto_is_flow_deletion_pending, async, pending, 4, args);
+    #else
+    ECALL(ecall_ofproto_is_flow_deletion_pending, pending, bridge_id, table_id, deletions, cr);
     #endif
 }

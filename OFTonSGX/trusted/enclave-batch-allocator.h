@@ -1,12 +1,11 @@
-#ifndef _TLS_ENCLAVE_BATCH_ALLOCATOR_H
-#define _TLS_ENCLAVE_BATCH_ALLOCATOR_H
+#ifndef _ENCLAVE_BATCH_ALLOCATOR_H
+#define _ENCLAVE_BATCH_ALLOCATOR_H
 #include <stdint.h>
 #include "common.h"
 
+
 struct bblock {
     struct list list_node;
-    //struct hmap_node hmap_node;
-
     uint8_t *ptr;
 };
 

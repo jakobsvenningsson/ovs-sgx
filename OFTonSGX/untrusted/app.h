@@ -3,6 +3,24 @@
 #include <stdint.h>
 #include "app.h"
 
+#define ASSERT_CATCH(F, EXPECTED, ERROR, ELSE_F) \
+	F; \
+	hotcall_transaction_expected_value(EXPECTED, ERROR, true); \
+	ELSE_F
+
+#define ASSERT(F, EXPECTED, ERROR) \
+	F; \
+	hotcall_transaction_expected_value(EXPECTED, ERROR, false)
+
+#define IF(EXPECTED, IF_LEN, ELSE_LEN, TYPE, N_COND, ...) \
+	hotcall_transaction_if_(EXPECTED, (unsigned int*[]) { __VA_ARGS__ }, TYPE, N_COND, IF_LEN, ELSE_LEN)
+
+#define IF_NOT_NULL(CONDITION, IF_LEN, ELSE_LEN) \
+	hotcall_transaction_if_null_(CONDITION, IF_LEN, ELSE_LEN)
+
+#define THEN(...) __VA_ARGS__
+#define ELSE(...) __VA_ARGS__
+
 void SGX_async_test();
 void SGX_batch_flush();
 
@@ -27,6 +45,14 @@ SGX_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t evictio
 void
 SGX_configure_tables(uint8_t bridge_id, int n_tables, uint32_t time_boot_msec, struct ofproto_table_settings *settings, bool *need_to_evict);
 
+void
+hotcall_transaction_begin();
+
+void
+hotcall_transaction_end();
+
+void
+hotcall_transaction_expected_value(int expected, int error_code, bool has_else);
 
 
 // Optimized calls
@@ -109,14 +135,6 @@ SGX_add_flow(uint8_t bridge_id,
 			 int *table_update_taggable, unsigned int *evict_priority);
 #endif
 
-/*
-bool *table_overflow,
-bool *is_rule_modifiable,
-bool *is_rule_overlapping,
-bool *is_deletion_pending,
-bool *is_read_only, bool *is_hidden, bool *is_other_table,
-
-*/
 
  size_t
  SGX_collect_rules_strict(uint8_t bridge_id,
@@ -174,19 +192,6 @@ SGX_modify_flows_loose(uint8_t bridge_id,
 						uint16_t out_port,
 						bool *postpone,
                         size_t *n_rules);
-/*
-void
-SGX_delete_flows(uint8_t bridge_id,
-				 //uint8_t *rule_table_ids,
-				 struct cls_rule **cls_rules,
-				// bool *rule_is_hidden,
-				 uint32_t *rule_hashes,
-				 unsigned int *rule_priorities,
-				 struct match *match,
-				// int *table_update_taggable,
-				// uint8_t *is_other_table,
-				 size_t n);
-*/
 
  size_t
  SGX_delete_flows_strict(uint8_t bridge_id,
@@ -270,12 +275,15 @@ uint32_t
 SGX_miniflow_expand_and_tag(uint8_t bridge_id, struct cls_rule *ut_cr, struct flow *flow, uint8_t table_id);
 
 
-//size_t
-//SGX_ofproto_evict_get_rest(uint32_t *rule_hashes, struct cls_rule ** cls_rules, size_t buf_size);
+int
+sgx_ofproto_init_tables(int n_tables);
 
-int sgx_ofproto_init_tables(int n_tables);
-void SGX_readonly_set(uint8_t bridge_id, uint8_t table_id);
-int SGX_istable_readonly(uint8_t bridge_id, uint8_t table_id);
+void
+SGX_readonly_set(uint8_t bridge_id, uint8_t table_id);
+
+void
+SGX_is_table_readonly(uint8_t bridge_id, uint8_t table_id, int *ecall_return);
+
 void SGX_cls_rule_init(uint8_t bridge_id, struct cls_rule * o_cls_rule,
 		const struct match * match , unsigned int priority);
 int SGX_cr_rule_overlaps(uint8_t bridge_id, uint8_t table_id,struct cls_rule * o_cls_rule);

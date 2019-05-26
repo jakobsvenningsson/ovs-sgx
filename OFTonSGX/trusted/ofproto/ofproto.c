@@ -2,6 +2,30 @@
 #include "enclave.h"
 #include "ofproto.h"
 #include "oftable.h"
+#include "hmap.h"
+#include "common.h"
+
+
+struct ofoperation {
+    struct ofopgroup *group;    /* Owning group. */
+    struct list group_node;     /* In ofopgroup's "ops" list. */
+    struct hmap_node hmap_node; /* In ofproto's "deletions" hmap. */
+    struct rule *rule;          /* Rule being operated upon. */
+    int type; /* Type of operation. */
+
+    /* OFOPERATION_ADD. */
+    struct rule *victim;        /* Rule being replaced, if any.. */
+
+    /* OFOPERATION_MODIFY: The old actions, if the actions are changing. */
+    struct ofpact *ofpacts;
+    size_t ofpacts_len;
+
+    /* OFOPERATION_DELETE. */
+    int reason; /* Reason flow was removed. */
+
+    ovs_be64 flow_cookie;       /* Rule's old flow cookie. */
+    int error;          /* 0 if no error. */
+};
 
 
 // Global data structures
@@ -182,4 +206,21 @@ ecall_ofproto_rule_send_removed(uint8_t bridge_id, struct cls_rule *cr, struct m
     }
     ecall_minimatch_expand(bridge_id, cr, match);
     *priority = pr;
+}
+
+bool
+ecall_ofproto_is_flow_deletion_pending(uint8_t bridge_id, uint8_t table_id, struct hmap *deletions, const struct cls_rule *cls_rule) {
+    if (hmap_is_empty(deletions)) {
+        printf("deletions empty\n");
+        return false;
+    }
+    struct ofoperation *op;
+    HMAP_FOR_EACH_WITH_HASH (op, hmap_node, ecall_cls_rule_hash(bridge_id, cls_rule, table_id), deletions) {
+        if (ecall_cls_rule_equal(bridge_id, cls_rule, &op->rule->cr)) {
+            printf("found\n");
+            return true;
+        }
+    }
+    printf("not found\n");
+    return false;
 }

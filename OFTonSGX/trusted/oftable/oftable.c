@@ -15,6 +15,8 @@ extern struct sgx_cls_table * SGX_hmap_table[100];
 
 // Vanilla ECALLS
 
+
+
 void
 ecall_oftable_set_name(uint8_t bridge_id, uint8_t table_id, char * name){
     if (name && name[bridge_id]) {
