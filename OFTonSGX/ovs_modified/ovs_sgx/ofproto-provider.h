@@ -239,13 +239,14 @@ struct rule {
     struct list expirable;      /* In ofproto's 'expirable' list if this rule
                                  * is expirable, otherwise empty. */
 
+    #ifdef OPTIMIZED
     uint16_t tmp_storage_vid;
     uint8_t tmp_storage_vid_exist;
     uint16_t tmp_storage_vid_mask;
     uint8_t tmp_storage_vid_mask_exist;
-
-    bool *is_other_table;
-    int *table_update_taggable;
+    bool is_other_table;
+    int table_update_taggable;
+    #endif
 
 };
 

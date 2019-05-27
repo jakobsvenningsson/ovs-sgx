@@ -35,9 +35,33 @@ struct function_call *fc_;
         printf("Calling func %s.\n", #f);\
         make_hotcall(&sm_ctx.hcall); \
     }
-#define ECALL(f, args ...) \
-    printf("Calling func %s.\n", #f);\
-    f(global_eid, ## args)
+
+    static int iii = 0;
+    static int iiii = 0;
+    #define ECALL(f, args ...) \
+      f(global_eid, ## args)
+
+
+/*
+  if(hotcall_ ## f == hotcall_ecall_add_flow && iii > 3) { \
+      printf("#\tEntering enclave.\n");\
+      printf("#\tAdding flow to flow table.\n");\
+  } \
+  if(hotcall_ ## f == hotcall_ecall_oftable_cls_lookup && iiii % 10 == 1) { \
+      printf("#\tEntering enclave.\n"); \
+      printf("#\tFinding matching flow.\n");\
+  } \
+  f(global_eid, ## args); \
+  if((hotcall_ ## f == hotcall_ecall_oftable_cls_lookup && iiii % 10 == 1) || (hotcall_ ## f == hotcall_ecall_add_flow && iii > 3)) { \
+      printf("#\tLeaving enclave.\n\n"); \
+  } \
+  if(hotcall_ ## f == hotcall_ecall_add_flow) { \
+      iii++;\
+  } \
+  if(hotcall_ ## f == hotcall_ecall_oftable_cls_lookup) { \
+      iiii++; \
+  }
+  */
 
 #ifdef BATCHING
 #define ASYNC(X) X

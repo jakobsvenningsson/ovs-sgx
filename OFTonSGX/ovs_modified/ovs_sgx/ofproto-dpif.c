@@ -5818,9 +5818,13 @@ rule_construct(struct rule *rule_)
 		}
 #endif
     }
+    #ifdef OPTIMIZED
     complete_operation(rule, &rule_->is_other_table, &rule_->table_update_taggable);
     rule_->is_other_table = 0;
     rule_->table_update_taggable = 0;
+    #else
+    complete_operation(rule, NULL, NULL);
+    #endif
     return 0;
 }
 
@@ -5834,7 +5838,13 @@ rule_destruct(struct rule *rule_)
         facet_revalidate(facet);
     }
 
+    #ifdef OPTIMIZED
     complete_operation(rule, &rule_->is_other_table, &rule_->table_update_taggable);
+    rule_->is_other_table = 0;
+    rule_->table_update_taggable = 0;
+    #else
+    complete_operation(rule, NULL, NULL);
+    #endif
 }
 
 static void
@@ -5894,9 +5904,13 @@ rule_modify_actions(struct rule *rule_)
 {
     struct rule_dpif *rule = rule_dpif_cast(rule_);
 
+    #ifdef OPTIMIZED
     complete_operation(rule, &rule_->is_other_table, &rule_->table_update_taggable);
     rule_->is_other_table = 0;
     rule_->table_update_taggable = 0;
+    #else
+    complete_operation(rule, NULL, NULL);
+    #endif
 }
 
 /* Sends 'packet' out 'ofport'.
