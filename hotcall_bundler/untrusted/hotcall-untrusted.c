@@ -1,51 +1,62 @@
-#include "/home/jakob/ovs-sgx/hotcall_bundler/lib/list.h"
+#include "hotcall_bundler_u.h"
 #include "hotcall-untrusted.h"
+#include <pthread.h>
 
 static int *transaction_err;
-static struct shared_memory_ctx sm_ctx;
 
 extern void make_hotcall(struct hotcall *);
 
-#ifdef BATCHING
-#define ASYNC(X) X || is_transaction_in_progress(&sm_ctx.hcall)
-#else
-#define ASYNC(X) false || is_transaction_in_progress(&sm_ctx.hcall)
-#endif
+static sgx_enclave_id_t global_eid;
+struct shared_memory_ctx *sm_ctx;
 
-void
-hotcall_init(struct shared_memory_ctx *sm_ctx) {
-    list_init(&sm_ctx->hcall.ecall_queue);
-    sm_ctx->hcall.transaction_in_progress = false;
-    sm_ctx->hcall.first_call_of_transaction = -1;
-
-    sm_ctx->pfc.len = 20;
-    sm_ctx->pfc.idx = 0;
-    sm_ctx->pfc.idx_uint8 = 0;
-    sm_ctx->pfc.idx_unsigned = 0;
-    sm_ctx->pfc.idx_sizet = 0;
+void *
+start_enclave_thread(void * vargp){
+    printf("start_enclave_thread\n");
+    int ecall_return;
+    ecall_start_poller(global_eid, &ecall_return, sm_ctx);
+    if (ecall_return == 0) {
+        printf("Application ran with success\n");
+    } else {
+        printf("Application failed %d \n", ecall_return);
+    }
 }
 
 void
-hotcall_flush(struct shared_memory_ctx *sm_ctx) {
+hotcall_init(struct shared_memory_ctx *ctx, sgx_enclave_id_t eid) {
+
+    ctx->hcall.transaction_in_progress = false;
+    ctx->hcall.first_call_of_transaction = -1;
+    ctx->hcall.queue_length = 0;
+
+    ctx->pfc.len = 20;
+    ctx->pfc.idx = 0;
+    ctx->pfc.idx_uint8 = 0;
+    ctx->pfc.idx_unsigned = 0;
+    ctx->pfc.idx_sizet = 0;
+
+    global_eid = eid;
+    sm_ctx = ctx;
+
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, start_enclave_thread, NULL);
+}
+
+void
+hotcall_bundle_flush(struct shared_memory_ctx *sm_ctx) {
     make_hotcall(&sm_ctx->hcall);
 }
 
+void
+hotcall_destroy(struct shared_memory_ctx *sm_ctx) {
+  HCALL_CONTROL(sm_ctx, DESTROY, false, 0, NULL);
+}
+
+
+
+
+
+
 /*
-void
-hotcall_bundle_begin(struct shared_memory_ctx *sm_ctx, int *transaction_error) {
-    transaction_err = transaction_error;
-    sm_ctx->hcall.transaction_in_progress = true;
-    sm_ctx->hcall.first_call_of_transaction = -1;
-}
-
-void
-hotcall_bundle_end(struct shared_memory_ctx *sm_ctx) {
-    hotcall_flush(sm_ctx);
-    transaction_err = NULL;
-    sm_ctx->hcall.transaction_in_progress = false;
-    sm_ctx->hcall.first_call_of_transaction = -1;
-}
-
 void
 hotcall_bundle_assert_false(struct preallocated_function_calls *pfc, int condition, int error_code, uint8_t cleanup_function) {
     *transaction_err = error_code;
@@ -87,13 +98,5 @@ hotcall_transaction_if_null_(struct preallocated_function_calls *pfc, void *cond
 }
 */
 /*
-bool
-is_transaction_in_progress(struct hotcall *hcall) {
-    return hcall->transaction_in_progress;
-}
 
-int
-first_call_of_transaction(struct hotcall *hcall) {
-    return hcall->first_call_of_transaction;
-}
 */

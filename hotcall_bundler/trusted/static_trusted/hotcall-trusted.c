@@ -1,25 +1,5 @@
 #include "hotcall_bundler_t.h"  /* print_string */
 #include "hotcall-trusted.h"
-/*
-// Its recommended by intel to add pause actions inside spinlock loops in order to increase performance.
-for (int i = 0; i < 3; ++i) {
-    __asm
-    __volatile(
-      "pause"
-    );
-}
-printf("after\n");
-for(int i = 0; i < hotcall_config->n_spinlock_jobs; ++i) {
-    printf("inside\n");
-    if(hotcall_config->spin_lock_task_count[i] == spin_lock_task_timeouts[i]) {
-            hotcall_config->spin_lock_tasks[i]();
-            hotcall_config->spin_lock_task_count[i] = 0;
-            continue;
-    }
-    hotcall_config->spin_lock_task_count[i]++;
-}
-
-*/
 
 static struct hotcall_config *hotcall_config;
 
@@ -28,9 +8,59 @@ hotcall_register_config(struct hotcall_config *config) {
     hotcall_config = config;
 }
 
+#define PREDICATE_TYPE_NULL 0
+#define PREDICATE_TYPE_CLAUSES 1
+
+
+inline void
+exclude_else_branch(uint8_t *exclude_list, int pos, unsigned int if_len, unsigned int else_len) {
+    memset(exclude_list + pos + if_len + 1, 1, else_len);
+}
+
+inline void
+exclude_if_branch(uint8_t *exclude_list, int pos, unsigned int if_len) {
+    memset(exclude_list + pos + 1, 1, if_len);
+}
+
+inline void
+hotcall_handle_if(struct transaction_if *tif, uint8_t *exclude_list, int pos) {
+    bool outcome;
+    unsigned int else_len = *tif->else_len, if_len = *tif->if_len;
+
+    switch(tif->predicate_type) {
+        case PREDICATE_TYPE_NULL:
+            if(tif->predicate.null_type.condition == NULL && else_len > 0) {
+                exclude_else_branch(exclude_list, pos, if_len, else_len);
+            } else if(tif->if_len > 0) {
+                exclude_if_branch(exclude_list, pos, if_len);
+            }
+            break;
+        case PREDICATE_TYPE_CLAUSES:
+            switch(tif->predicate.num_type.type[0]) {
+                case 's':
+                    outcome = *(unsigned int *) tif->predicate.num_type.conditions[0];
+                    break;
+                case '>':
+                    outcome = *(unsigned int *) tif->predicate.num_type.conditions[0] > *(unsigned int *) tif->predicate.num_type.conditions[1];
+                    break;
+                default:
+                    printf("unknown type.\n");
+            }
+            if(outcome == *tif->predicate.num_type.expected  && else_len > 0) {
+                exclude_else_branch(exclude_list, pos, if_len, else_len);
+            } else if(outcome != *tif->predicate.num_type.expected && tif->if_len > 0) {
+                exclude_if_branch(exclude_list, pos, if_len);
+            }
+            break;
+        default:
+            printf("Unknown predicate type.\n");
+    }
+}
+
 int
 ecall_start_poller(struct shared_memory_ctx *sm_ctx){
 
+    printf("Starting shared memory poller.\n");
 
     struct ecall_queue_item *queue_item, *queue_item_next;
     struct function_call *fc, *prev_fc;
@@ -43,32 +73,26 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
 
         if (sm_ctx->hcall.run) {
 
-            #ifdef TIMEOUT
-            timeout_counter = INIT_TIMER_VALUE;
-            #endif
             sm_ctx->hcall.run = false;
-            bool discard_rest = false, execute_else_branch = false, discard_next = false;
 
-            int sz = list_size(&sm_ctx->hcall.ecall_queue);
-            uint8_t exclude_list[sz];
-            for(int i = 0; i < sz; ++i) exclude_list[i] = 0;
+            uint8_t exclude_list[sm_ctx->hcall.queue_length];
+            memset(exclude_list, 0, sm_ctx->hcall.queue_length);
 
-            int n = 0;
-            LIST_FOR_EACH_SAFE(queue_item, queue_item_next, list_node, &sm_ctx->hcall.ecall_queue) {
-                    if(exclude_list[n++]) {
-                        list_remove(&queue_item->list_node);
+            for(int n = 0; n < sm_ctx->hcall.queue_length; ++n) {
+                    if(exclude_list[n]) {
                         continue;
                     }
+                    queue_item = sm_ctx->hcall.ecall_queue[n];
+
                     switch(queue_item->type) {
-                        case 3:
-                            break;
-                        case 0:
+                        case QUEUE_ITEM_TYPE_DESTROY:
+                            goto exit;
+                        case QUEUE_ITEM_TYPE_FUNCTION:
                             fc = &queue_item->call.fc;
-                            printf("Execting function %d.\n", fc->id);
                             hotcall_config->execute_function(fc);
                             prev_fc = fc;
                             break;
-                        case 1:
+                        case QUEUE_ITEM_TYPE_GUARD:
                             if(!prev_fc) {
                                 break;
                             }
@@ -87,47 +111,16 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                                 }
                             }
                             break;
-                        case 2:
+                        case QUEUE_ITEM_TYPE_IF: case QUEUE_ITEM_TYPE_IF_NULL:
                             tif = &queue_item->call.tif;
-                            bool outcome;
-                            switch(tif->predicate_type) {
-                                case 0:
-                                    if(tif->predicate.null_type.condition == NULL) {
-                                        memset(exclude_list + n + tif->if_len, 1, tif->else_len);
-                                    } else {
-                                        memset(exclude_list + n, 1, tif->if_len);
-                                    }
-                                    break;
-                                case 1:
-                                    switch(tif->predicate.num_type.type[0]) {
-                                        case 's':
-                                            outcome = *(unsigned int *) tif->predicate.num_type.conditions[0];
-                                            break;
-                                        case '>':
-                                            outcome = *(unsigned int *) tif->predicate.num_type.conditions[0] > *(unsigned int *) tif->predicate.num_type.conditions[1];
-                                            break;
-                                        default:
-                                            printf("unknown type.\n");
-                                    }
-
-                                    if(outcome == tif->predicate.num_type.expected) {
-                                        memset(exclude_list + n + tif->if_len, 1, tif->else_len);
-                                    } else {
-                                        memset(exclude_list + n, 1, tif->if_len);
-                                    }
-                                    break;
-                                default:
-                                    break;
-                            }
+                            hotcall_handle_if(&queue_item->call.tif, exclude_list, n);
                             break;
                         default:
                             printf("Error, the default statement should never happen...\n");
                     }
-                    list_remove(&queue_item->list_node);
                 }
                 sm_ctx->hcall.is_done = true;
-                sgx_spin_unlock(&sm_ctx->hcall.spinlock);
-                continue;
+                sm_ctx->hcall.queue_length = 0;
         }
 
         sgx_spin_unlock(&sm_ctx->hcall.spinlock);
@@ -139,6 +132,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
               "pause"
             );
         }
+
         for(int i = 0; i < hotcall_config->n_spinlock_jobs; ++i) {
             if(hotcall_config->spin_lock_task_count[i] == hotcall_config->spin_lock_task_timeouts[i]) {
                     hotcall_config->spin_lock_tasks[i](sm_ctx->custom_object_ptr[i]);
@@ -149,8 +143,14 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
         }
     }
 
-    sgx_spin_unlock(&sm_ctx->hcall.spinlock);
 
+    exit:
+
+    printf("Exiting shared memory poller\n");
+
+    sm_ctx->hcall.queue_length = 0;
+    sgx_spin_unlock(&sm_ctx->hcall.spinlock);
+    sm_ctx->hcall.is_done = true;
 
     return 0;
 } /* ecall_start_poller */

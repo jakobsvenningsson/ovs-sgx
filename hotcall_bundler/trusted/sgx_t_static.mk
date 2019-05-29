@@ -43,8 +43,8 @@ endif
 
 Crypto_Library_Name := sgx_tcrypto
 
-hotcall_bundler_C_Files := static_trusted/hotcall_bundler.c static_trusted/hotcall-trusted.c ../lib/list.c
-hotcall_bundler_Include_Paths := -IInclude -I/home/jakob/ovs-sgx/hotcall_bundler/include -I/home/jakob/ovs-sgx/hotcall_bundler/lib -Ihotcall_bundler -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx
+hotcall_bundler_C_Files := static_trusted/hotcall_bundler.c static_trusted/hotcall-trusted.c
+hotcall_bundler_Include_Paths := -Istatic_untrusted -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -Iinclude
 
 Flags_Just_For_C := -Wno-implicit-function-declaration -std=c11
 Common_C_Cpp_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(hotcall_bundler_Include_Paths) -fno-builtin-printf -I.

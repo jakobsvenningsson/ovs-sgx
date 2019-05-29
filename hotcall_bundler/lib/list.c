@@ -138,7 +138,7 @@ list_front(const struct list *list_)
 {
     struct list *list = CONST_CAST(struct list *, list_);
 
-    assert(!list_is_empty(list));
+    //assert(!list_is_empty(list));
     return list->next;
 }
 
@@ -149,7 +149,7 @@ list_back(const struct list *list_)
 {
     struct list *list = CONST_CAST(struct list *, list_);
 
-    assert(!list_is_empty(list));
+    //assert(!list_is_empty(list));
     return list->prev;
 }
 

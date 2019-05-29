@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-I../include -I/opt/intel/sgxsdk/include
+CFLAGS=-I../trusted/include/ -I/opt/intel/sgxsdk/include -I../trusted/untrusted/
 DEPS = spinlock.h hotcall-untrusted.h
 
 %.o: %.c $(DEPS)

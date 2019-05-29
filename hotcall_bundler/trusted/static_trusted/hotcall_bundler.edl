@@ -2,13 +2,11 @@
 
 enclave {
 
-    include "/home/jakob/ovs-sgx/hotcall_bundler/include/hotcall.h"
+    include "hotcall.h"
 
-    untrusted {
-    };
+    untrusted {};
 
     trusted {
-            include "hotcall-trusted.h"
     	    public int ecall_start_poller([user_check] struct shared_memory_ctx *sm_ctx);
     };
 };

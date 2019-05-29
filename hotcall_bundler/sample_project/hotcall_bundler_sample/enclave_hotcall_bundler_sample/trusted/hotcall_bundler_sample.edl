@@ -1,0 +1,26 @@
+/* hotcall_bundler_sample.edl - Top EDL file. */
+
+enclave {
+
+    include "stdbool.h"
+
+    from "hotcall_bundler.edl" import ecall_start_poller;
+
+    untrusted {
+      void
+      ocall_print([in, string] const char *str);
+    };
+
+    trusted {
+      public void
+      ecall_configure_hotcall();
+      public bool
+      ecall_always_true();
+      public bool
+      ecall_always_false();
+      public void
+      ecall_foo();
+      public void
+      ecall_bar();
+    };
+};

@@ -1,0 +1,9 @@
+hotcall_bundler_sample.so
+{
+    global:
+        g_global_data_sim;
+        g_global_data;
+        hotcall_bundler_sample_entry;
+    local:
+        *;
+};
