@@ -57,11 +57,14 @@ extern "C" {
 #define DO_WHILE(SM_CTX, F, ARGS) \
     hotcall_bundle_for_each((SM_CTX), hotcall_ ## F, ARGS)
 
-#define BEGIN_FOR(SM_CTX, N_ITERS, N_ROWS) \
-    hotcall_bundle_for_begin(SM_CTX, N_ITERS, N_ROWS)
-#define END_FOR(SM_CTX, N_ROWS) \
-    hotcall_bundle_for_end(SM_CTX, N_ROWS)
-
+#define BEGIN_FOR(SM_CTX, ARGS) \
+    hotcall_bundle_for_begin(SM_CTX, ARGS)
+#define END_FOR(SM_CTX, ARGS) \
+    hotcall_bundle_for_end(SM_CTX, ARGS)
+#define BEGIN_WHILE(SM_CTX, ARGS) \
+    hotcall_bundle_while_begin(SM_CTX, ARGS)
+#define END_WHILE(SM_CTX, ARGS) \
+    hotcall_bundle_while_end(SM_CTX, ARGS)
 
 extern inline bool
 is_transaction_in_progress(struct hotcall *hcall) {
@@ -280,7 +283,7 @@ hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, unsigned in
 }
 
 extern inline void
-hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, unsigned int n_iters, unsigned int n_rows) {
+hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, struct for_args *args) {
     struct ecall_queue_item *item;
     item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
     item->type = QUEUE_ITEM_TYPE_FOR_BEGIN;
@@ -289,13 +292,26 @@ hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, unsigned int n_iters,
     }
     struct transaction_for_start *for_s;
     for_s = &item->call.for_s;
-    for_s->n_iters = n_iters;
-    for_s->n_rows = n_rows;
+    for_s->args = args;
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
 }
 
 extern inline void
-hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx, unsigned int n_rows) {
+hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_args *args) {
+    struct ecall_queue_item *item;
+    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item->type = QUEUE_ITEM_TYPE_WHILE_BEGIN;
+    if(sm_ctx->pfc.idx == MAX_TS) {
+        sm_ctx->pfc.idx = 0;
+    }
+    struct transaction_while_start *while_s;
+    while_s = &item->call.while_s;
+    while_s->args = args;
+    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+}
+
+extern inline void
+hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx, struct for_args *args) {
     struct ecall_queue_item *item;
     item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
     item->type = QUEUE_ITEM_TYPE_FOR_END;
@@ -304,7 +320,21 @@ hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx, unsigned int n_rows) {
     }
     struct transaction_for_end *for_e;
     for_e = &item->call.for_e;
-    for_e->n_rows = n_rows;
+    for_e->args = args;
+    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+}
+
+extern inline void
+hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx, struct while_args *args) {
+    struct ecall_queue_item *item;
+    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item->type = QUEUE_ITEM_TYPE_WHILE_END;
+    if(sm_ctx->pfc.idx == MAX_TS) {
+        sm_ctx->pfc.idx = 0;
+    }
+    struct transaction_while_end *while_e;
+    while_e = &item->call.while_e;
+    while_e->args = args;
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
 }
 

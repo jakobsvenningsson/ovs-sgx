@@ -24,15 +24,15 @@ int presedence(char c) {
 }
 
 extern inline void
-to_postfix(struct transaction_if *tif, struct postfix_item *output, unsigned int *output_length) {
+to_postfix(struct predicate *predicate, struct postfix_item *output, unsigned int *output_length) {
     char chs[128];
     unsigned int pos = 0, output_index = 0, variable_index = 0;
     char tmp;
-    char *input = tif->args->fmt;
+    char *input = predicate->fmt;
     for(int i = 0; i < strlen(input); ++i) {
         if(input[i] >= 'a' && input[i] <= 'z') {
             output[output_index].ch = input[i];
-            output[output_index].var = &tif->args->variables[variable_index++];
+            output[output_index].var = &predicate->variables[variable_index++];
             output[output_index].type = OPERAND;
             output_index++;
             continue;
@@ -77,7 +77,7 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
         {
             struct function_call *fc;
             fc = (struct function_call *) operand_item->var->val;
-            int operand;
+            bool operand;
             fc->return_value = &operand;
             hotcall_config->execute_function(fc);
             return operand;
@@ -101,27 +101,36 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
 }
 
 extern inline int
-evaluate_postfix(struct transaction_if *tif, struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config) {
+evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config) {
 
-    struct postfix_item output[128];
+    struct postfix_item *output[output_length];
     unsigned int stack_pos = 0;
 
-    struct postfix_item it;
+    struct postfix_item *it;
 
     int operand1, operand2, res;
-    struct postfix_item operand1_item, operand2_item;
+
+    struct postfix_item *operand1_item, *operand2_item;
+
+    struct predicate_variable p_var = {
+        .type = VARIABLE_TYPE,
+        .val = &res
+    };
+    struct postfix_item res_item = {
+        .ch = 'b',
+        .type = OPERAND,
+        .var = &p_var
+    };
 
     for(int i = 0; i < output_length; ++i) {
-        it = postfix[i];
-
-        if(it.ch >= 'a' && it.ch <= 'z') {
+        it = &postfix[i];
+        if(it->ch >= 'a' && it->ch <= 'z') {
             output[stack_pos++] = it;
             continue;
         }
-
-        if(it.ch == '!') {
+        if(it->ch == '!') {
             struct postfix_item *pi;
-            pi = &output[stack_pos - 1];
+            pi = output[stack_pos - 1];
             switch(pi->ch) {
                 case 'b':
                     *(bool *) pi->var->val = *(bool *) pi->var->val == 0 ? 1 : 0;
@@ -138,13 +147,17 @@ evaluate_postfix(struct transaction_if *tif, struct postfix_item *postfix, unsig
             continue;
         }
 
-        operand2_item = output[--stack_pos];
-        operand2 = evaluate_variable(&operand2_item, hotcall_config);
-        operand1_item = output[--stack_pos];
-        operand1 = evaluate_variable(&operand1_item, hotcall_config);
 
-        switch(it.ch) {
+        operand2_item = output[--stack_pos];
+        operand2 = evaluate_variable(operand2_item, hotcall_config);
+
+        operand1_item = output[--stack_pos];
+        operand1 = evaluate_variable(operand1_item, hotcall_config);
+
+
+        switch(it->ch) {
             case '&':
+                //printf("%d %d\n", operand1, operand2);
                 res = operand1 && operand2;
                 break;
             case '|':
@@ -159,13 +172,11 @@ evaluate_postfix(struct transaction_if *tif, struct postfix_item *postfix, unsig
             default:
                 printf("Default reached at %s %d\n", __FILE__, __LINE__);
         }
-        output[stack_pos].ch = 'b';
-        output[stack_pos].var->type = VARIABLE_TYPE;
-        output[stack_pos].var->val = &res;
-        stack_pos++;
+        output[stack_pos++] = &res_item;
     }
 
-    return *(int *) output[--stack_pos].var->val;
+    operand1_item = output[--stack_pos];
+    return evaluate_variable(operand1_item, hotcall_config);
 }
 
 #endif

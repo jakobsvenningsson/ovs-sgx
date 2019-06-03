@@ -54,7 +54,7 @@ unsigned int
 
     bool ret;
     for(int i = 0; i < (ROUNDS + WARM_UP); ++i) {
-        long unsigned xs[32 * 1024];
+        /*long unsigned xs[32 * 1024];
         for(int j = 0; j < 32 * 1024; ++j) {
             xs[j] = rand();
         }
@@ -90,7 +90,7 @@ unsigned int
         CLOSE
         if(i >= WARM_UP) {
             rounds_1[i - WARM_UP] = GET_TIME
-        }
+        }*/
     }
 
     qsort(rounds_1, ROUNDS, sizeof(unsigned int), cmpfunc);
@@ -219,7 +219,7 @@ benchmark_bundle_for_v2() {
     unsigned int rounds[ROUNDS];
     bool ret;
     for(int i = 0; i < (ROUNDS + WARM_UP); ++i) {
-        long unsigned dummy[32 * 1024];
+        /*long unsigned dummy[32 * 1024];
         for(int j = 0; j < 32 * 1024; ++j) {
             dummy[j] = rand();
         }
@@ -237,7 +237,7 @@ benchmark_bundle_for_v2() {
         if(i < WARM_UP) {
             continue;
         }
-        rounds[i - WARM_UP] = GET_TIME;
+        rounds[i - WARM_UP] = GET_TIME;*/
     }
     qsort(rounds, ROUNDS, sizeof(unsigned int), cmpfunc);
     return rounds[ROUNDS / 2];
@@ -407,7 +407,7 @@ int SGX_CDECL main(int argc, char *argv[])
 
     hotcall_init(&sm_ctx, global_eid);
 
-    hotcall_bundle_example_for(&sm_ctx);
+    hotcall_bundle_example_while(&sm_ctx);
 
 
     /* for(int n = 0; n < ITERATIONS; ++n) {

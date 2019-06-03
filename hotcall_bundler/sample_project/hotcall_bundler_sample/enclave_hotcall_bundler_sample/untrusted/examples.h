@@ -9,5 +9,6 @@
 
 void hotcall_bundle_example_if(struct shared_memory_ctx *sm_ctx);
 void hotcall_bundle_example_for(struct shared_memory_ctx *sm_ctx);
+void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx);
 
 #endif

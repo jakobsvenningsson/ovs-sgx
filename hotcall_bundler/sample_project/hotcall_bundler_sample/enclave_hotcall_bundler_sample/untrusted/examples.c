@@ -16,13 +16,16 @@ void hotcall_bundle_example_if(struct shared_memory_ctx *sm_ctx) {
         (struct predicate_variable) { &res2, VARIABLE_TYPE, 'b' },
         (struct predicate_variable) { &res3, VARIABLE_TYPE, 'b' },
     };
-    struct if_args if_args = {
+    struct predicate predicate = {
         .expected = 1,
-        .then_branch_len = 1,
-        .else_branch_len = 2,
         .fmt = fmt,
         .n_variables = n_variables,
-        .variables = variables,
+        .variables = variables
+    };
+    struct if_args if_args = {
+        .then_branch_len = 1,
+        .else_branch_len = 2,
+        .predicate = predicate,
         .return_if_false = false
     };
     IF(
@@ -49,20 +52,66 @@ void hotcall_bundle_example_for(struct shared_memory_ctx *sm_ctx) {
     int xs[N_FOR_ITERS] = { 0 };
     int ys[N_FOR_ITERS] = { 0 };
     void *args[n_params] = { xs, ys };
-    BEGIN_FOR(sm_ctx, N_FOR_ITERS, n_ecalls);
+
+    struct for_args for_args = {
+        .n_iters = N_FOR_ITERS,
+        .n_rows = n_ecalls
+    };
+    BEGIN_FOR(sm_ctx, &for_args);
     HCALL(sm_ctx, ecall_plus_plus, false, NULL, 2, args);
     HCALL(sm_ctx, ecall_plus_one, false, NULL, 1, args);
     HCALL(sm_ctx, ecall_plus_one, false, NULL, 1, args);
-    END_FOR(sm_ctx, n_ecalls);
+    END_FOR(sm_ctx, &for_args);
     hotcall_bundle_end(sm_ctx);
 
     for(int i = 0; i < N_FOR_ITERS; ++i) {
         printf("%d ", xs[i]);
     }
     printf("\n");
-    
+
     for(int i = 0; i < N_FOR_ITERS; ++i) {
         printf("%d ", ys[i]);
     }
     printf("\n");
+}
+
+void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx) {
+    hotcall_bundle_begin(sm_ctx, NULL);
+    unsigned int n_ecalls = 2, n_params = 1, n_variables = 3;
+    char fmt[] = "b&b|b";
+    int x = 0;
+    bool b = false;
+    void *args[n_params] = { &x };
+    struct function_call fc = {
+        .id = hotcall_ecall_greater_than_two,
+        .args = (argument_list) {
+            .n_args = 1,
+            .args = { &x }
+        }
+    };
+    struct predicate_variable variables[n_variables] = {
+        (struct predicate_variable) { &fc, FUNCTION_TYPE, 'b' },
+        (struct predicate_variable) { &fc, FUNCTION_TYPE, 'b' },
+        (struct predicate_variable) { &b, VARIABLE_TYPE, 'b' }
+    };
+    struct predicate predicate = {
+        .expected = 0,
+        .fmt = fmt,
+        .n_variables = n_variables,
+        .variables = variables
+    };
+    struct while_args while_args = {
+        .predicate = predicate,
+        .n_rows = n_ecalls
+    };
+    BEGIN_WHILE(
+        sm_ctx,
+        &while_args
+    );
+    HCALL(sm_ctx, ecall_plus_one, false, NULL, n_params, args);
+    HCALL(sm_ctx, ecall_plus_one, false, NULL, n_params, args);
+    END_WHILE(sm_ctx, &while_args);
+    hotcall_bundle_end(sm_ctx);
+
+    printf("X: %d.\n", x);
 }

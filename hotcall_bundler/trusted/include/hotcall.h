@@ -16,6 +16,9 @@
 #define QUEUE_ITEM_TYPE_FOR_BEGIN 7
 #define QUEUE_ITEM_TYPE_FILTER 8
 #define QUEUE_ITEM_TYPE_DO_WHILE 9
+#define QUEUE_ITEM_TYPE_WHILE_BEGIN 10
+#define QUEUE_ITEM_TYPE_WHILE_END 11
+
 
 #define HOTCALL_MAX_ARG 25
 
@@ -28,7 +31,6 @@ struct function_call {
     uint8_t id;
     argument_list args;
     void *return_value;
-    char *fmt;
     bool async;
 };
 
@@ -53,22 +55,30 @@ struct predicate_variable {
     char fmt;
 };
 
-struct predicate_ {
+struct predicate {
     bool expected;
     char *fmt;
-    struct predicate_variable variables[MAX_N_VARIABLES];
     uint8_t n_variables;
+    struct predicate_variable *variables;
 };
 
 
 struct if_args {
-    int expected;
     unsigned int then_branch_len;
     unsigned int else_branch_len;
-    char *fmt;
-    uint8_t n_variables;
-    struct predicate_variable *variables;
+    struct predicate predicate;
     bool return_if_false;
+};
+
+struct for_args {
+        unsigned int n_iters;
+        unsigned int n_rows;
+};
+
+
+struct while_args {
+    struct predicate predicate;
+    unsigned int n_rows;
 };
 /*
 struct do_while_args {
@@ -119,12 +129,19 @@ struct transaction_for_each {
 };
 
 struct transaction_for_start {
-    unsigned int n_iters;
-    unsigned int n_rows;
+    struct for_args *args;
 };
 
 struct transaction_for_end {
-    unsigned int n_rows;
+    struct for_args *args;
+};
+
+struct transaction_while_start {
+    struct while_args *args;
+};
+
+struct transaction_while_end {
+    struct while_args *args;
 };
 
 union fcall {
@@ -135,6 +152,9 @@ union fcall {
     struct transaction_for_each tor;
     struct transaction_filter fi;
     struct transaction_do_while dw;
+    struct transaction_while_start while_s;
+    struct transaction_while_end while_e;
+
 };
 
 struct ecall_queue_item {

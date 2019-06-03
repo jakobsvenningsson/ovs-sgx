@@ -51,8 +51,6 @@ execute_function(struct function_call *fc){
 
 void
 ecall_configure_hotcall() {
-    printf("ecall_configure_hotcall\n");
-
     struct hotcall_config conf = {
         .execute_function = execute_function,
         .n_spinlock_jobs = 0,
