@@ -4,8 +4,6 @@
 
 static int *transaction_err;
 
-extern void make_hotcall(struct hotcall *);
-
 static sgx_enclave_id_t global_eid;
 struct shared_memory_ctx *sm_ctx;
 

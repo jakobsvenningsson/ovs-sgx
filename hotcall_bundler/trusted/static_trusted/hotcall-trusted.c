@@ -117,7 +117,7 @@ hotcall_handle_for(struct transaction_for_each *tor) {
 static inline void
 hotcall_handle_for_begin(struct transaction_for_start *for_s, uint8_t *for_loop_nesting, uint8_t *exclude_list, int pos) {
     if(for_s->n_iters-- > 0) {
-        for_loop_nesting++;
+        (*for_loop_nesting)++;
         return;
     }
     (*for_loop_nesting)--;
@@ -143,9 +143,8 @@ hotcall_handle_function(struct function_call *fc, uint8_t for_loop_nesting, unsi
     hotcall_config->execute_function(fc);
     if(for_loop_nesting > 0) {
         for(int i = 0; i < fc->args.n_args; ++i) {
-            int *p = ((int *) fc->args.args[i] + for_loop_indices[for_loop_nesting - 1]);
-            p = (int *) fc->args.args[i];
-            fc->args.args[0] = tmp[i];
+            fc->args.args[i] = ((int *) fc->args.args[i] + for_loop_indices[for_loop_nesting - 1]);
+            fc->args.args[i] = tmp[i];
         }
     }
 }

@@ -13,7 +13,7 @@
 
 #include "hotcall-untrusted.h"
 #include "functions.h"
-
+#include "examples.h"
 #include "ovs-benchmark.h"
 
 sgx_enclave_id_t global_eid = 0;
@@ -407,40 +407,7 @@ int SGX_CDECL main(int argc, char *argv[])
 
     hotcall_init(&sm_ctx, global_eid);
 
-    int x = 0;
-    hotcall_bundle_begin(&sm_ctx, NULL);
-    bool res1;
-    HCALL(&sm_ctx, ecall_always_false, false, &res1, 0, NULL);
-    int n_variables = 1;
-    char fmt[] = "b";
-    struct predicate_variable variables[n_variables] = {
-        (struct predicate_variable) { &res1, VARIABLE_TYPE, 'b' }
-    };
-    struct if_args if_args = {
-        .expected = 1,
-        .then_branch_len = 1,
-        .else_branch_len = 2,
-        .fmt = fmt,
-        .n_variables = n_variables,
-        .variables = variables,
-        .return_if_false = false
-    };
-    IF(
-        &sm_ctx,
-        &if_args
-    );
-    THEN(
-        void *args[1] = { &x };
-        HCALL(&sm_ctx, ecall_plus_one, false, NULL, 1, args)
-    );
-    ELSE(
-        HCALL(&sm_ctx, ecall_plus_one, false, NULL, 1, args);
-        HCALL(&sm_ctx, ecall_plus_one, false, NULL, 1, args);
-    );
-    HCALL(&sm_ctx, ecall_plus_one, false, NULL, 1, args);
-    hotcall_bundle_end(&sm_ctx);
-
-    printf("x: %d\n", x);
+    hotcall_bundle_example_for(&sm_ctx);
 
 
     /* for(int n = 0; n < ITERATIONS; ++n) {

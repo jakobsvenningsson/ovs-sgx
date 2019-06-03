@@ -7,5 +7,6 @@
 #define hotcall_ecall_bar 3
 #define hotcall_ecall_plus_one 4
 #define hotcall_ecall_greater_than_two 5
+#define hotcall_ecall_plus_plus 6
 
 #endif

@@ -20,7 +20,6 @@ extern "C" {
 #else
 #define ASYNC(SM_CTX, X) false || is_transaction_in_progress(&(SM_CTX)->hcall)
 #endif
-//list_insert(&(SM_CTX)->hcall.ecall_queue, &QI->list_node);
 
 #define HCALL(SM_CTX, F, _ASYNC, RET, N_ARGS, ARGS) \
     (SM_CTX)->hcall.ecall_queue[(SM_CTX)->hcall.queue_length++] = \
@@ -29,40 +28,17 @@ extern "C" {
         make_hotcall(&(SM_CTX)->hcall); \
     }
 
-//list_insert(&(SM_CTX)->hcall.ecall_queue, &QI->list_node);
 #define HCALL_CONTROL(SM_CTX, TYPE, _ASYNC, N_ARGS, ARGS) \
     (SM_CTX)->hcall.ecall_queue[(SM_CTX)->hcall.queue_length++] = \
         get_fcall(&(SM_CTX)->pfc, QUEUE_ITEM_TYPE_ ## TYPE, 0, NULL, N_ARGS, ARGS); \
     if(ASYNC(SM_CTX, _ASYNC) != 1) { \
         make_hotcall(&(SM_CTX)->hcall); \
     }
-/*
-#define ASSERT_CATCH(F, EXPECTED, ERROR, ELSE_F) \
-    F; \
-    hotcall_transaction_expected_value(EXPECTED, ERROR, true); \
-    ELSE_F
-
-#define ASSERT(F, EXPECTED, ERROR) \
-    F; \
-    hotcall_transaction_expected_value(EXPECTED, ERROR, false)
-*/
-/*
-#define IF(SM_CTX, EXPECTED, IF_LEN, ELSE_LEN, FMT, CLAUSE_TYPE, N_COND, ...) \
-    const void *conditions[N_COND] = { __VA_ARGS__ }; \
-    hotcall_bundle_if_(SM_CTX, EXPECTED, conditions, FMT, N_COND, IF_LEN, ELSE_LEN, CLAUSE_TYPE);*/
-
 
 #define IF(SM_CTX, ARGS) \
     hotcall_bundle_if_(SM_CTX, ARGS);
-
-/*
-#define IF_NOT_NULL(CONDITION, IF_LEN, ELSE_LEN) \
-    hotcall_transaction_if_null_(CONDITION, IF_LEN, ELSE_LEN)*/
-
 #define THEN(...) __VA_ARGS__
 #define ELSE(...) __VA_ARGS__
-
-//#define CONDITION(...) __VA_ARGS__
 
 
 #define FOR_EACH(SM_CTX, FUNCTION, ITERS, N_PARAMS, PARAMS, FMT) \
@@ -86,8 +62,6 @@ extern "C" {
 #define END_FOR(SM_CTX, N_ROWS) \
     hotcall_bundle_for_end(SM_CTX, N_ROWS)
 
-//void hotcall_flush(struct shared_memory_ctx *sm_ctx);
-
 
 extern inline bool
 is_transaction_in_progress(struct hotcall *hcall) {
@@ -98,16 +72,8 @@ void
 hotcall_init(struct shared_memory_ctx *sm_ctx, sgx_enclave_id_t _global_eid);
 void
 hotcall_bundle_flush(struct shared_memory_ctx *sm_ctx);
-/*void
-hotcall_bundle_begin(struct shared_memory_ctx *sm_ctx, int *transaction_error);
-void
-hotcall_bundle_end(struct shared_memory_ctx *sm_ctx);*/
-void
-hotcall_bundle_assert_false(struct preallocated_function_calls *pfc, int condition, int error_code, uint8_t cleanup_function);
 void
 hotcall_bundle_expected_value(struct preallocated_function_calls *pfc, int expected, int error_code, bool has_else);
-void
-hotcall_bundle_if_null_(struct preallocated_function_calls *pfc, void *condition, int if_len, int else_len);
 void
 hotcall_destroy(struct shared_memory_ctx *sm_ctx);
 
@@ -131,44 +97,10 @@ struct ecall_queue_item * get_fcall(struct preallocated_function_calls *pfc, uin
     struct ecall_queue_item *item = &pfc->fcs[pfc->idx++];
     item->type = f_type;
     switch(item->type) {
-        case QUEUE_ITEM_TYPE_GUARD:
-        {
-            /*
-            struct transaction_assert *trans_assert;
-            trans_assert = &item->call.ta;
-            trans_assert->expected = *(int *) args[0];
-            trans_assert->error = *(int *) args[1];
-            trans_assert->transaction_error = (int *) args[2];
-            trans_assert->has_else = *(bool *) args[3];*/
-            break;
-        }
-        case QUEUE_ITEM_TYPE_IF_NULL:
-        {
-            /*struct transaction_if *trans_if;
-            trans_if = &item->call.tif;
-            trans_if->predicate_type = 0;
-            trans_if->predicate.null_type.condition = (void *) args[0];
-            trans_if->if_len = *(unsigned int *) args[1];
-            trans_if->else_len = *(unsigned int *) args[2];*/
-
-            break;
-        }
         case QUEUE_ITEM_TYPE_IF:
         {
             struct transaction_if *trans_if;
             trans_if = &item->call.tif;
-            //trans_if->predicate_type = 1;
-            //memcpy(&trans_if->predicate.num_type, args, 8 * 4);
-            //trans_if->predicate.num_type.expected = (unsigned int *) args[0]; //*(int *) args[0];
-            //trans_if->predicate.num_type.conditions = (void **) args[1];
-            //trans_if->predicate.num_type.n_conditions = (unsigned int *) args[2];//*(int *) args[2];;
-            //trans_if->predicate.num_type.fmt = (char *) args[3];
-
-            //trans_if->else_len =  (unsigned int *) args[4]; //*(int *) args[4];
-            //trans_if->if_len = (unsigned int *) args[5]; //*(int *) args[3];
-
-            //memcpy(trans_if->predicate.num_type.conditions, args[1], 8 * trans_if->predicate.num_type.n_conditions
-            //memcpy(trans_if->predicate.num_type.type, (char *) args[5], 5);
             break;
         }
         case QUEUE_ITEM_TYPE_DESTROY:
@@ -275,29 +207,9 @@ next_int(struct preallocated_function_calls *pfc, int x) {
     return &pfc->int_ts[pfc->idx_int++];
 }
 
-/*
-extern inline void
-make_hcall(struct shared_memory_ctx *sm_ctx, struct ecall_queue_item *queue_item, uint8_t f, bool async, void *ret, uint8_t n_args, void **args) {
-  queue_item = get_fcall(&sm_ctx->pfc, f, ret, n_args, args);
-  list_insert(&sm_ctx->hcall.ecall_queue, &queue_item->list_node);
-  if(!async) {
-      make_hotcall(&sm_ctx->hcall);
-  }
-}*/
 
 extern inline void
 hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_args *args) {
-//hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, bool expected, const void *clauses[], char *fmt, int n_clauses, int if_len, int else_len, char *clause_type) {
-    //void **args = sm_ctx->pfc.args[sm_ctx->pfc.idx];
-    //args[0] = next_int(&sm_ctx->pfc, expected);
-    //args[1] = (void **) clauses;
-    //args[2] = next_int(&sm_ctx->pfc, n_clauses);
-    //args[3] = type;
-    //args[4] = next_int(&sm_ctx->pfc, else_len);
-    //args[5] = next_int(&sm_ctx->pfc, if_len);
-    //HCALL_CONTROL(sm_ctx, IF, false, 6, args);
-
-
     struct ecall_queue_item *item;
     item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
     item->type = QUEUE_ITEM_TYPE_IF;
@@ -307,31 +219,6 @@ hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_args *args) {
     struct transaction_if *tif;
     tif = &item->call.tif;
     tif->args = args;
-
-    /*tif->else_len = else_len;
-    tif->if_len = if_len;
-    tif->predicate.expected = expected;
-    tif->predicate.fmt = fmt;
-    tif->predicate.n_variables = n_clauses;
-
-    for(int i = 0; i < n_clauses; ++i) {
-        tif->predicate.variables[i].val = clauses[i];
-        switch(clause_type[i]) {
-            case 'f':
-                tif->predicate.variables[i].type = FUNCTION_TYPE;
-                break;
-            case 'p':
-                tif->predicate.variables[i].type = POINTER_TYPE;
-                break;
-            case 'v':
-                tif->predicate.variables[i].type = VARIABLE_TYPE;
-                break;
-
-            default:
-                printf("unknown clause type.\n");
-        }
-    }*/
-
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
 }
 
@@ -354,7 +241,6 @@ hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, int n_params,
     fi->params_in = params;
     fi->params_out = filtered_params;
     fi->fmt = fmt;
-
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
 }
 
@@ -406,7 +292,6 @@ hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, unsigned int n_iters,
     for_s->n_iters = n_iters;
     for_s->n_rows = n_rows;
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
-
 }
 
 extern inline void
