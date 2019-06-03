@@ -11,7 +11,11 @@
 #define QUEUE_ITEM_TYPE_GUARD 2
 #define QUEUE_ITEM_TYPE_DESTROY 3
 #define QUEUE_ITEM_TYPE_FUNCTION 4
-
+#define QUEUE_ITEM_TYPE_FOR_EACH 5
+#define QUEUE_ITEM_TYPE_FOR_END 6
+#define QUEUE_ITEM_TYPE_FOR_BEGIN 7
+#define QUEUE_ITEM_TYPE_FILTER 8
+#define QUEUE_ITEM_TYPE_DO_WHILE 9
 
 #define HOTCALL_MAX_ARG 25
 
@@ -19,13 +23,6 @@ typedef struct {
     int n_args;
     void *args[HOTCALL_MAX_ARG];
 } argument_list;
-
-
-typedef struct {
-  size_t allocated_size;
-  void *val;
-} return_value;
-
 
 struct function_call {
     uint8_t id;
@@ -35,54 +32,112 @@ struct function_call {
     bool async;
 };
 
-struct transaction_assert {
+
+
+struct immutable_function_argument {
+    unsigned int n_params;
+    char *fmt;
+    void **params_in;
+    unsigned int params_in_length;
+    void **params_out;
+    unsigned int params_out_length;
+};
+
+
+enum variable_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE };
+#define MAX_N_VARIABLES 5
+
+struct predicate_variable {
+    const void *val;
+    enum variable_type type;
+    char fmt;
+};
+
+struct predicate_ {
+    bool expected;
+    char *fmt;
+    struct predicate_variable variables[MAX_N_VARIABLES];
+    uint8_t n_variables;
+};
+
+
+struct if_args {
     int expected;
-    int *transaction_error;
-    int error;
-    bool has_else;
+    unsigned int then_branch_len;
+    unsigned int else_branch_len;
+    char *fmt;
+    uint8_t n_variables;
+    struct predicate_variable *variables;
+    bool return_if_false;
 };
+/*
+struct do_while_args {
+    unsigned int params_n;
+    void **params_in;
+    char *params_fmt;
 
-struct numertic_type {
-    unsigned int *expected;
-    void **conditions;
-    unsigned int *n_conditions;
-    char *type;
+    unsigned int condition_n;
+    void **condition_params;
+    char *condition_fmt;
 
-    unsigned int *n_clauses;
-};
+    struct numertic_type condition;
 
-struct null_type {
-    void *condition;
-};
-
-union predicate {
-    struct null_type null_type;
-    struct numertic_type num_type;
-};
+};*/
 
 struct transaction_if {
-    uint8_t predicate_type;
-    union predicate predicate;
-    unsigned int *else_len;
-    unsigned int *if_len;
+    struct if_args *args;
+    //unsigned int n_clauses;
+    /*struct predicate_ predicate;
+    //union predicate predicate;
+    unsigned int else_len;
+    unsigned int if_len;*/
 };
 
-struct transaction_for {
-    struct function_call *fc;
-    unsigned int n;
-    argument_list *args[];
+struct transaction_filter {
+    uint8_t f;
+    struct immutable_function_argument *args;
+    unsigned int *n_iter;
+    unsigned int n_params;
+    unsigned int *filtered_length;
+    void **params_in;
+    void **params_out;
+    char *fmt;
+};
 
-}
+struct transaction_do_while {
+    uint8_t f;
+    struct do_while_args *args;
+};
+
+struct transaction_for_each {
+    uint8_t f;
+    struct immutable_function_argument *args;
+    unsigned int *n_iter;
+    unsigned int n_params;
+    void **params;
+    char *fmt;
+};
+
+struct transaction_for_start {
+    unsigned int n_iters;
+    unsigned int n_rows;
+};
+
+struct transaction_for_end {
+    unsigned int n_rows;
+};
 
 union fcall {
-    struct transaction_assert ta;
     struct function_call fc;
     struct transaction_if tif;
-    struct transaction_for tor;
+    struct transaction_for_start for_s;
+    struct transaction_for_end for_e;
+    struct transaction_for_each tor;
+    struct transaction_filter fi;
+    struct transaction_do_while dw;
 };
 
 struct ecall_queue_item {
-    //struct list list_node;
     uint8_t type;
     union fcall call;
 };
@@ -100,10 +155,8 @@ struct hotcall {
     bool is_done;
     bool sleeping;
     int timeout_counter;
-    //struct list ecall_queue;
     struct ecall_queue_item *ecall_queue[MAX_FCS];
-    uint8_t queue_length;
-
+    unsigned int queue_length;
     bool transaction_in_progress;
     int first_call_of_transaction;
 };
@@ -154,6 +207,5 @@ struct hotcall_config {
     unsigned int spin_lock_task_timeouts[MAX_SPINLOCK_JOBS];
     unsigned int n_spinlock_jobs;
 };
-
 
 #endif

@@ -22,5 +22,9 @@ enclave {
       ecall_foo();
       public void
       ecall_bar();
+      public void
+      ecall_plus_one([user_check] int *x);
+      public bool
+      ecall_greater_than_two([user_check] int *x);
     };
 };

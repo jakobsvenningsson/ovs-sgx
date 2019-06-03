@@ -22,22 +22,28 @@ execute_function(struct function_call *fc){
     args       = &fc->args;
 
     switch (fc->id) {
-      case hotcall_ecall_always_true:
-        *(bool *) fc->return_value = ecall_always_true();
-        break;
-      case hotcall_ecall_always_false:
-        *(bool *) fc->return_value = ecall_always_false();
-        break;
-      case hotcall_ecall_foo:
-        ecall_foo();
-        break;
-      case hotcall_ecall_bar:
-        ecall_bar();
-        break;
-      default:
-        printf("unknown hotcall function.\n");
-        break;
-    }
+        case hotcall_ecall_always_true:
+            *(bool *) fc->return_value = ecall_always_true();
+            break;
+        case hotcall_ecall_always_false:
+            *(bool *) fc->return_value = ecall_always_false();
+            break;
+        case hotcall_ecall_foo:
+            ecall_foo();
+            break;
+        case hotcall_ecall_bar:
+            ecall_bar();
+            break;
+        case hotcall_ecall_plus_one:
+            ecall_plus_one((int *) args->args[0]);
+            break;
+        case hotcall_ecall_greater_than_two:
+            *(bool *) fc->return_value = ecall_greater_than_two((int *) args->args[0]);
+            break;
+        default:
+            printf("unknown hotcall function %d.\n", fc->id);
+            break;
+        }
   }
 
 void
@@ -71,4 +77,14 @@ ecall_foo() {
 void
 ecall_bar() {
   //printf("Calling bar!\n");
+}
+
+void
+ecall_plus_one(int *x) {
+    ++*x;
+}
+
+bool
+ecall_greater_than_two(int *x) {
+    return *x > 2 ? true : false;
 }
