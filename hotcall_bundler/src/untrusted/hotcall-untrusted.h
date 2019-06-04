@@ -41,15 +41,15 @@ extern "C" {
 #define ELSE(...) __VA_ARGS__
 
 
-#define FOR_EACH(SM_CTX, FUNCTION, ITERS, N_PARAMS, PARAMS, FMT) \
-    hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ITERS, N_PARAMS, PARAMS, FMT)
+/*#define FOR_EACH(SM_CTX, FUNCTION, ITERS, N_PARAMS, PARAMS, FMT) \
+    hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ITERS, N_PARAMS, PARAMS, FMT)*/
 
 #define FILTER(SM_CTX, FUNCTION, N_PARAMS, PARAMS, ITERS, LEN_FILTERED, FILTERED_OUT, FMT) \
     hotcall_bundle_filter(SM_CTX, hotcall_ ## FUNCTION, N_PARAMS, PARAMS, ITERS, LEN_FILTERED, FILTERED_OUT, FMT)
-/*
+
 #define FOR_EACH(SM_CTX, FUNCTION, ARGS) \
     hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ARGS)
-
+/*
 #define FILTER(SM_CTX, FUNCTION, ARGS) \
     hotcall_bundle_filter(SM_CTX, hotcall_ ## FUNCTION, ARGS)*/
 
@@ -71,6 +71,9 @@ is_transaction_in_progress(struct hotcall *hcall) {
     return hcall->transaction_in_progress;
 }
 
+
+bool
+hotcall_test();
 void
 hotcall_init(struct shared_memory_ctx *sm_ctx, sgx_enclave_id_t _global_eid);
 void
@@ -263,8 +266,8 @@ hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, uint8_t f, struct do_w
 }
 
 extern inline void
-//hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, struct immutable_function_argument *args) {
-hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, unsigned int *n, int n_params, void **params, char *fmt) {
+hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, struct for_each_args *args) {
+//hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, unsigned int *n, int n_params, void **params, char *fmt) {
     struct ecall_queue_item *item;
     item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
     item->type = QUEUE_ITEM_TYPE_FOR_EACH;
@@ -273,12 +276,12 @@ hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, unsigned in
     }
     struct transaction_for_each *tor;
     tor = &item->call.tor;
-    tor->fmt = fmt;
+    tor->args = args;
     tor->f = f;
     //tor->args = args;
-    tor->n_iter = n;
+    /*tor->n_iter = n;
     tor->n_params = n_params;
-    tor->params = params;
+    tor->params = params;*/
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
 }
 

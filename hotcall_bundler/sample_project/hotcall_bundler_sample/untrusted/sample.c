@@ -15,6 +15,8 @@
 #include "functions.h"
 #include "examples.h"
 #include "ovs-benchmark.h"
+#include <gtest/gtest.h>
+#include "test/test.h"
 
 sgx_enclave_id_t global_eid = 0;
 
@@ -376,14 +378,14 @@ benchmark_bundle_for_if_optimized() {
           ecall_plus_one,
           &for_each_args
       );*/
-        FOR_EACH(
+    /*    FOR_EACH(
             &sm_ctx,
             ecall_plus_one,
             &filtered_length,
             n_params,
             parameters_for_each,
             fmt
-        );
+        );*/
         hotcall_bundle_end(&sm_ctx);
         CLOSE
         if(i < WARM_UP) {
@@ -395,17 +397,35 @@ benchmark_bundle_for_if_optimized() {
     return rounds[ROUNDS / 2];
 }
 
+/*
+TEST(foo,bar) {
+    EXPECT_EQ( hotcall_test(), true );
+}*/
+
 /* Application entry */
 int SGX_CDECL main(int argc, char *argv[])
 {
+    ::testing::InitGoogleTest(&argc, argv);
+
     /* Initialize the enclave */
     if(initialize_enclave() < 0){
         return -1;
     }
 
-    ecall_configure_hotcall(global_eid);
 
-    hotcall_init(&sm_ctx, global_eid);
+
+    //sleep(1);
+
+
+
+    if(argc > 1 && !strcmp(argv[1], "-t")) {
+        printf("Running test...\n");
+        return hotcall_run_tests(&sm_ctx);
+    }
+
+
+
+
 
     hotcall_bundle_example_while(&sm_ctx);
 
@@ -420,6 +440,8 @@ int SGX_CDECL main(int argc, char *argv[])
 
 
   hotcall_destroy(&sm_ctx);
+
+  //return RUN_ALL_TESTS();
 
   return 0;
 }

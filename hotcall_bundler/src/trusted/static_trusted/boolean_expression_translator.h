@@ -1,6 +1,7 @@
 #ifndef _H_BOOLEAN_EXPRESSION_H
 #define _H_BOOLEAN_EXPRESSION_H
 
+#include "hotcall-trusted.h"
 
 enum postfix_item_type { OPERAND, OPERATOR };
 struct postfix_item {
@@ -70,6 +71,10 @@ to_postfix(struct predicate *predicate, struct postfix_item *output, unsigned in
 }
 
 
+
+extern unsigned int for_loop_indices[3];
+extern unsigned int for_loop_nesting;
+
 extern inline int
 evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotcall_config) {
     switch(operand_item->var->type) {
@@ -79,11 +84,12 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
             fc = (struct function_call *) operand_item->var->val;
             bool operand;
             fc->return_value = &operand;
-            hotcall_config->execute_function(fc);
+            //hotcall_config->execute_function(fc);
+            hotcall_handle_function(fc);
             return operand;
         }
         case POINTER_TYPE:
-            return operand_item->var->val == NULL;
+            return operand_item->var->val != NULL;
         case VARIABLE_TYPE:
             switch(operand_item->ch) {
                 case 'b':
@@ -129,21 +135,35 @@ evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struc
             continue;
         }
         if(it->ch == '!') {
-            struct postfix_item *pi;
-            pi = output[stack_pos - 1];
-            switch(pi->ch) {
-                case 'b':
-                    *(bool *) pi->var->val = *(bool *) pi->var->val == 0 ? 1 : 0;
-                    break;
-                case 'u':
-                    *(unsigned int *) pi->var->val = *(unsigned int *) pi->var->val == 0 ? 1 : 0;
-                    break;
-                case 'd':
-                    *(int *) pi->var->val = *(int *) pi->var->val == 0 ? 1 : 0;
-                    break;
+            struct postfix_item *operand_item;
+            operand_item = output[stack_pos - 1];
+            switch(operand_item->var->type) {
+                case FUNCTION_TYPE:
+                {
+                    struct function_call *fc;
+                    fc = (struct function_call *) operand_item->var->val;
+                    bool operand;
+                    fc->return_value = &operand;
+                    hotcall_config->execute_function(fc);
+                    return !operand;
+                }
+                case POINTER_TYPE:
+                    return operand_item->var->val == NULL;
+                case VARIABLE_TYPE:
+                    switch(operand_item->ch) {
+                        case 'b':
+                            return !*(bool *) operand_item->var->val;
+                        case 'u':
+                            return !*(unsigned int *) operand_item->var->val;
+                        case 'd':
+                            return !*(int *) operand_item->var->val;
+                        default:
+                            printf("Default reached at %s %d\n", __FILE__, __LINE__);
+                    }
                 default:
-                    printf("Default reached at %s %d %c\n", __FILE__, __LINE__, pi->ch);
+                    printf("Default reached at %s %d\n", __FILE__, __LINE__);
             }
+
             continue;
         }
 
@@ -157,7 +177,6 @@ evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struc
 
         switch(it->ch) {
             case '&':
-                //printf("%d %d\n", operand1, operand2);
                 res = operand1 && operand2;
                 break;
             case '|':

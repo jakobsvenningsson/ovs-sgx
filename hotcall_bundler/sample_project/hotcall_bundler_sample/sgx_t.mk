@@ -3,8 +3,8 @@ SGX_SDK ?= /opt/intel/sgxsdk
 SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 
-HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/include
-HOTCALL_BUNDLER_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/trusted
+HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/src/include
+HOTCALL_BUNDLER_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/trusted
 
 ifeq ($(shell getconf LONG_BIT), 32)
 	SGX_ARCH := x86
@@ -63,7 +63,7 @@ Hotcall_bundler_sample_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -no
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
 	-Wl,--version-script=trusted/hotcall_bundler_sample.lds \
-	-L$(HOTCALL_BUNDLER_LIB_PATH) -lhotcall_bundler_trusted
+	-L$(HOTCALL_BUNDLER_LIB_PATH) -lhotcall_bundler_trusted -lgtest
 
 Hotcall_bundler_sample_C_Objects := $(Hotcall_bundler_sample_C_Files:.c=.o)
 

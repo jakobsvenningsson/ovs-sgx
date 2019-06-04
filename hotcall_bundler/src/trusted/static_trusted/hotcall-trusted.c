@@ -4,8 +4,6 @@
 #include <ctype.h>
 #include "boolean_expression_translator.h"
 
-static struct hotcall_config *hotcall_config;
-
 void
 hotcall_register_config(struct hotcall_config *config) {
     hotcall_config = config;
@@ -43,10 +41,11 @@ hotcall_handle_if(struct transaction_if *tif, uint8_t *exclude_list, int pos, in
     unsigned int output_length;
     to_postfix(&tif->args->predicate, output, &output_length);
     /*for(int i = 0; i < output_length; ++i) {
-        printf("%c %d ", output[i].ch, output[i].type == OPERAND ? (output[i].var->type == VARIABLE_TYPE ? *(bool *) output[i].var->val : -2) : -1);
+        printf("%c ", output[i].ch);
     }
     printf("\n");*/
     int res = evaluate_postfix(output, output_length, hotcall_config);
+
     if(res == tif->args->predicate.expected && tif->args->else_branch_len > 0) {
         exclude_else_branch(exclude_list, pos, tif->args->then_branch_len, tif->args->else_branch_len);
     } else if(res != tif->args->predicate.expected) {
@@ -99,12 +98,12 @@ static inline void
 hotcall_handle_for(struct transaction_for_each *tor) {
     struct function_call fc;
     fc.id = tor->f;
-    fc.args.n_args = tor->n_params;
-    for(int i = 0; i < *tor->n_iter; ++i) {
-        for(int j = 0; j < tor->n_params; ++j) {
-            switch(tor->fmt[j]) {
+    fc.args.n_args = tor->args->n_params;
+    for(int i = 0; i < tor->args->params_length; ++i) {
+        for(int j = 0; j < tor->args->n_params; ++j) {
+            switch(tor->args->fmt[j]) {
                 case 'd':
-                    fc.args.args[j] = (int *) tor->params[j] + i;
+                    fc.args.args[j] = (int *) tor->args->params[j] + i;
                     break;
                 default:
                     break;
@@ -115,24 +114,25 @@ hotcall_handle_for(struct transaction_for_each *tor) {
 }
 
 static inline void
-hotcall_handle_for_begin(struct transaction_for_start *for_s, uint8_t *for_loop_nesting, uint8_t *exclude_list, int pos) {
-    if(for_s->args->n_iters-- > 0) {
+hotcall_handle_for_begin(struct transaction_for_start *for_s, unsigned int *for_loop_nesting, uint8_t *exclude_list, int pos) {
+    bool continue_loop = for_s->args->n_iters-- > 0;
+    if(continue_loop) {
         (*for_loop_nesting)++;
-        return;
+    } else {
+        for_loop_indices[*for_loop_nesting] = 0;
     }
-    (*for_loop_nesting)--;
-    memset(exclude_list + pos + 1, 1, for_s->args->n_rows + 1);
+    memset(exclude_list + pos + 1, continue_loop ? 0 : 1, for_s->args->n_rows + 1);
 }
 
 static inline void
-hotcall_handle_for_end(struct transaction_for_end *for_e, int *pos, uint8_t *for_loop_nesting, unsigned int *for_loop_indices) {
+hotcall_handle_for_end(struct transaction_for_end *for_e, int *pos, unsigned int *for_loop_nesting, unsigned int *for_loop_indices) {
     *pos = *pos - (for_e->args->n_rows + 2);
     (*for_loop_nesting)--;
     for_loop_indices[*for_loop_nesting]++;
 }
 
 static inline void
-hotcall_handle_while_begin(struct transaction_while_start *while_s, uint8_t *for_loop_nesting, uint8_t *exclude_list, int pos) {
+hotcall_handle_while_begin(struct transaction_while_start *while_s, unsigned int *for_loop_nesting, uint8_t *exclude_list, int pos) {
     struct postfix_item output[strlen(while_s->args->predicate.fmt)];
     unsigned int output_length;
     to_postfix(&while_s->args->predicate, output, &output_length);
@@ -144,35 +144,15 @@ hotcall_handle_while_begin(struct transaction_while_start *while_s, uint8_t *for
 }
 
 static inline void
-hotcall_handle_while_end(struct transaction_while_end *while_e, int *pos, uint8_t *for_loop_nesting, unsigned int *for_loop_indices) {
+hotcall_handle_while_end(struct transaction_while_end *while_e, int *pos, unsigned int *for_loop_nesting, unsigned int *for_loop_indices) {
     *pos = *pos - (while_e->args->n_rows + 2);
     //(*for_loop_nesting)--;
     //for_loop_indices[*for_loop_nesting]++;
 }
 
-static inline void
-hotcall_handle_function(struct function_call *fc, uint8_t for_loop_nesting, unsigned int *for_loop_indices) {
-    void *tmp[fc->args.n_args];
-    if(for_loop_nesting > 0) {
-        for(int i = 0; i < fc->args.n_args; ++i) {
-            tmp[i] = fc->args.args[i];
-            fc->args.args[i] = ((int *) fc->args.args[i] + for_loop_indices[for_loop_nesting - 1]);
-        }
-    }
-    hotcall_config->execute_function(fc);
-    if(for_loop_nesting > 0) {
-        for(int i = 0; i < fc->args.n_args; ++i) {
-            fc->args.args[i] = ((int *) fc->args.args[i] + for_loop_indices[for_loop_nesting - 1]);
-            fc->args.args[i] = tmp[i];
-        }
-    }
-}
-
 
 int
 ecall_start_poller(struct shared_memory_ctx *sm_ctx){
-
-    printf("Starting shared memory poller.\n");
 
     struct ecall_queue_item *queue_item, *queue_item_next;
     struct function_call *fc, *prev_fc;
@@ -193,21 +173,20 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
             uint8_t exclude_list[sm_ctx->hcall.queue_length];
             memset(exclude_list, 0, sm_ctx->hcall.queue_length);
 
-            unsigned int for_loop_indices[3] = { 0 };
-            uint8_t for_loop_nesting = 0;
 
             int n;
             for(n = 0; n < sm_ctx->hcall.queue_length; ++n) {
+                    queue_item = sm_ctx->hcall.ecall_queue[n];
                     if(exclude_list[n]) {
+                        //printf("excluding %d\n", queue_item->type);
                         continue;
                     }
-                    queue_item = sm_ctx->hcall.ecall_queue[n];
 
                     switch(queue_item->type) {
                         case QUEUE_ITEM_TYPE_DESTROY:
                             goto exit;
                         case QUEUE_ITEM_TYPE_FUNCTION:
-                            hotcall_handle_function(&queue_item->call.fc, for_loop_nesting, for_loop_indices);
+                            hotcall_handle_function(&queue_item->call.fc);
                             prev_fc = &queue_item->call.fc;
                             break;
                         case QUEUE_ITEM_TYPE_IF: case QUEUE_ITEM_TYPE_IF_NULL:
@@ -264,8 +243,6 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
 
 
     exit:
-
-    printf("Exiting shared memory poller\n");
 
     sm_ctx->hcall.queue_length = 0;
     sgx_spin_unlock(&sm_ctx->hcall.spinlock);

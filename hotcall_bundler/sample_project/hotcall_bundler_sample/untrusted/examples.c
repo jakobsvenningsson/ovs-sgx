@@ -115,3 +115,41 @@ void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx) {
 
     printf("X: %d.\n", x);
 }
+
+void hotcall_bundle_example_for_each(struct shared_memory_ctx *sm_ctx) {
+    hotcall_bundle_begin(sm_ctx, NULL);
+    char fmt[] = "b";
+    unsigned int n_params = 1, n_iters = 10;
+    int xs[n_iters] = { 0 };
+    void *params[n_params] = { xs };
+
+    struct for_each_args for_each_args = {
+        .fmt = fmt,
+        .n_params = n_params,
+        .params = params,
+        .params_length = n_iters
+    };
+    FOR_EACH(
+      sm_ctx,
+      ecall_plus_one,
+      &for_each_args
+  );
+  hotcall_bundle_end(sm_ctx);
+
+  for(int i = 0; i < n_params; ++i) {
+      printf("%d ", xs[i]);
+  }
+  printf("\n");
+}
+
+void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
+
+}
+
+void hotcall_bundle_example_map(struct shared_memory_ctx *sm_ctx) {
+
+}
+
+void hotcall_bundle_example_do_while(struct shared_memory_ctx *sm_ctx) {
+
+}

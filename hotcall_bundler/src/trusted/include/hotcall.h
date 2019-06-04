@@ -35,6 +35,12 @@ struct function_call {
 };
 
 
+struct for_each_args {
+    char *fmt;
+    unsigned int n_params;
+    void **params;
+    unsigned int params_length;
+};
 
 struct immutable_function_argument {
     unsigned int n_params;
@@ -121,11 +127,11 @@ struct transaction_do_while {
 
 struct transaction_for_each {
     uint8_t f;
-    struct immutable_function_argument *args;
-    unsigned int *n_iter;
+    struct for_each_args *args;
+    /*unsigned int *n_iter;
     unsigned int n_params;
     void **params;
-    char *fmt;
+    char *fmt;*/
 };
 
 struct transaction_for_start {

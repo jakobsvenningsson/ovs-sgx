@@ -9,7 +9,6 @@ struct shared_memory_ctx *sm_ctx;
 
 void *
 start_enclave_thread(void * vargp){
-    printf("start_enclave_thread\n");
     int ecall_return;
     ecall_start_poller(global_eid, &ecall_return, sm_ctx);
     if (ecall_return == 0) {
@@ -49,8 +48,10 @@ hotcall_destroy(struct shared_memory_ctx *sm_ctx) {
   HCALL_CONTROL(sm_ctx, DESTROY, false, 0, NULL);
 }
 
-
-
+bool
+hotcall_test() {
+    return true;
+}
 
 
 
