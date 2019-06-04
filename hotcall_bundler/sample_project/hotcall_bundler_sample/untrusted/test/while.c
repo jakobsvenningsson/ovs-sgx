@@ -50,3 +50,41 @@ TEST(while,1) {
 
     ASSERT_EQ(x, 4);
 }
+
+TEST(while, 2) {
+    // Contract: the loop should execute 10 times and hence x should be 10 after the loop has terminated.
+    hotcall_test_setup();
+    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
+
+    int x = 0;
+    int y = 10;
+    hotcall_bundle_begin(sm_ctx, NULL);
+    unsigned int n_ecalls = 1, n_params = 1, n_variables = 2;
+    char fmt[] = "d<d";
+    void *args[n_params] = { &x };
+    struct predicate_variable variables[n_variables] = {
+        (struct predicate_variable) { &x, VARIABLE_TYPE, 'b' },
+        (struct predicate_variable) { &y, VARIABLE_TYPE, 'b' }
+    };
+    struct predicate predicate = {
+        .expected = 1,
+        .fmt = fmt,
+        .n_variables = n_variables,
+        .variables = variables
+    };
+    struct while_args while_args = {
+        .predicate = predicate,
+        .n_rows = n_ecalls
+    };
+    BEGIN_WHILE(
+        sm_ctx,
+        &while_args
+    );
+    HCALL(sm_ctx, ecall_plus_one, false, NULL, n_params, args);
+    END_WHILE(sm_ctx, &while_args);
+    hotcall_bundle_end(sm_ctx);
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 10);
+}
