@@ -90,7 +90,7 @@ struct predicate {
 };
 
 struct map_args {
-    struct function_parameters_in params_in;
+    const struct function_parameters_in params_in;
     struct function_map_out params_out;
 };
 
@@ -99,7 +99,7 @@ struct for_each_args {
 };
 
 struct filter_args {
-    struct function_parameters_in params_in;
+    const struct function_parameters_in params_in;
     struct function_filter_out params_out;
     struct predicate predicate;
 };

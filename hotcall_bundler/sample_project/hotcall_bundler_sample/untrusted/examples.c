@@ -169,7 +169,7 @@ void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
     };
 
     struct filter_args filter_args = {
-        .params_in = (struct function_parameters_in) {
+        .params_in = (const struct function_parameters_in) {
             .params = params_in, .n_params = 1, .iters = n_iters
         },
         .params_out = (struct function_filter_out) {
@@ -211,7 +211,7 @@ void hotcall_bundle_example_map(struct shared_memory_ctx *sm_ctx) {
     };
 
     struct map_args map_args = {
-        .params_in = (struct function_parameters_in) {
+        .params_in = (const struct function_parameters_in) {
             .params = params_in, .n_params = n_params, .iters = n_iters
         },
         .params_out = (struct function_map_out) {

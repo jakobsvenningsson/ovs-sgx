@@ -80,7 +80,7 @@ hotcall_set_function_in_arguments(struct function_parameters_in *params_in, stru
 }*/
 
 static inline void
-hotcall_set_function_in_arguments(struct function_parameters_in *params_in, struct function_call *fc, int iter) {
+hotcall_set_function_in_arguments(const struct function_parameters_in *params_in, struct function_call *fc, int iter) {
     struct function_parameter *param;
     int offset;
     for(int n = 0; n < params_in->n_params; ++n) {
@@ -104,7 +104,7 @@ hotcall_set_function_in_arguments(struct function_parameters_in *params_in, stru
 }
 
 static inline void
-hotcall_set_function_out_arguments(struct function_filter_out *params_out, struct function_parameters_in *params_in, struct function_call *fc, int iter, int n_include) {
+hotcall_set_function_out_arguments(struct function_filter_out *params_out, const struct function_parameters_in *params_in, struct function_call *fc, int iter, int n_include) {
     struct function_parameter *param_i, *param_o;
     int offset;
     for(int n = 0; n < params_in->n_params; ++n) {
@@ -131,7 +131,7 @@ hotcall_set_function_out_arguments(struct function_filter_out *params_out, struc
 static inline void
 hotcall_handle_map(struct transaction_map *ma) {
     printf("hotcall_handle_map\n");
-    struct function_parameters_in *params_in;
+    const struct function_parameters_in *params_in;
     struct function_map_out *params_out;
     params_in = &ma->args->params_in;
     params_out = &ma->args->params_out;
