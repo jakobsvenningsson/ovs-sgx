@@ -46,6 +46,12 @@ execute_function(struct function_call *fc){
         case hotcall_ecall_plus_plus:
             ecall_plus_plus((int *) args->args[0], (int *) args->args[1]);
             break;
+        case hotcall_ecall_plus_one_ret:
+            *(int *) fc->return_value = ecall_plus_one_ret(*(int *) args->args[0]);
+            break;
+        case hotcall_ecall_plus:
+            *(int *) fc->return_value = ecall_plus(*(int *) args->args[0], *(int *) args->args[1]);
+            break;
         default:
             printf("unknown hotcall function %d.\n", fc->id);
             break;
@@ -88,6 +94,11 @@ ecall_plus_one(int *x) {
     ++*x;
 }
 
+int
+ecall_plus_one_ret(int x) {
+    return ++x;
+}
+
 bool
 ecall_greater_than_two(int *x) {
     return *x > 2 ? true : false;
@@ -103,4 +114,9 @@ void
 ecall_plus_plus(int *x, int *y) {
     *x = *x + 1;
     *y = *y + 2;
+}
+
+int
+ecall_plus(int x, int y) {
+    return x + y;
 }

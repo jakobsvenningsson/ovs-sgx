@@ -17,14 +17,16 @@ TEST(filter,1) {
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int ys[n_iters] = { 0 };
 
-    void *params_in[n_params] = { xs };
-    void *params_out[n_params] = { ys };
+    struct function_parameter params_in[n_params] = {
+        (struct function_parameter) { .arg = xs, .fmt = 'd', .iter = true }
+    };
+
+    struct function_parameter params_out[n_params] = {
+        (struct function_parameter) { .arg = ys, .fmt = 'd', .iter = true }
+    };
 
     struct function_call fc = {
-        .id = hotcall_ecall_greater_than_two,
-        .args = (argument_list) {
-            .n_args = 1
-        }
+        .id = hotcall_ecall_greater_than_two
     };
 
     unsigned int n_variables = 1;
@@ -34,9 +36,9 @@ TEST(filter,1) {
 
     struct filter_args filter_args = {
         .params_in = (struct function_parameters_in) {
-            .params = params_in, .len = n_iters, .fmt = fmt_input,
+            .params = params_in, .n_params = 1, .iters = n_iters
         },
-        .params_out = (struct function_parameters_out) {
+        .params_out = (struct function_filter_out) {
             .params = params_out, .len = &out_length
         },
         .predicate = (struct predicate)  {
@@ -45,7 +47,6 @@ TEST(filter,1) {
             .n_variables = n_variables,
             .variables = variables
         }
-
     };
 
     FILTER(
@@ -64,7 +65,6 @@ TEST(filter,1) {
 }
 
 
-
 TEST(filter,2) {
 
 
@@ -79,14 +79,19 @@ TEST(filter,2) {
     int ys[n_iters] = { 0 };
 
     int y = 6;
-    void *params_in[n_params] = { xs, &y };
-    void *params_out[n_params] = { ys, &y };
+
+    struct function_parameter params_in[n_params] = {
+        (struct function_parameter) { .arg = xs, .fmt = 'd', .iter = true },
+        (struct function_parameter) { .arg = &y, .fmt = 'd', .iter = false }
+    };
+
+    struct function_parameter params_out[n_params] = {
+        (struct function_parameter) { .arg = ys, .fmt = 'd', .iter = true },
+        (struct function_parameter) { .arg = &y, .fmt = 'd', .iter = false }
+    };
 
     struct function_call fc = {
-        .id = hotcall_ecall_greater_than_y,
-        .args = (argument_list) {
-            .n_args = 2
-        }
+        .id = hotcall_ecall_greater_than_y
     };
 
     bool z = true;
@@ -99,9 +104,9 @@ TEST(filter,2) {
 
     struct filter_args filter_args = {
         .params_in = (struct function_parameters_in) {
-            .params = params_in, .len = n_iters, .fmt = fmt_input, .iter_params = { 1, 0 }
+            .params = params_in, .n_params = 2, .iters = n_iters,
         },
-        .params_out = (struct function_parameters_out) {
+        .params_out = (struct function_filter_out) {
             .params = params_out, .len = &out_length
         },
         .predicate = (struct predicate)  {

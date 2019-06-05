@@ -58,10 +58,10 @@ hotcall_handle_if(struct transaction_if *tif, uint8_t *exclude_list, int pos, in
     }
 }
 
-
+/*
 static inline void
 hotcall_set_function_in_arguments(struct function_parameters_in *params_in, struct function_call *fc, int iter, int param) {
-    for(int n = 0; n < fc->args.n_args; ++n) {
+    for(int n = 0; n < params_in->n_params; ++n) {
         switch(params_in->fmt[param]) {
             case 'u':
                 fc->args.args[n] = ((unsigned int *) params_in->params[n]) + (params_in->iter_params[n] ? iter : 0);
@@ -77,25 +77,86 @@ hotcall_set_function_in_arguments(struct function_parameters_in *params_in, stru
                 break;
         }
     }
-}
+}*/
 
 static inline void
-hotcall_set_function_out_arguments(struct function_parameters_out *params_out, struct function_parameters_in *params_in, struct function_call *fc, int iter, int n_include) {
-    for(int n = 0; n < fc->args.n_args; ++n) {
-        switch(params_in->fmt[n]) {
+hotcall_set_function_in_arguments(struct function_parameters_in *params_in, struct function_call *fc, int iter) {
+    struct function_parameter *param;
+    int offset;
+    for(int n = 0; n < params_in->n_params; ++n) {
+        param = &params_in->params[n];
+        offset = param->iter ? iter : 0;
+        switch(param->fmt) {
             case 'u':
-                ((unsigned int *) params_out->params[n])[n_include] = ((unsigned int *) params_in->params[n])[(params_in->iter_params[n] ? iter : 0)];
+                fc->args.args[n] = ((unsigned int *) param->arg) + offset;
                 break;
             case 'b':
-                ((bool *) params_out->params[n])[n_include] = ((bool *) params_in->params[n])[(params_in->iter_params[n] ? iter : 0)];
+                fc->args.args[n] = ((bool *) param->arg) + offset;
                 break;
             case 'd':
-                ((int *) params_out->params[n])[n_include] = ((int *) params_in->params[n])[(params_in->iter_params[n] ? iter : 0)];
+                fc->args.args[n] = ((int *) param->arg) + offset;
                 break;
             default:
                 printf("Switch default at %s %d.\n", __FILE__, __LINE__);
                 break;
         }
+    }
+}
+
+static inline void
+hotcall_set_function_out_arguments(struct function_filter_out *params_out, struct function_parameters_in *params_in, struct function_call *fc, int iter, int n_include) {
+    struct function_parameter *param_i, *param_o;
+    int offset;
+    for(int n = 0; n < params_in->n_params; ++n) {
+        param_i = &params_in->params[n];
+        param_o = &params_out->params[n];
+        offset = param_i->iter ? iter : 0;
+        switch(param_i->fmt) {
+            case 'u':
+                ((unsigned int *) param_o->arg)[n_include] = ((unsigned int *) param_i->arg)[offset];
+                break;
+            case 'b':
+                ((bool *) param_o->arg)[n_include] = ((bool *) param_i->arg)[offset];
+                break;
+            case 'd':
+                ((int *) param_o->arg)[n_include] = ((int *) param_i->arg)[offset];
+                break;
+            default:
+                printf("Switch default at %s %d.\n", __FILE__, __LINE__);
+                break;
+        }
+    }
+}
+
+static inline void
+hotcall_handle_map(struct transaction_map *ma) {
+    printf("hotcall_handle_map\n");
+    struct function_parameters_in *params_in;
+    struct function_map_out *params_out;
+    params_in = &ma->args->params_in;
+    params_out = &ma->args->params_out;
+
+    struct function_call fc;
+    fc.id = ma->f;
+    fc.args.n_args = params_in->n_params;
+
+    for(int i = 0; i < params_in->iters; ++i) {
+        hotcall_set_function_in_arguments(params_in, &fc, i);
+        switch(params_out->fmt) {
+            case 'u':
+                fc.return_value = ((unsigned int *) params_out->params) + i;
+                break;
+            case 'b':
+                fc.return_value = ((bool *) params_out->params) + i;
+                break;
+            case 'd':
+                fc.return_value = ((int *) params_out->params) + i;
+                break;
+            default:
+                printf("Switch default at %s %d.\n", __FILE__, __LINE__);
+                break;
+        }
+        hotcall_config->execute_function(&fc);
     }
 }
 
@@ -107,11 +168,12 @@ hotcall_handle_filter(struct transaction_filter *fi) {
 
     struct function_call *fc;
     unsigned int res, n_include = 0;
-    for(int i = 0; i < fi->args->params_in.len; ++i) {
+    for(int i = 0; i < fi->args->params_in.n_params; ++i) {
         for(int j = 0; j < fi->args->predicate.n_variables; ++j) {
             if(fi->args->predicate.variables[j].type == FUNCTION_TYPE) {
                 fc = (struct function_call *) fi->args->predicate.variables[j].val;
-                hotcall_set_function_in_arguments(&fi->args->params_in, fc, i, j);
+                fc->args.n_args = fi->args->params_in.n_params;
+                hotcall_set_function_in_arguments(&fi->args->params_in, fc, i);
             }
         }
         res = evaluate_postfix(output, output_length, hotcall_config);
@@ -280,6 +342,9 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                             break;
                         case QUEUE_ITEM_TYPE_WHILE_END:
                             hotcall_handle_while_end(&queue_item->call.while_e, &n, &for_loop_nesting, for_loop_indices);
+                            break;
+                        case QUEUE_ITEM_TYPE_MAP:
+                            hotcall_handle_map(&queue_item->call.ma);
                             break;
                         default:
                             printf("Error, the default statement should never happen... %d\n", queue_item->type);

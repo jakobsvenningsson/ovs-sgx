@@ -30,5 +30,9 @@ enclave {
       ecall_plus_plus([user_check] int *x, [user_check] int *y);
       public bool
       ecall_greater_than_y([user_check] int *x, int y);
+      public int
+      ecall_plus_one_ret(int x);
+      int
+      ecall_plus(int x, int y);
     };
 };

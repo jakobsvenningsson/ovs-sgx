@@ -18,6 +18,7 @@
 #define QUEUE_ITEM_TYPE_DO_WHILE 9
 #define QUEUE_ITEM_TYPE_WHILE_BEGIN 10
 #define QUEUE_ITEM_TYPE_WHILE_END 11
+#define QUEUE_ITEM_TYPE_MAP 12
 
 
 #define HOTCALL_MAX_ARG 25
@@ -35,14 +36,7 @@ struct function_call {
 };
 
 
-struct map_args {
-    uint8_t f;
-    void **params_in;
-    unsigned int params_in_length;
-    void **params_out;
-    unsigned int *params_out_length;
-    char *fmt;
-};
+
 
 
 
@@ -64,15 +58,32 @@ struct immutable_function_argument {
 
 
 struct function_parameters_in {
-    void **params;
-    unsigned int len;
-    char *fmt;
-    bool iter_params[5];
+    struct function_parameter *params;
+    unsigned int n_params;
+    unsigned int iters;
 };
 
-struct function_parameters_out {
-    void **params;
+struct function_filter_out {
+    struct function_parameter *params;
     unsigned int *len;
+};
+
+
+struct function_map_out {
+    void *params;
+    char fmt;
+};
+
+struct function_parameter {
+    void *arg;
+    char fmt;
+    bool iter;
+};
+
+struct function_map_in {
+    struct function_parameter *params;
+    unsigned int n_params;
+    unsigned int iters;
 };
 
 enum variable_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE };
@@ -91,9 +102,14 @@ struct predicate {
     struct predicate_variable *variables;
 };
 
+struct map_args {
+    struct function_parameters_in params_in;
+    struct function_map_out params_out;
+};
+
 struct filter_args {
     struct function_parameters_in params_in;
-    struct function_parameters_out params_out;
+    struct function_filter_out params_out;
     struct predicate predicate;
 };
 
@@ -106,8 +122,8 @@ struct if_args {
 };
 
 struct for_args {
-        unsigned int n_iters;
-        unsigned int n_rows;
+    unsigned int n_iters;
+    unsigned int n_rows;
 };
 
 
@@ -115,28 +131,17 @@ struct while_args {
     struct predicate predicate;
     unsigned int n_rows;
 };
-/*
-struct do_while_args {
-    unsigned int params_n;
-    void **params_in;
-    char *params_fmt;
-
-    unsigned int condition_n;
-    void **condition_params;
-    char *condition_fmt;
-
-    struct numertic_type condition;
-
-};*/
 
 struct transaction_if {
     struct if_args *args;
-    //unsigned int n_clauses;
-    /*struct predicate_ predicate;
-    //union predicate predicate;
-    unsigned int else_len;
-    unsigned int if_len;*/
+
 };
+
+struct transaction_map {
+    uint8_t f;
+    struct map_args *args;
+};
+
 
 struct transaction_filter {
     uint8_t f;
@@ -183,7 +188,7 @@ union fcall {
     struct transaction_do_while dw;
     struct transaction_while_start while_s;
     struct transaction_while_end while_e;
-
+    struct transaction_map ma;
 };
 
 struct ecall_queue_item {
