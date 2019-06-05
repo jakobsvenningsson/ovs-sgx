@@ -35,6 +35,17 @@ struct function_call {
 };
 
 
+struct map_args {
+    uint8_t f;
+    void **params_in;
+    unsigned int params_in_length;
+    void **params_out;
+    unsigned int *params_out_length;
+    char *fmt;
+};
+
+
+
 struct for_each_args {
     char *fmt;
     unsigned int n_params;
@@ -52,6 +63,18 @@ struct immutable_function_argument {
 };
 
 
+struct function_parameters_in {
+    void **params;
+    unsigned int len;
+    char *fmt;
+    bool iter_params[5];
+};
+
+struct function_parameters_out {
+    void **params;
+    unsigned int *len;
+};
+
 enum variable_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE };
 #define MAX_N_VARIABLES 5
 
@@ -66,6 +89,12 @@ struct predicate {
     char *fmt;
     uint8_t n_variables;
     struct predicate_variable *variables;
+};
+
+struct filter_args {
+    struct function_parameters_in params_in;
+    struct function_parameters_out params_out;
+    struct predicate predicate;
 };
 
 
@@ -111,13 +140,7 @@ struct transaction_if {
 
 struct transaction_filter {
     uint8_t f;
-    struct immutable_function_argument *args;
-    unsigned int *n_iter;
-    unsigned int n_params;
-    unsigned int *filtered_length;
-    void **params_in;
-    void **params_out;
-    char *fmt;
+    struct filter_args *args;
 };
 
 struct transaction_do_while {

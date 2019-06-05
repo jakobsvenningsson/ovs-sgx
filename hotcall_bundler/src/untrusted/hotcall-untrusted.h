@@ -44,14 +44,14 @@ extern "C" {
 /*#define FOR_EACH(SM_CTX, FUNCTION, ITERS, N_PARAMS, PARAMS, FMT) \
     hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ITERS, N_PARAMS, PARAMS, FMT)*/
 
-#define FILTER(SM_CTX, FUNCTION, N_PARAMS, PARAMS, ITERS, LEN_FILTERED, FILTERED_OUT, FMT) \
-    hotcall_bundle_filter(SM_CTX, hotcall_ ## FUNCTION, N_PARAMS, PARAMS, ITERS, LEN_FILTERED, FILTERED_OUT, FMT)
+/*#define FILTER(SM_CTX, FUNCTION, N_PARAMS, PARAMS, ITERS, LEN_FILTERED, FILTERED_OUT, FMT) \
+    hotcall_bundle_filter(SM_CTX, hotcall_ ## FUNCTION, N_PARAMS, PARAMS, ITERS, LEN_FILTERED, FILTERED_OUT, FMT)*/
 
-#define FOR_EACH(SM_CTX, FUNCTION, ARGS) \
-    hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ARGS)
-/*
+#define FOR_EACH(SM_CTX, FUNCTION, ARGS) hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ARGS)
+
+
 #define FILTER(SM_CTX, FUNCTION, ARGS) \
-    hotcall_bundle_filter(SM_CTX, hotcall_ ## FUNCTION, ARGS)*/
+    hotcall_bundle_filter(SM_CTX, hotcall_ ## FUNCTION, ARGS)
 
 
 #define DO_WHILE(SM_CTX, F, ARGS) \
@@ -229,8 +229,8 @@ hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_args *args) {
 }
 
 extern inline void
-//hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, struct immutable_function_argument *args) {
-hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, int n_params, void **params, unsigned int *n_iter, unsigned int *filtered_length, void **filtered_params, char *fmt) {
+hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, struct filter_args *args) {
+//hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, int n_params, void **params, unsigned int *n_iter, unsigned int *filtered_length, void **filtered_params, char *fmt) {
     struct ecall_queue_item *item;
     item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
     item->type = QUEUE_ITEM_TYPE_FILTER;
@@ -240,13 +240,13 @@ hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, int n_params,
     struct transaction_filter *fi;
     fi = &item->call.fi;
     fi->f = f;
-    //fi->args = args;
-    fi->filtered_length = filtered_length;
+    fi->args = args;
+    /*fi->filtered_length = filtered_length;
     fi->n_iter = n_iter;
     fi->n_params = n_params;
     fi->params_in = params;
     fi->params_out = filtered_params;
-    fi->fmt = fmt;
+    fi->fmt = fmt;*/
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
 }
 
@@ -267,6 +267,7 @@ hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, uint8_t f, struct do_w
 
 extern inline void
 hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, struct for_each_args *args) {
+
 //hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, unsigned int *n, int n_params, void **params, char *fmt) {
     struct ecall_queue_item *item;
     item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];

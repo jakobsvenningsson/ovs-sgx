@@ -357,7 +357,7 @@ benchmark_bundle_for_if_optimized() {
           ecall_greater_than_two,
           &filter_args
       );*/
-        FILTER(
+        /*FILTER(
             &sm_ctx,
             ecall_greater_than_two,
             n_params,
@@ -366,7 +366,7 @@ benchmark_bundle_for_if_optimized() {
             &filtered_length,
             parameters_for_each,
             fmt
-        );
+        );*/
         /*struct immutable_function_argument for_each_args = {
             .n_params = filter_args.n_params,
             .fmt = filter_args.fmt,
@@ -423,11 +423,10 @@ int SGX_CDECL main(int argc, char *argv[])
         return hotcall_run_tests(&sm_ctx);
     }
 
+    ecall_configure_hotcall(global_eid);
+    hotcall_init(&sm_ctx, global_eid);
 
-
-
-
-    hotcall_bundle_example_while(&sm_ctx);
+    hotcall_bundle_example_filter(&sm_ctx);
 
 
     /* for(int n = 0; n < ITERATIONS; ++n) {

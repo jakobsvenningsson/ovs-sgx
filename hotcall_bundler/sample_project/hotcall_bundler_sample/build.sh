@@ -2,11 +2,11 @@
 
 source /opt/intel/sgxsdk/environment
 
-make -C ../../src/trusted clean
-make -C ../../src/trusted 
+make -C ../../src/trusted -j4 clean
+make -C ../../src/trusted
 
-make -C ../../src/untrusted clean
-make -C ../../src/untrusted 
+make -C ../../src/untrusted -j4 clean
+make -C ../../src/untrusted -j4 
 
 make clean
 make 

@@ -58,11 +58,73 @@ hotcall_handle_if(struct transaction_if *tif, uint8_t *exclude_list, int pos, in
     }
 }
 
+
+static inline void
+hotcall_set_function_in_arguments(struct function_parameters_in *params_in, struct function_call *fc, int iter, int param) {
+    for(int n = 0; n < fc->args.n_args; ++n) {
+        switch(params_in->fmt[param]) {
+            case 'u':
+                fc->args.args[n] = ((unsigned int *) params_in->params[n]) + (params_in->iter_params[n] ? iter : 0);
+                break;
+            case 'b':
+                fc->args.args[n] = ((bool *) params_in->params[n]) + (params_in->iter_params[n] ? iter : 0);
+                break;
+            case 'd':
+                fc->args.args[n] = ((int *) params_in->params[n]) + (params_in->iter_params[n] ? iter : 0);
+                break;
+            default:
+                printf("Switch default at %s %d.\n", __FILE__, __LINE__);
+                break;
+        }
+    }
+}
+
+static inline void
+hotcall_set_function_out_arguments(struct function_parameters_out *params_out, struct function_parameters_in *params_in, struct function_call *fc, int iter, int n_include) {
+    for(int n = 0; n < fc->args.n_args; ++n) {
+        switch(params_in->fmt[n]) {
+            case 'u':
+                ((unsigned int *) params_out->params[n])[n_include] = ((unsigned int *) params_in->params[n])[(params_in->iter_params[n] ? iter : 0)];
+                break;
+            case 'b':
+                ((bool *) params_out->params[n])[n_include] = ((bool *) params_in->params[n])[(params_in->iter_params[n] ? iter : 0)];
+                break;
+            case 'd':
+                ((int *) params_out->params[n])[n_include] = ((int *) params_in->params[n])[(params_in->iter_params[n] ? iter : 0)];
+                break;
+            default:
+                printf("Switch default at %s %d.\n", __FILE__, __LINE__);
+                break;
+        }
+    }
+}
+
 static inline void
 hotcall_handle_filter(struct transaction_filter *fi) {
-    struct function_call fc;
+    struct postfix_item output[strlen(fi->args->predicate.fmt)];
+    unsigned int output_length;
+    to_postfix(&fi->args->predicate, output, &output_length);
+
+    struct function_call *fc;
+    unsigned int res, n_include = 0;
+    for(int i = 0; i < fi->args->params_in.len; ++i) {
+        for(int j = 0; j < fi->args->predicate.n_variables; ++j) {
+            if(fi->args->predicate.variables[j].type == FUNCTION_TYPE) {
+                fc = (struct function_call *) fi->args->predicate.variables[j].val;
+                hotcall_set_function_in_arguments(&fi->args->params_in, fc, i, j);
+            }
+        }
+        res = evaluate_postfix(output, output_length, hotcall_config);
+        if(res == fi->args->predicate.expected) {
+            hotcall_set_function_out_arguments(&fi->args->params_out, &fi->args->params_in, fc, i, n_include++);
+        }
+        *(fi->args->params_out.len) = n_include;
+    }
+
+
+    /*struct function_call fc;
     fc.id = fi->f;
-    fc.args.n_args = fi->n_params;
+    fc.args.n_args = fi->args.params_length;
     int n_include = 0;
     for(int i = 0; i < *fi->n_iter; ++i) {
         for(int j = 0; j < fi->n_params; ++j) {
@@ -90,12 +152,12 @@ hotcall_handle_filter(struct transaction_filter *fi) {
             n_include++;
         }
     }
-    *fi->filtered_length = n_include;
+    *fi->filtered_length = n_include;*/
     //memcpy(fi->params_out[0], filtered, n_include * 4);
 }
 
 static inline void
-hotcall_handle_for(struct transaction_for_each *tor) {
+hotcall_handle_for_each(struct transaction_for_each *tor) {
     struct function_call fc;
     fc.id = tor->f;
     fc.args.n_args = tor->args->n_params;
@@ -105,6 +167,12 @@ hotcall_handle_for(struct transaction_for_each *tor) {
                 case 'd':
                     fc.args.args[j] = (int *) tor->args->params[j] + i;
                     break;
+                case 'u':
+                    fc.args.args[j] = (unsigned int *) tor->args->params[j] + i;
+                    break;
+                case 'b':
+                    fc.args.args[j] = (bool *) tor->args->params[j] + i;
+                        break;
                 default:
                     break;
             }
@@ -193,7 +261,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                             hotcall_handle_if(&queue_item->call.tif, exclude_list, n, sm_ctx->hcall.queue_length);
                             break;
                         case QUEUE_ITEM_TYPE_FOR_EACH:
-                            hotcall_handle_for(&queue_item->call.tor);
+                            hotcall_handle_for_each(&queue_item->call.tor);
                             break;
                         case QUEUE_ITEM_TYPE_FOR_BEGIN:
                             hotcall_handle_for_begin(&queue_item->call.for_s, &for_loop_nesting, exclude_list, n);
