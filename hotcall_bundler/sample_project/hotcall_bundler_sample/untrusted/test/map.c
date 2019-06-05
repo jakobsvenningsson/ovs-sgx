@@ -5,7 +5,7 @@
 
 
 TEST(map,1) {
-
+    //Contract: Map shoud add 1 to each element in the output list. The input list shall be unmodified.
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
@@ -38,13 +38,16 @@ TEST(map,1) {
 
     hotcall_test_teardown();
 
+
     for(int i = 0; i < n_iters; ++i) {
         ASSERT_EQ(ys[i], i + 1);
+        ASSERT_EQ(xs[i], i);
     }
 }
 
 
 TEST(map,2) {
+    //Contract: Map shoud add x to each element in the output list. The input list shall be unmodified.
 
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
@@ -82,5 +85,6 @@ TEST(map,2) {
 
     for(int i = 0; i < n_iters; ++i) {
         ASSERT_EQ(ys[i], i + x);
+        ASSERT_EQ(xs[i], i);
     }
 }

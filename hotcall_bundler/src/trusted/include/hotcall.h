@@ -39,14 +39,6 @@ struct function_call {
 
 
 
-
-struct for_each_args {
-    char *fmt;
-    unsigned int n_params;
-    void **params;
-    unsigned int params_length;
-};
-
 struct immutable_function_argument {
     unsigned int n_params;
     char *fmt;
@@ -80,11 +72,6 @@ struct function_parameter {
     bool iter;
 };
 
-struct function_map_in {
-    struct function_parameter *params;
-    unsigned int n_params;
-    unsigned int iters;
-};
 
 enum variable_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE };
 #define MAX_N_VARIABLES 5
@@ -105,6 +92,10 @@ struct predicate {
 struct map_args {
     struct function_parameters_in params_in;
     struct function_map_out params_out;
+};
+
+struct for_each_args {
+    struct function_parameters_in params_in;
 };
 
 struct filter_args {

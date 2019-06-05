@@ -53,6 +53,7 @@ App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/test/if.c \
 			   $(UNTRUSTED_DIR)/test/for.c \
 			   $(UNTRUSTED_DIR)/test/while.c \
+			   $(UNTRUSTED_DIR)/test/for_each.c \
 			   $(UNTRUSTED_DIR)/test/map.c \
 			   $(UNTRUSTED_DIR)/test/filter.c
 App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include -I$(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/include -I$(HOTCALL_BUNDLER_UNTRUSTED_LIB_PATH) -I/home/jakob/ovs-sgx/benchmark/include

@@ -5,7 +5,7 @@
 
 
 TEST(filter,1) {
-
+    //Contract: Filter should filter out all elements with a value less than 3,
 
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
@@ -55,17 +55,23 @@ TEST(filter,1) {
         &filter_args
     );
 
-  hotcall_bundle_end(sm_ctx);
+    hotcall_bundle_end(sm_ctx);
 
-  hotcall_test_teardown();
+    hotcall_test_teardown();
 
-  for(int i = 0; i < out_length; ++i) {
-      ASSERT_EQ(ys[i], i + 3);
-  }
+    // check that orignal list is unmodified.
+    for(int i = 0; i < n_iters; ++i) {
+        ASSERT_EQ(xs[i], i);
+    }
+
+    for(int i = 0; i < out_length; ++i) {
+        ASSERT_EQ(ys[i], i + 3);
+    }
 }
 
 
 TEST(filter,2) {
+    //Contract: Filter should filter out all elements with a value less than 7,
 
 
     hotcall_test_setup();
@@ -127,6 +133,11 @@ TEST(filter,2) {
   hotcall_bundle_end(sm_ctx);
 
   hotcall_test_teardown();
+
+  // check that orignal list is unmodified.
+  for(int i = 0; i < n_iters; ++i) {
+      ASSERT_EQ(xs[i], i);
+  }
 
   for(int i = 0; i < out_length; ++i) {
       ASSERT_EQ(ys[i], i + 7);

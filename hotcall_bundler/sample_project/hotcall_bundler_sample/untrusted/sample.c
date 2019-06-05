@@ -426,7 +426,7 @@ int SGX_CDECL main(int argc, char *argv[])
     ecall_configure_hotcall(global_eid);
     hotcall_init(&sm_ctx, global_eid);
 
-    hotcall_bundle_example_filter(&sm_ctx);
+    hotcall_bundle_example_map(&sm_ctx);
 
 
     /* for(int n = 0; n < ITERATIONS; ++n) {

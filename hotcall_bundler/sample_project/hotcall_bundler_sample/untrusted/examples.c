@@ -118,16 +118,15 @@ void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx) {
 
 void hotcall_bundle_example_for_each(struct shared_memory_ctx *sm_ctx) {
     hotcall_bundle_begin(sm_ctx, NULL);
-    char fmt[] = "d";
     unsigned int n_params = 1, n_iters = 10;
-    int xs[n_iters] = { 0 };
-    void *params[n_params] = { xs };
-
+    int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    struct function_parameter params_in[n_params] = {
+        (struct function_parameter) { .arg = xs, .fmt = 'd', .iter = true }
+    };
     struct for_each_args for_each_args = {
-        .fmt = fmt,
-        .n_params = n_params,
-        .params = params,
-        .params_length = n_iters
+        .params_in = (struct function_parameters_in) {
+            .params = params_in, .n_params = 1, .iters = n_iters
+        },
     };
     FOR_EACH(
       sm_ctx,
@@ -201,7 +200,38 @@ void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
 }
 
 void hotcall_bundle_example_map(struct shared_memory_ctx *sm_ctx) {
+    hotcall_bundle_begin(sm_ctx, NULL);
 
+    unsigned int n_params = 1, n_iters = 10;
+    int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    int ys[n_iters] = { 0 };
+
+    struct function_parameter params_in[n_params] = {
+        (struct function_parameter) { .arg = xs, .fmt = 'd', .iter = true }
+    };
+
+    struct map_args map_args = {
+        .params_in = (struct function_parameters_in) {
+            .params = params_in, .n_params = n_params, .iters = n_iters
+        },
+        .params_out = (struct function_map_out) {
+            .params = ys, .fmt = 'd'
+        }
+    };
+
+    MAP(
+        sm_ctx,
+        ecall_plus_one_ret,
+        &map_args
+    );
+
+    hotcall_bundle_end(sm_ctx);
+
+    printf("Output: ");
+    for(int i = 0; i < n_iters; ++i) {
+        printf("%d ", ys[i]);
+    }
+    printf("\n");
 }
 
 void hotcall_bundle_example_do_while(struct shared_memory_ctx *sm_ctx) {

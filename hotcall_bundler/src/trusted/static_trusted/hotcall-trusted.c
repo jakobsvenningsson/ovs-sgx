@@ -222,18 +222,22 @@ static inline void
 hotcall_handle_for_each(struct transaction_for_each *tor) {
     struct function_call fc;
     fc.id = tor->f;
-    fc.args.n_args = tor->args->n_params;
-    for(int i = 0; i < tor->args->params_length; ++i) {
-        for(int j = 0; j < tor->args->n_params; ++j) {
-            switch(tor->args->fmt[j]) {
+    fc.args.n_args = tor->args->params_in.n_params;
+    struct function_parameter *param;
+    int offset;
+    for(int i = 0; i < tor->args->params_in.iters; ++i) {
+        for(int j = 0; j < tor->args->params_in.n_params; ++j) {
+            param = &tor->args->params_in.params[j];
+            offset = param->iter ? i : 0;
+            switch(param->fmt) {
                 case 'd':
-                    fc.args.args[j] = (int *) tor->args->params[j] + i;
+                    fc.args.args[j] = (int *) param->arg + i;
                     break;
                 case 'u':
-                    fc.args.args[j] = (unsigned int *) tor->args->params[j] + i;
+                    fc.args.args[j] = (unsigned int *) param->arg + i;
                     break;
                 case 'b':
-                    fc.args.args[j] = (bool *) tor->args->params[j] + i;
+                    fc.args.args[j] = (bool *) param->arg + i;
                         break;
                 default:
                     break;
