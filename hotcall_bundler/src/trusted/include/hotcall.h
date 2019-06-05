@@ -105,6 +105,12 @@ struct filter_args {
 };
 
 
+struct do_while_args {
+    struct function_parameters_in params_predicate;
+    struct function_parameters_in params_body;
+    struct predicate predicate;
+};
+
 struct if_args {
     unsigned int then_branch_len;
     unsigned int else_branch_len;
@@ -147,10 +153,6 @@ struct transaction_do_while {
 struct transaction_for_each {
     uint8_t f;
     struct for_each_args *args;
-    /*unsigned int *n_iter;
-    unsigned int n_params;
-    void **params;
-    char *fmt;*/
 };
 
 struct transaction_for_start {

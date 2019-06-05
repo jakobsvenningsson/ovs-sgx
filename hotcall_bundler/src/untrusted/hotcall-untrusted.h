@@ -57,7 +57,7 @@ extern "C" {
     hotcall_bundle_map(SM_CTX, hotcall_ ## FUNCTION, ARGS)
 
 #define DO_WHILE(SM_CTX, F, ARGS) \
-    hotcall_bundle_for_each((SM_CTX), hotcall_ ## F, ARGS)
+    hotcall_bundle_do_while((SM_CTX), hotcall_ ## F, ARGS)
 
 #define BEGIN_FOR(SM_CTX, ARGS) \
     hotcall_bundle_for_begin(SM_CTX, ARGS)
@@ -270,15 +270,13 @@ hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, uint8_t f, struct do_w
     }
     struct transaction_do_while *dw;
     dw = &item->call.dw;
+    dw->f = f;
     dw->args = do_while_args;
-
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
 }
 
 extern inline void
 hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, struct for_each_args *args) {
-
-//hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, unsigned int *n, int n_params, void **params, char *fmt) {
     struct ecall_queue_item *item;
     item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
     item->type = QUEUE_ITEM_TYPE_FOR_EACH;
@@ -289,10 +287,6 @@ hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, struct for_
     tor = &item->call.tor;
     tor->args = args;
     tor->f = f;
-    //tor->args = args;
-    /*tor->n_iter = n;
-    tor->n_params = n_params;
-    tor->params = params;*/
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
 }
 
@@ -353,49 +347,6 @@ hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx, struct while_args *ar
 }
 
 
-extern inline void
-hotcall_bundle_for(struct shared_memory_ctx *sm_ctx, uint8_t *fcs, int n, int n_params, void **params) {
-    /*struct ecall_queue_item *item
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
-    item->type = QUEUE_ITEM_TYPE_FOR_START;
-    struct transaction_for_start *for_s;
-    for_s = &item->call.for_s;
-    //tor->f = f;
-    for_s->n_iter = n;
-    for_s->n_params = n_params;
-    for_s->params = params;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
-
-
-    struct function_call *fc;
-    for(int i = 0; i < 1; ++i) {
-        item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
-        if(sm_ctx->pfc.idx == MAX_TS) {
-            sm_ctx->pfc.idx = 0;
-        }
-        fc = &item->call.fc;
-        fc->id = fcs[i];
-        fc->args.n_args = 1;
-        fc->return_value = NULL;
-        for(int j = 0; j < n_params; ++j) {
-            fc->args.args[j] = (int *) params[j] + i;
-        }
-        sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
-    }
-
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
-    item->type = QUEUE_ITEM_TYPE_FOR_END;
-    struct transaction_for_end *for_e;
-    for_e = &item->call.for_e;
-    for_e->n_rows = 1;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;*/
-}
 
 #ifdef __cplusplus
 }

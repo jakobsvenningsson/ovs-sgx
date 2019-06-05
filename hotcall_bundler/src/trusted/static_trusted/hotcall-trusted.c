@@ -9,41 +9,12 @@ hotcall_register_config(struct hotcall_config *config) {
     hotcall_config = config;
 }
 
-static inline void
-hotcall_handle_do_while(struct transaction_do_while *dw) {
-    /*struct function_call fc;
-    fc.id = dw->f;
-    fc.args.n_args = dw->args.params_n;
-
-    bool outcome;
-    outcome = translate_expression(dw->args.condition, 0, 0);
-    while(outcome == dw->args.condition.expected) {
-        for(int j = 0; j < dw->args.params_n; ++j) {
-            switch(dw->fmt[j]) {
-                case 'd':
-                    fc.args.args[j] = (int *) dw->args.params_in[j] + i;
-                    break;
-                default:
-                    break;
-            }
-        }
-        hotcall_config->execute_function(&fc);
-
-        outcome = translate_expression(dw->args.condition, 0, 0);
-    }*/
-}
-
-
 
 static inline bool
 hotcall_handle_if(struct transaction_if *tif, uint8_t *exclude_list, int pos, int exclude_list_len) {
     struct postfix_item output[strlen(tif->args->predicate.fmt)];
     unsigned int output_length;
     to_postfix(&tif->args->predicate, output, &output_length);
-    /*for(int i = 0; i < output_length; ++i) {
-        printf("%c ", output[i].ch);
-    }
-    printf("\n");*/
     int res = evaluate_postfix(output, output_length, hotcall_config);
 
     if(res == tif->args->predicate.expected && tif->args->else_branch_len > 0) {
@@ -58,29 +29,9 @@ hotcall_handle_if(struct transaction_if *tif, uint8_t *exclude_list, int pos, in
     }
 }
 
-/*
-static inline void
-hotcall_set_function_in_arguments(struct function_parameters_in *params_in, struct function_call *fc, int iter, int param) {
-    for(int n = 0; n < params_in->n_params; ++n) {
-        switch(params_in->fmt[param]) {
-            case 'u':
-                fc->args.args[n] = ((unsigned int *) params_in->params[n]) + (params_in->iter_params[n] ? iter : 0);
-                break;
-            case 'b':
-                fc->args.args[n] = ((bool *) params_in->params[n]) + (params_in->iter_params[n] ? iter : 0);
-                break;
-            case 'd':
-                fc->args.args[n] = ((int *) params_in->params[n]) + (params_in->iter_params[n] ? iter : 0);
-                break;
-            default:
-                printf("Switch default at %s %d.\n", __FILE__, __LINE__);
-                break;
-        }
-    }
-}*/
-
 static inline void
 hotcall_set_function_in_arguments(const struct function_parameters_in *params_in, struct function_call *fc, int iter) {
+    fc->args.n_args = params_in->n_params;
     struct function_parameter *param;
     int offset;
     for(int n = 0; n < params_in->n_params; ++n) {
@@ -129,8 +80,33 @@ hotcall_set_function_out_arguments(struct function_filter_out *params_out, const
 }
 
 static inline void
+hotcall_handle_do_while(struct transaction_do_while *dw) {
+    struct postfix_item output[strlen(dw->args->predicate.fmt)];
+    unsigned int output_length;
+    to_postfix(&dw->args->predicate, output, &output_length);
+
+    struct function_call *fc, fc_body;
+    fc_body.id = dw->f;
+    hotcall_set_function_in_arguments(&dw->args->params_body, &fc_body, 0);
+    unsigned int res;
+    while(true) {
+        for(int j = 0; j < dw->args->predicate.n_variables; ++j) {
+            if(dw->args->predicate.variables[j].type == FUNCTION_TYPE) {
+                fc = (struct function_call *) dw->args->predicate.variables[j].val;
+                hotcall_set_function_in_arguments(&dw->args->params_predicate, fc, 0);
+            }
+        }
+        res = evaluate_postfix(output, output_length, hotcall_config);
+        if(res != dw->args->predicate.expected) {
+            return;
+        }
+        hotcall_config->execute_function(&fc_body);
+    }
+}
+
+
+static inline void
 hotcall_handle_map(struct transaction_map *ma) {
-    printf("hotcall_handle_map\n");
     const struct function_parameters_in *params_in;
     struct function_map_out *params_out;
     params_in = &ma->args->params_in;
@@ -182,40 +158,6 @@ hotcall_handle_filter(struct transaction_filter *fi) {
         }
         *(fi->args->params_out.len) = n_include;
     }
-
-
-    /*struct function_call fc;
-    fc.id = fi->f;
-    fc.args.n_args = fi->args.params_length;
-    int n_include = 0;
-    for(int i = 0; i < *fi->n_iter; ++i) {
-        for(int j = 0; j < fi->n_params; ++j) {
-            switch(fi->fmt[j]) {
-                case 'd':
-                    fc.args.args[j] = (int *) fi->params_in[j] + i;
-                    break;
-                default:
-                    break;
-            }
-        }
-        bool include;
-        fc.return_value = (void *) &include;
-        hotcall_config->execute_function(&fc);
-        if(include) {
-            for(int j = 0; j < fi->n_params; ++j) {
-                switch(fi->fmt[j]) {
-                    case 'd':
-                        ((int *) fi->params_out[j])[n_include] = ((int *) fi->params_in[j])[i];
-                        break;
-                    default:
-                        break;
-                }
-            }
-            n_include++;
-        }
-    }
-    *fi->filtered_length = n_include;*/
-    //memcpy(fi->params_out[0], filtered, n_include * 4);
 }
 
 static inline void

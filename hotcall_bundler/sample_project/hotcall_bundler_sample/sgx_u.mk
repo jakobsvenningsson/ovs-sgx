@@ -52,6 +52,7 @@ App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/test/test.c \
 			   $(UNTRUSTED_DIR)/test/if.c \
 			   $(UNTRUSTED_DIR)/test/for.c \
+			   $(UNTRUSTED_DIR)/test/do_while.c \
 			   $(UNTRUSTED_DIR)/test/while.c \
 			   $(UNTRUSTED_DIR)/test/for_each.c \
 			   $(UNTRUSTED_DIR)/test/map.c \

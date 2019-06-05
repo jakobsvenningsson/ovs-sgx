@@ -91,6 +91,7 @@ ecall_bar() {
 
 void
 ecall_plus_one(int *x) {
+    printf("ecall_plus_one %d \n", *x);
     ++*x;
 }
 
@@ -101,6 +102,7 @@ ecall_plus_one_ret(int x) {
 
 bool
 ecall_greater_than_two(int *x) {
+    printf("%d \n", *x);
     return *x > 2 ? true : false;
 }
 
