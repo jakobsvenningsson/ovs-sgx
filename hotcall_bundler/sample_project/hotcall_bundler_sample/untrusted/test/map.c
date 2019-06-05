@@ -3,6 +3,7 @@
 #include "hotcall-untrusted.h"
 #include "functions.h"
 
+#include "hotcall_map.h"
 
 TEST(map,1) {
     //Contract: Map shoud add 1 to each element in the output list. The input list shall be unmodified.

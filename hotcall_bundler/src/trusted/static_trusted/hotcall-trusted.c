@@ -11,7 +11,7 @@ hotcall_register_config(struct hotcall_config *config) {
 
 
 static inline bool
-hotcall_handle_if(struct transaction_if *tif, uint8_t *exclude_list, int pos, int exclude_list_len) {
+hotcall_handle_if(struct hotcall_if *tif, uint8_t *exclude_list, int pos, int exclude_list_len) {
     struct postfix_item output[strlen(tif->args->predicate.fmt)];
     unsigned int output_length;
     to_postfix(&tif->args->predicate, output, &output_length);
@@ -30,7 +30,7 @@ hotcall_handle_if(struct transaction_if *tif, uint8_t *exclude_list, int pos, in
 }
 
 static inline void
-hotcall_set_function_in_arguments(const struct function_parameters_in *params_in, struct function_call *fc, int iter) {
+hotcall_set_function_in_arguments(const struct function_parameters_in *params_in, struct hotcall_function *fc, int iter) {
     fc->args.n_args = params_in->n_params;
     struct function_parameter *param;
     int offset;
@@ -55,7 +55,7 @@ hotcall_set_function_in_arguments(const struct function_parameters_in *params_in
 }
 
 static inline void
-hotcall_set_function_out_arguments(struct function_filter_out *params_out, const struct function_parameters_in *params_in, struct function_call *fc, int iter, int n_include) {
+hotcall_set_function_out_arguments(struct function_filter_out *params_out, const struct function_parameters_in *params_in, struct hotcall_function *fc, int iter, int n_include) {
     struct function_parameter *param_i, *param_o;
     int offset;
     for(int n = 0; n < params_in->n_params; ++n) {
@@ -80,22 +80,16 @@ hotcall_set_function_out_arguments(struct function_filter_out *params_out, const
 }
 
 static inline void
-hotcall_handle_do_while(struct transaction_do_while *dw) {
+hotcall_handle_do_while(struct hotcall_do_while *dw) {
     struct postfix_item output[strlen(dw->args->predicate.fmt)];
     unsigned int output_length;
     to_postfix(&dw->args->predicate, output, &output_length);
 
-    struct function_call *fc, fc_body;
+    struct hotcall_function *fc, fc_body;
     fc_body.id = dw->f;
-    hotcall_set_function_in_arguments(&dw->args->params_body, &fc_body, 0);
+    hotcall_set_function_in_arguments(&dw->args->params, &fc_body, 0);
     unsigned int res;
     while(true) {
-        for(int j = 0; j < dw->args->predicate.n_variables; ++j) {
-            if(dw->args->predicate.variables[j].type == FUNCTION_TYPE) {
-                fc = (struct function_call *) dw->args->predicate.variables[j].val;
-                hotcall_set_function_in_arguments(&dw->args->params_predicate, fc, 0);
-            }
-        }
         res = evaluate_postfix(output, output_length, hotcall_config);
         if(res != dw->args->predicate.expected) {
             return;
@@ -106,13 +100,13 @@ hotcall_handle_do_while(struct transaction_do_while *dw) {
 
 
 static inline void
-hotcall_handle_map(struct transaction_map *ma) {
+hotcall_handle_map(struct hotcall_map *ma) {
     const struct function_parameters_in *params_in;
     struct function_map_out *params_out;
     params_in = &ma->args->params_in;
     params_out = &ma->args->params_out;
 
-    struct function_call fc;
+    struct hotcall_function fc;
     fc.id = ma->f;
     fc.args.n_args = params_in->n_params;
 
@@ -137,17 +131,17 @@ hotcall_handle_map(struct transaction_map *ma) {
 }
 
 static inline void
-hotcall_handle_filter(struct transaction_filter *fi) {
+hotcall_handle_filter(struct hotcall_filter *fi) {
     struct postfix_item output[strlen(fi->args->predicate.fmt)];
     unsigned int output_length;
     to_postfix(&fi->args->predicate, output, &output_length);
 
-    struct function_call *fc;
+    struct hotcall_function *fc;
     unsigned int res, n_include = 0;
     for(int i = 0; i < fi->args->params_in.n_params; ++i) {
         for(int j = 0; j < fi->args->predicate.n_variables; ++j) {
             if(fi->args->predicate.variables[j].type == FUNCTION_TYPE) {
-                fc = (struct function_call *) fi->args->predicate.variables[j].val;
+                fc = (struct hotcall_function *) fi->args->predicate.variables[j].val;
                 fc->args.n_args = fi->args->params_in.n_params;
                 hotcall_set_function_in_arguments(&fi->args->params_in, fc, i);
             }
@@ -161,8 +155,8 @@ hotcall_handle_filter(struct transaction_filter *fi) {
 }
 
 static inline void
-hotcall_handle_for_each(struct transaction_for_each *tor) {
-    struct function_call fc;
+hotcall_handle_for_each(struct hotcall_for_each *tor) {
+    struct hotcall_function fc;
     fc.id = tor->f;
     fc.args.n_args = tor->args->params_in.n_params;
     struct function_parameter *param;
@@ -190,7 +184,7 @@ hotcall_handle_for_each(struct transaction_for_each *tor) {
 }
 
 static inline void
-hotcall_handle_for_begin(struct transaction_for_start *for_s, unsigned int *for_loop_nesting, uint8_t *exclude_list, int pos) {
+hotcall_handle_for_begin(struct hotcall_for_start *for_s, unsigned int *for_loop_nesting, uint8_t *exclude_list, int pos) {
     bool continue_loop = for_s->args->n_iters-- > 0;
     if(continue_loop) {
         (*for_loop_nesting)++;
@@ -201,14 +195,14 @@ hotcall_handle_for_begin(struct transaction_for_start *for_s, unsigned int *for_
 }
 
 static inline void
-hotcall_handle_for_end(struct transaction_for_end *for_e, int *pos, unsigned int *for_loop_nesting, unsigned int *for_loop_indices) {
+hotcall_handle_for_end(struct hotcall_for_end *for_e, int *pos, unsigned int *for_loop_nesting, unsigned int *for_loop_indices) {
     *pos = *pos - (for_e->args->n_rows + 2);
     (*for_loop_nesting)--;
     for_loop_indices[*for_loop_nesting]++;
 }
 
 static inline void
-hotcall_handle_while_begin(struct transaction_while_start *while_s, unsigned int *for_loop_nesting, uint8_t *exclude_list, int pos) {
+hotcall_handle_while_begin(struct hotcall_while_start *while_s, unsigned int *for_loop_nesting, uint8_t *exclude_list, int pos) {
     struct postfix_item output[strlen(while_s->args->predicate.fmt)];
     unsigned int output_length;
     to_postfix(&while_s->args->predicate, output, &output_length);
@@ -220,7 +214,7 @@ hotcall_handle_while_begin(struct transaction_while_start *while_s, unsigned int
 }
 
 static inline void
-hotcall_handle_while_end(struct transaction_while_end *while_e, int *pos, unsigned int *for_loop_nesting, unsigned int *for_loop_indices) {
+hotcall_handle_while_end(struct hotcall_while_end *while_e, int *pos, unsigned int *for_loop_nesting, unsigned int *for_loop_indices) {
     *pos = *pos - (while_e->args->n_rows + 2);
     //(*for_loop_nesting)--;
     //for_loop_indices[*for_loop_nesting]++;
@@ -231,12 +225,7 @@ int
 ecall_start_poller(struct shared_memory_ctx *sm_ctx){
 
     struct ecall_queue_item *queue_item, *queue_item_next;
-    struct function_call *fc, *prev_fc;
-    struct transaction_if *tif;
-    struct transaction_for_each *tor;
-    struct transaction_for_end *for_e;
-    struct transaction_for_start *for_s;
-    struct transaction_filter *fi;
+    struct hotcall_function *fc, *prev_fc;
 
     while (1) {
 

@@ -3,6 +3,7 @@
 #include "hotcall-untrusted.h"
 #include "functions.h"
 
+#include "hotcall_for_each.h"
 
 TEST(for_each,1) {
     //Contract: for each should apply the hcall on each element in the list

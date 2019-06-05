@@ -21,8 +21,7 @@ start_enclave_thread(void * vargp){
 void
 hotcall_init(struct shared_memory_ctx *ctx, sgx_enclave_id_t eid) {
 
-    ctx->hcall.transaction_in_progress = false;
-    ctx->hcall.first_call_of_transaction = -1;
+    ctx->hcall.hotcall_in_progress = false;
     ctx->hcall.queue_length = 0;
 
     ctx->pfc.len = 20;
@@ -58,7 +57,7 @@ hotcall_test() {
 /*
 void
 hotcall_bundle_assert_false(struct preallocated_function_calls *pfc, int condition, int error_code, uint8_t cleanup_function) {
-    *transaction_err = error_code;
+    *hotcall_err = error_code;
     void **args = pfc->args[pfc->idx];
     args[0] = next_int(pfc, condition);
     args[1] = next_uint8(pfc, cleanup_function);

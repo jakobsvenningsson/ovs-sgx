@@ -3,6 +3,7 @@
 #include "hotcall-untrusted.h"
 #include "functions.h"
 
+#include "hotcall_for.h"
 
 TEST(for,1) {
     //Contract: the hcalls inside the for loop should add 3 to each element in xs and 2 to each element in ys.
@@ -51,7 +52,7 @@ TEST(for,2) {
 
     char fmt[] = "b&b";
 
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
         .args = (argument_list) {
             .n_args = 1,

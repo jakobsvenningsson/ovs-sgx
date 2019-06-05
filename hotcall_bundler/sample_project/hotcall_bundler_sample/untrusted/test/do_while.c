@@ -3,6 +3,8 @@
 #include "hotcall-untrusted.h"
 #include "functions.h"
 
+#include "hotcall_do_while.h"
+
 
 TEST(do_while,1) {
     //Contract: the body of the while loop should execute 3 times and hence x should be 3 after termination.
@@ -12,15 +14,11 @@ TEST(do_while,1) {
 
     unsigned int n_params = 1, n_variables = 1, x = 0;
 
-    struct function_parameter params_predicate[n_params] = {
-        (struct function_parameter) { .arg = &x, .fmt = 'u', .iter = false }
-    };
-
     struct function_parameter params_body[n_params] = {
         (struct function_parameter) { .arg = &x, .fmt = 'u', .iter = false }
     };
 
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
         .args = (argument_list) {
             .n_args = 1,
@@ -30,12 +28,10 @@ TEST(do_while,1) {
     struct predicate_variable variables[n_variables] = {
         (struct predicate_variable) { &fc, FUNCTION_TYPE, 'b' }
     };
+
     char fmt[] = "b";
     struct do_while_args dw_args = {
-        .params_predicate = (struct function_parameters_in) {
-            .params = params_predicate, .n_params = 1, .iters = 0,
-        },
-        .params_body = (struct function_parameters_in) {
+        .params = (struct function_parameters_in) {
             .params = params_body, .n_params = 1, .iters = 0,
         },
         .predicate = (struct predicate)  {

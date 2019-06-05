@@ -6,6 +6,15 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "hotcall_do_while.h"
+#include "hotcall_while.h"
+#include "hotcall_for.h"
+#include "hotcall_for_each.h"
+#include "hotcall_filter.h"
+#include "hotcall_map.h"
+#include "hotcall_if.h"
+#include "hotcall_predicate.h"
+
 #define QUEUE_ITEM_TYPE_IF 0
 #define QUEUE_ITEM_TYPE_IF_NULL 1
 #define QUEUE_ITEM_TYPE_GUARD 2
@@ -20,178 +29,29 @@
 #define QUEUE_ITEM_TYPE_WHILE_END 11
 #define QUEUE_ITEM_TYPE_MAP 12
 
-
-#define HOTCALL_MAX_ARG 25
-
-typedef struct {
-    int n_args;
-    void *args[HOTCALL_MAX_ARG];
-} argument_list;
-
-struct function_call {
-    uint8_t id;
-    argument_list args;
-    void *return_value;
-    bool async;
-};
-
-
-
-
-
-struct immutable_function_argument {
-    unsigned int n_params;
-    char *fmt;
-    void **params_in;
-    unsigned int params_in_length;
-    void **params_out;
-    unsigned int params_out_length;
-};
-
-
-struct function_parameters_in {
-    struct function_parameter *params;
-    unsigned int n_params;
-    unsigned int iters;
-};
-
-struct function_filter_out {
-    struct function_parameter *params;
-    unsigned int *len;
-};
-
-
-struct function_map_out {
-    void *params;
-    char fmt;
-};
-
-struct function_parameter {
-    void *arg;
-    char fmt;
-    bool iter;
-};
-
-
-enum variable_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE };
+#define MAX_FCS 200
+#define MAX_TS 200
 #define MAX_N_VARIABLES 5
 
-struct predicate_variable {
-    const void *val;
-    enum variable_type type;
-    char fmt;
+union hcall {
+    struct hotcall_function fc;
+    struct hotcall_if tif;
+    struct hotcall_for_start for_s;
+    struct hotcall_for_end for_e;
+    struct hotcall_for_each tor;
+    struct hotcall_filter fi;
+    struct hotcall_do_while dw;
+    struct hotcall_while_start while_s;
+    struct hotcall_while_end while_e;
+    struct hotcall_map ma;
 };
 
-struct predicate {
-    bool expected;
-    char *fmt;
-    uint8_t n_variables;
-    struct predicate_variable *variables;
-};
-
-struct map_args {
-    const struct function_parameters_in params_in;
-    struct function_map_out params_out;
-};
-
-struct for_each_args {
-    struct function_parameters_in params_in;
-};
-
-struct filter_args {
-    const struct function_parameters_in params_in;
-    struct function_filter_out params_out;
-    struct predicate predicate;
-};
-
-
-struct do_while_args {
-    struct function_parameters_in params_predicate;
-    struct function_parameters_in params_body;
-    struct predicate predicate;
-};
-
-struct if_args {
-    unsigned int then_branch_len;
-    unsigned int else_branch_len;
-    struct predicate predicate;
-    bool return_if_false;
-};
-
-struct for_args {
-    unsigned int n_iters;
-    unsigned int n_rows;
-};
-
-
-struct while_args {
-    struct predicate predicate;
-    unsigned int n_rows;
-};
-
-struct transaction_if {
-    struct if_args *args;
-
-};
-
-struct transaction_map {
-    uint8_t f;
-    struct map_args *args;
-};
-
-
-struct transaction_filter {
-    uint8_t f;
-    struct filter_args *args;
-};
-
-struct transaction_do_while {
-    uint8_t f;
-    struct do_while_args *args;
-};
-
-struct transaction_for_each {
-    uint8_t f;
-    struct for_each_args *args;
-};
-
-struct transaction_for_start {
-    struct for_args *args;
-};
-
-struct transaction_for_end {
-    struct for_args *args;
-};
-
-struct transaction_while_start {
-    struct while_args *args;
-};
-
-struct transaction_while_end {
-    struct while_args *args;
-};
-
-union fcall {
-    struct function_call fc;
-    struct transaction_if tif;
-    struct transaction_for_start for_s;
-    struct transaction_for_end for_e;
-    struct transaction_for_each tor;
-    struct transaction_filter fi;
-    struct transaction_do_while dw;
-    struct transaction_while_start while_s;
-    struct transaction_while_end while_e;
-    struct transaction_map ma;
-};
 
 struct ecall_queue_item {
     uint8_t type;
-    union fcall call;
+    union hcall call;
 };
 
-
-#define MAX_FCS 200
-#define MAX_TS 200
 
 struct hotcall {
     sgx_thread_mutex_t mutex;
@@ -204,10 +64,8 @@ struct hotcall {
     int timeout_counter;
     struct ecall_queue_item *ecall_queue[MAX_FCS];
     unsigned int queue_length;
-    bool transaction_in_progress;
-    int first_call_of_transaction;
+    bool hotcall_in_progress;
 };
-
 
 
 struct preallocated_function_calls {
@@ -238,21 +96,11 @@ struct preallocated_function_calls {
     int int_ts[MAX_TS];
 };
 
-
-#define MAX_SPINLOCK_JOBS 5
-
 struct shared_memory_ctx {
   struct hotcall hcall;
-  void *custom_object_ptr[5];
+  void *custom_object_ptr[MAX_N_VARIABLES];
   struct preallocated_function_calls pfc;
 };
 
-struct hotcall_config {
-    void (*execute_function)(struct function_call *);
-    void (*spin_lock_tasks[MAX_SPINLOCK_JOBS])();
-    unsigned int spin_lock_task_count[MAX_SPINLOCK_JOBS];
-    unsigned int spin_lock_task_timeouts[MAX_SPINLOCK_JOBS];
-    unsigned int n_spinlock_jobs;
-};
 
 #endif

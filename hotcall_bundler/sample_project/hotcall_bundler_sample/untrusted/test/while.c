@@ -3,6 +3,8 @@
 #include "hotcall-untrusted.h"
 #include "functions.h"
 
+#include "hotcall_while.h"
+
 
 TEST(while,1) {
     // Contract: the loop should execute twice and increment x with 2 in each iteration. Therefore x should be 4 when the loop terminates.
@@ -15,7 +17,7 @@ TEST(while,1) {
     int x = 0;
     bool b = false;
     void *args[n_params] = { &x };
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
         .args = (argument_list) {
             .n_args = 1,

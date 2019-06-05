@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "hotcall_config.h"
 #include "hotcall.h"
 
 unsigned int for_loop_indices[3] = { 0 };
@@ -32,7 +33,7 @@ exclude_rest(uint8_t *exclude_list, int pos, int then_branch_len, int else_branc
 
 
 extern inline void
-hotcall_handle_function(struct function_call *fc) {
+hotcall_handle_function(struct hotcall_function *fc) {
     void *tmp[fc->args.n_args];
     if(for_loop_nesting > 0) {
         for(int i = 0; i < fc->args.n_args; ++i) {

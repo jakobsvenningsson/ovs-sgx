@@ -80,8 +80,8 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
     switch(operand_item->var->type) {
         case FUNCTION_TYPE:
         {
-            struct function_call *fc;
-            fc = (struct function_call *) operand_item->var->val;
+            struct hotcall_function *fc;
+            fc = (struct hotcall_function *) operand_item->var->val;
             bool operand;
             fc->return_value = &operand;
             //hotcall_config->execute_function(fc);
@@ -140,8 +140,8 @@ evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struc
             switch(operand_item->var->type) {
                 case FUNCTION_TYPE:
                 {
-                    struct function_call *fc;
-                    fc = (struct function_call *) operand_item->var->val;
+                    struct hotcall_function *fc;
+                    fc = (struct hotcall_function *) operand_item->var->val;
                     bool operand;
                     fc->return_value = &operand;
                     hotcall_config->execute_function(fc);

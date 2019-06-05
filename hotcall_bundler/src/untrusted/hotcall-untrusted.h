@@ -14,11 +14,10 @@
 extern "C" {
 #endif
 
-
 #ifdef BATCHING
-#define ASYNC(SM_CTX, X) X || is_transaction_in_progress(&(SM_CTX)->hcall)
+#define ASYNC(SM_CTX, X) X || is_hotcall_in_progress(&(SM_CTX)->hcall)
 #else
-#define ASYNC(SM_CTX, X) false || is_transaction_in_progress(&(SM_CTX)->hcall)
+#define ASYNC(SM_CTX, X) false || is_hotcall_in_progress(&(SM_CTX)->hcall)
 #endif
 
 #define HCALL(SM_CTX, F, _ASYNC, RET, N_ARGS, ARGS) \
@@ -35,45 +34,6 @@ extern "C" {
         make_hotcall(&(SM_CTX)->hcall); \
     }
 
-#define IF(SM_CTX, ARGS) \
-    hotcall_bundle_if_(SM_CTX, ARGS);
-#define THEN(...) __VA_ARGS__
-#define ELSE(...) __VA_ARGS__
-
-
-/*#define FOR_EACH(SM_CTX, FUNCTION, ITERS, N_PARAMS, PARAMS, FMT) \
-    hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ITERS, N_PARAMS, PARAMS, FMT)*/
-
-/*#define FILTER(SM_CTX, FUNCTION, N_PARAMS, PARAMS, ITERS, LEN_FILTERED, FILTERED_OUT, FMT) \
-    hotcall_bundle_filter(SM_CTX, hotcall_ ## FUNCTION, N_PARAMS, PARAMS, ITERS, LEN_FILTERED, FILTERED_OUT, FMT)*/
-
-#define FOR_EACH(SM_CTX, FUNCTION, ARGS) hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ARGS)
-
-
-#define FILTER(SM_CTX, FUNCTION, ARGS) \
-    hotcall_bundle_filter(SM_CTX, hotcall_ ## FUNCTION, ARGS)
-
-#define MAP(SM_CTX, FUNCTION, ARGS) \
-    hotcall_bundle_map(SM_CTX, hotcall_ ## FUNCTION, ARGS)
-
-#define DO_WHILE(SM_CTX, F, ARGS) \
-    hotcall_bundle_do_while((SM_CTX), hotcall_ ## F, ARGS)
-
-#define BEGIN_FOR(SM_CTX, ARGS) \
-    hotcall_bundle_for_begin(SM_CTX, ARGS)
-#define END_FOR(SM_CTX, ARGS) \
-    hotcall_bundle_for_end(SM_CTX, ARGS)
-#define BEGIN_WHILE(SM_CTX, ARGS) \
-    hotcall_bundle_while_begin(SM_CTX, ARGS)
-#define END_WHILE(SM_CTX, ARGS) \
-    hotcall_bundle_while_end(SM_CTX, ARGS)
-
-extern inline bool
-is_transaction_in_progress(struct hotcall *hcall) {
-    return hcall->transaction_in_progress;
-}
-
-
 bool
 hotcall_test();
 void
@@ -86,17 +46,22 @@ void
 hotcall_destroy(struct shared_memory_ctx *sm_ctx);
 
 
+extern inline bool
+is_hotcall_in_progress(struct hotcall *hcall) {
+    return hcall->hotcall_in_progress;
+}
+
 extern inline void
 hotcall_bundle_begin(struct shared_memory_ctx *sm_ctx, int *transaction_error) {
     //transaction_err = transaction_error;
-    sm_ctx->hcall.transaction_in_progress = true;
+    sm_ctx->hcall.hotcall_in_progress = true;
 }
 
 extern inline void
 hotcall_bundle_end(struct shared_memory_ctx *sm_ctx) {
     hotcall_bundle_flush(sm_ctx);
     //transaction_err = NULL;
-    sm_ctx->hcall.transaction_in_progress = false;
+    sm_ctx->hcall.hotcall_in_progress = false;
 }
 
 
@@ -107,7 +72,7 @@ struct ecall_queue_item * get_fcall(struct preallocated_function_calls *pfc, uin
     switch(item->type) {
         case QUEUE_ITEM_TYPE_IF:
         {
-            struct transaction_if *trans_if;
+            struct hotcall_if *trans_if;
             trans_if = &item->call.tif;
             break;
         }
@@ -115,7 +80,7 @@ struct ecall_queue_item * get_fcall(struct preallocated_function_calls *pfc, uin
             break;
         case QUEUE_ITEM_TYPE_FUNCTION:
         {
-            struct function_call *fcall;
+            struct hotcall_function *fcall;
             fcall = &item->call.fc;
             fcall->id = f_id;
             fcall->args.n_args = n_args;
@@ -224,7 +189,7 @@ hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_args *args) {
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_if *tif;
+    struct hotcall_if *tif;
     tif = &item->call.tif;
     tif->args = args;
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
@@ -238,7 +203,7 @@ hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, struct filter
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_filter *fi;
+    struct hotcall_filter *fi;
     fi = &item->call.fi;
     fi->f = f;
     fi->args = args;
@@ -253,7 +218,7 @@ hotcall_bundle_map(struct shared_memory_ctx *sm_ctx, uint8_t f, struct map_args 
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_map *ma;
+    struct hotcall_map *ma;
     ma = &item->call.ma;
     ma->f = f;
     ma->args = args;
@@ -268,7 +233,7 @@ hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, uint8_t f, struct do_w
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_do_while *dw;
+    struct hotcall_do_while *dw;
     dw = &item->call.dw;
     dw->f = f;
     dw->args = do_while_args;
@@ -283,7 +248,7 @@ hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, struct for_
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_for_each *tor;
+    struct hotcall_for_each *tor;
     tor = &item->call.tor;
     tor->args = args;
     tor->f = f;
@@ -298,7 +263,7 @@ hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, struct for_args *args
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_for_start *for_s;
+    struct hotcall_for_start *for_s;
     for_s = &item->call.for_s;
     for_s->args = args;
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
@@ -312,7 +277,7 @@ hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_args *
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_while_start *while_s;
+    struct hotcall_while_start *while_s;
     while_s = &item->call.while_s;
     while_s->args = args;
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
@@ -326,7 +291,7 @@ hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx, struct for_args *args) 
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_for_end *for_e;
+    struct hotcall_for_end *for_e;
     for_e = &item->call.for_e;
     for_e->args = args;
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
@@ -340,7 +305,7 @@ hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx, struct while_args *ar
     if(sm_ctx->pfc.idx == MAX_TS) {
         sm_ctx->pfc.idx = 0;
     }
-    struct transaction_while_end *while_e;
+    struct hotcall_while_end *while_e;
     while_e = &item->call.while_e;
     while_e->args = args;
     sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;

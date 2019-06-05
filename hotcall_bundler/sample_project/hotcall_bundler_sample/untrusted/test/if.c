@@ -3,6 +3,7 @@
 #include "hotcall-untrusted.h"
 #include "functions.h"
 
+#include "hotcall_if.h"
 
 TEST(if,1) {
     // Contract: a true condition should execute the "then" branch
@@ -74,7 +75,7 @@ TEST(if,2) {
     bool res;
     HCALL(sm_ctx, ecall_always_false, false, &res, 0, NULL);
 
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_always_true
     };
 
@@ -133,7 +134,7 @@ TEST(if,3) {
     bool res;
     HCALL(sm_ctx, ecall_always_false, false, &res, 0, NULL);
 
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_always_true
     };
 

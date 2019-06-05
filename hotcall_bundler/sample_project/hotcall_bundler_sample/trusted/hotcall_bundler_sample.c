@@ -4,6 +4,7 @@
 #include "hotcall_bundler_sample.h"
 #include "hotcall_bundler_sample_t.h"  /* print_string */
 #include "functions.h"
+#include "hotcall_config.h"
 
 void printf(const char *fmt, ...)
 {
@@ -16,7 +17,7 @@ void printf(const char *fmt, ...)
 }
 
 void
-execute_function(struct function_call *fc){
+execute_function(struct hotcall_function *fc){
 
     argument_list * args;
     args       = &fc->args;
@@ -91,7 +92,6 @@ ecall_bar() {
 
 void
 ecall_plus_one(int *x) {
-    printf("ecall_plus_one %d \n", *x);
     ++*x;
 }
 
@@ -102,7 +102,6 @@ ecall_plus_one_ret(int x) {
 
 bool
 ecall_greater_than_two(int *x) {
-    printf("%d \n", *x);
     return *x > 2 ? true : false;
 }
 

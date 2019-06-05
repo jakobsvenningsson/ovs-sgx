@@ -3,7 +3,6 @@
 #include "hotcall_bundler_sample_u.h"
 #include "hotcall-untrusted.h"
 
-
 struct shared_memory_ctx *test_sm_ctx;
 extern sgx_enclave_id_t global_eid;
 

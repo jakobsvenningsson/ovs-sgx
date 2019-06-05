@@ -3,6 +3,7 @@
 #include "hotcall-untrusted.h"
 #include "functions.h"
 
+#include "hotcall_filter.h"
 
 TEST(filter,1) {
     //Contract: Filter should filter out all elements with a value less than 3,
@@ -23,7 +24,7 @@ TEST(filter,1) {
         (struct function_parameter) { .arg = ys, .fmt = 'd', .iter = true }
     };
 
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two
     };
 
@@ -95,7 +96,7 @@ TEST(filter,2) {
         (struct function_parameter) { .arg = &y, .fmt = 'd', .iter = false }
     };
 
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_y
     };
 

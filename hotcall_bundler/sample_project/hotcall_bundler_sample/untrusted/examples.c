@@ -1,6 +1,7 @@
 #include "examples.h"
 #include "hotcall-untrusted.h"
 #include "functions.h"
+#include "hotcall_syntax.h"
 
 void hotcall_bundle_example_if(struct shared_memory_ctx *sm_ctx) {
     int x = 0;
@@ -82,7 +83,7 @@ void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx) {
     int x = 0;
     bool b = false;
     void *args[n_params] = { &x };
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
         .args = (argument_list) {
             .n_args = 1,
@@ -149,7 +150,7 @@ void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int ys[n_iters] = { 0 };
 
-    struct function_call fc = {
+    struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
         .args = (argument_list) {
             .n_args = 1
