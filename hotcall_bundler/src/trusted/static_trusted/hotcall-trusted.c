@@ -15,11 +15,11 @@ hotcall_handle_if(struct hotcall_if *tif, uint8_t *exclude_list, int pos, int ex
     struct postfix_item output[strlen(tif->args->predicate.fmt)];
     unsigned int output_length;
     to_postfix(&tif->args->predicate, output, &output_length);
-    int res = evaluate_postfix(output, output_length, hotcall_config);
+    int res = evaluate_postfix(output, output_length, hotcall_config, 0);
 
-    if(res == tif->args->predicate.expected && tif->args->else_branch_len > 0) {
+    if(res && tif->args->else_branch_len > 0) {
         exclude_else_branch(exclude_list, pos, tif->args->then_branch_len, tif->args->else_branch_len);
-    } else if(res != tif->args->predicate.expected) {
+    } else if(!res) {
         if(tif->args->then_branch_len > 0) {
             exclude_if_branch(exclude_list, pos, tif->args->then_branch_len);
         }
@@ -55,7 +55,7 @@ hotcall_set_function_in_arguments(const struct function_parameters_in *params_in
 }
 
 static inline void
-hotcall_set_function_out_arguments(struct function_filter_out *params_out, const struct function_parameters_in *params_in, struct hotcall_function *fc, int iter, int n_include) {
+hotcall_set_function_out_arguments(struct function_parameters_in *params_out, const struct function_parameters_in *params_in, struct hotcall_function *fc, int iter, int n_include) {
     struct function_parameter *param_i, *param_o;
     int offset;
     for(int n = 0; n < params_in->n_params; ++n) {
@@ -87,11 +87,11 @@ hotcall_handle_do_while(struct hotcall_do_while *dw) {
 
     struct hotcall_function *fc, fc_body;
     fc_body.id = dw->f;
-    hotcall_set_function_in_arguments(&dw->args->params, &fc_body, 0);
+    hotcall_set_function_in_arguments(dw->args->params, &fc_body, 0);
     unsigned int res;
     while(true) {
-        res = evaluate_postfix(output, output_length, hotcall_config);
-        if(res != dw->args->predicate.expected) {
+        res = evaluate_postfix(output, output_length, hotcall_config, 0);
+        if(!res) {
             return;
         }
         hotcall_config->execute_function(&fc_body);
@@ -101,29 +101,28 @@ hotcall_handle_do_while(struct hotcall_do_while *dw) {
 
 static inline void
 hotcall_handle_map(struct hotcall_map *ma) {
-    const struct function_parameters_in *params_in;
-    struct function_map_out *params_out;
-    params_in = &ma->args->params_in;
-    params_out = &ma->args->params_out;
+    const struct function_parameters_in *params_in, *params_out;
+    params_in = ma->args->params_in;
+    params_out = ma->args->params_out;
 
     struct hotcall_function fc;
     fc.id = ma->f;
     fc.args.n_args = params_in->n_params;
 
-    for(int i = 0; i < params_in->iters; ++i) {
+    for(int i = 0; i < *params_in->iters; ++i) {
         hotcall_set_function_in_arguments(params_in, &fc, i);
-        switch(params_out->fmt) {
+        switch(params_out->params[0].fmt) {
             case 'u':
-                fc.return_value = ((unsigned int *) params_out->params) + i;
+                fc.return_value = ((unsigned int *) params_out->params[0].arg) + i;
                 break;
             case 'b':
-                fc.return_value = ((bool *) params_out->params) + i;
+                fc.return_value = ((bool *) params_out->params[0].arg) + i;
                 break;
             case 'd':
-                fc.return_value = ((int *) params_out->params) + i;
+                fc.return_value = ((int *) params_out->params[0].arg) + i;
                 break;
             default:
-                printf("Switch default at %s %d.\n", __FILE__, __LINE__);
+                printf("Switch default at %s %d.\n", __FILE__, __LINE__, params_out->params[0].fmt, params_out->n_params);
                 break;
         }
         hotcall_config->execute_function(&fc);
@@ -138,32 +137,41 @@ hotcall_handle_filter(struct hotcall_filter *fi) {
 
     struct hotcall_function *fc;
     unsigned int res, n_include = 0;
-    for(int i = 0; i < fi->args->params_in.n_params; ++i) {
+    for(int n = 0; n < *fi->args->params_in->iters; ++n) {
         for(int j = 0; j < fi->args->predicate.n_variables; ++j) {
-            if(fi->args->predicate.variables[j].type == FUNCTION_TYPE) {
-                fc = (struct hotcall_function *) fi->args->predicate.variables[j].val;
-                fc->args.n_args = fi->args->params_in.n_params;
-                hotcall_set_function_in_arguments(&fi->args->params_in, fc, i);
+            switch(fi->args->predicate.variables[j].type) {
+                case FUNCTION_TYPE:
+                    fc = (struct hotcall_function *) fi->args->predicate.variables[j].val;
+                    fc->args.n_args = fi->args->params_in->n_params;
+                    hotcall_set_function_in_arguments(fi->args->params_in, fc, n);
+                    break;
+                case POINTER_TYPE:
+                    break;
+                case VARIABLE_TYPE:
+                    break;
+                default:
+                    printf("Switch default at %s %d.\n", __FILE__, __LINE__);
+                    break;
             }
         }
-        res = evaluate_postfix(output, output_length, hotcall_config);
-        if(res == fi->args->predicate.expected) {
-            hotcall_set_function_out_arguments(&fi->args->params_out, &fi->args->params_in, fc, i, n_include++);
+        res = evaluate_postfix(output, output_length, hotcall_config, n);
+        if(res) {
+            hotcall_set_function_out_arguments(fi->args->params_out, fi->args->params_in, fc, n, n_include++);
         }
-        *(fi->args->params_out.len) = n_include;
     }
+    *(fi->args->params_out->iters) = n_include;
 }
 
 static inline void
 hotcall_handle_for_each(struct hotcall_for_each *tor) {
     struct hotcall_function fc;
     fc.id = tor->f;
-    fc.args.n_args = tor->args->params_in.n_params;
+    fc.args.n_args = tor->args->params_in->n_params;
     struct function_parameter *param;
     int offset;
-    for(int i = 0; i < tor->args->params_in.iters; ++i) {
-        for(int j = 0; j < tor->args->params_in.n_params; ++j) {
-            param = &tor->args->params_in.params[j];
+    for(int i = 0; i < *tor->args->params_in->iters; ++i) {
+        for(int j = 0; j < tor->args->params_in->n_params; ++j) {
+            param = &tor->args->params_in->params[j];
             offset = param->iter ? i : 0;
             switch(param->fmt) {
                 case 'd':
@@ -206,8 +214,8 @@ hotcall_handle_while_begin(struct hotcall_while_start *while_s, unsigned int *fo
     struct postfix_item output[strlen(while_s->args->predicate.fmt)];
     unsigned int output_length;
     to_postfix(&while_s->args->predicate, output, &output_length);
-    int res = evaluate_postfix(output, output_length, hotcall_config);
-    if(res == while_s->args->predicate.expected) {
+    int res = evaluate_postfix(output, output_length, hotcall_config, 0);
+    if(res) {
         return;
     }
     memset(exclude_list + pos + 1, 1, while_s->args->n_rows + 1);
@@ -219,7 +227,6 @@ hotcall_handle_while_end(struct hotcall_while_end *while_e, int *pos, unsigned i
     //(*for_loop_nesting)--;
     //for_loop_indices[*for_loop_nesting]++;
 }
-
 
 int
 ecall_start_poller(struct shared_memory_ctx *sm_ctx){
@@ -235,15 +242,14 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
 
             sm_ctx->hcall.run = false;
 
-            uint8_t exclude_list[sm_ctx->hcall.queue_length];
-            memset(exclude_list, 0, sm_ctx->hcall.queue_length);
+            uint8_t exclude_list[sm_ctx->hcall.batch.queue_len];
+            memset(exclude_list, 0, sm_ctx->hcall.batch.queue_len);
 
 
             int n;
-            for(n = 0; n < sm_ctx->hcall.queue_length; ++n) {
-                    queue_item = sm_ctx->hcall.ecall_queue[n];
+            for(n = 0; n < sm_ctx->hcall.batch.queue_len; ++n) {
+                    queue_item = sm_ctx->hcall.batch.queue[n];
                     if(exclude_list[n]) {
-                        //printf("excluding %d\n", queue_item->type);
                         continue;
                     }
 
@@ -255,7 +261,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                             prev_fc = &queue_item->call.fc;
                             break;
                         case QUEUE_ITEM_TYPE_IF: case QUEUE_ITEM_TYPE_IF_NULL:
-                            hotcall_handle_if(&queue_item->call.tif, exclude_list, n, sm_ctx->hcall.queue_length);
+                            hotcall_handle_if(&queue_item->call.tif, exclude_list, n, sm_ctx->hcall.batch.queue_len);
                             break;
                         case QUEUE_ITEM_TYPE_FOR_EACH:
                             hotcall_handle_for_each(&queue_item->call.tor);
@@ -281,12 +287,16 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                         case QUEUE_ITEM_TYPE_MAP:
                             hotcall_handle_map(&queue_item->call.ma);
                             break;
+                        case QUEUE_ITEM_TYPE_ERROR:
+                            sm_ctx->hcall.batch.error = queue_item->call.err.error_code;
+                            goto batch_done;
                         default:
                             printf("Error, the default statement should never happen... %d\n", queue_item->type);
                     }
                 }
+                batch_done:
                 sm_ctx->hcall.is_done = true;
-                sm_ctx->hcall.queue_length = 0;
+                sm_ctx->hcall.batch.queue_len = 0;
         }
 
         sgx_spin_unlock(&sm_ctx->hcall.spinlock);
@@ -312,7 +322,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
 
     exit:
 
-    sm_ctx->hcall.queue_length = 0;
+    sm_ctx->hcall.batch.queue_len = 0;
     sgx_spin_unlock(&sm_ctx->hcall.spinlock);
     sm_ctx->hcall.is_done = true;
 

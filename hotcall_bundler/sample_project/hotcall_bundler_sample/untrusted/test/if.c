@@ -11,7 +11,7 @@ TEST(if,1) {
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
     int x = 0;
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     bool res1, res2, res3;
     bool *ptr = NULL;
 
@@ -28,17 +28,14 @@ TEST(if,1) {
         (struct predicate_variable) { &res3, VARIABLE_TYPE, 'b' },
     };
 
-    struct predicate predicate = {
-        .expected = 1,
-        .fmt = fmt,
-        .n_variables = n_variables,
-        .variables = variables
-    };
-
     struct if_args if_args = {
         .then_branch_len = 1,
         .else_branch_len = 2,
-        .predicate = predicate,
+        .predicate = (struct predicate) {
+            .fmt = fmt,
+            .n_variables = n_variables,
+            .variables = variables
+        },
         .return_if_false = false
     };
 
@@ -70,7 +67,7 @@ TEST(if,2) {
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
     int x = 0;
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
 
     bool res;
     HCALL(sm_ctx, ecall_always_false, false, &res, 0, NULL);
@@ -87,7 +84,6 @@ TEST(if,2) {
     };
 
     struct predicate predicate = {
-        .expected = 1,
         .fmt = fmt,
         .n_variables = n_variables,
         .variables = variables
@@ -129,7 +125,7 @@ TEST(if,3) {
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
     int x = 0;
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
 
     bool res;
     HCALL(sm_ctx, ecall_always_false, false, &res, 0, NULL);
@@ -146,7 +142,6 @@ TEST(if,3) {
     };
 
     struct predicate predicate = {
-        .expected = 1,
         .fmt = fmt,
         .n_variables = n_variables,
         .variables = variables

@@ -2,8 +2,6 @@
 #include "hotcall-untrusted.h"
 #include <pthread.h>
 
-static int *transaction_err;
-
 static sgx_enclave_id_t global_eid;
 struct shared_memory_ctx *sm_ctx;
 
@@ -22,7 +20,8 @@ void
 hotcall_init(struct shared_memory_ctx *ctx, sgx_enclave_id_t eid) {
 
     ctx->hcall.hotcall_in_progress = false;
-    ctx->hcall.queue_length = 0;
+    ctx->hcall.batch.queue_len = 0;
+    ctx->hcall.is_inside_chain = false;
 
     ctx->pfc.len = 20;
     ctx->pfc.idx = 0;

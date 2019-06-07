@@ -76,7 +76,7 @@ extern unsigned int for_loop_indices[3];
 extern unsigned int for_loop_nesting;
 
 extern inline int
-evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotcall_config) {
+evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotcall_config, int offset) {
     switch(operand_item->var->type) {
         case FUNCTION_TYPE:
         {
@@ -89,25 +89,31 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
             return operand;
         }
         case POINTER_TYPE:
-            return operand_item->var->val != NULL;
+        {
+            int offset_ = operand_item->var->iter ? offset : 0;
+            return (operand_item->var->val + offset_) != NULL;
+        }
         case VARIABLE_TYPE:
+        {
+            int offset_ = operand_item->var->iter ? offset : 0;
             switch(operand_item->ch) {
                 case 'b':
-                    return *(bool *) operand_item->var->val;
+                    return *((bool *) operand_item->var->val + offset_);
                 case 'u':
-                    return *(unsigned int *) operand_item->var->val;
+                    return *((unsigned int *) operand_item->var->val + offset_);
                 case 'd':
-                    return *(int *) operand_item->var->val;
+                    return *((int *) operand_item->var->val + offset_);
                 default:
                     printf("Default reached at %s %d\n", __FILE__, __LINE__);
             }
+        }
         default:
             printf("Default reached at %s %d\n", __FILE__, __LINE__);
     }
 }
 
 extern inline int
-evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config) {
+evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int offset) {
 
     struct postfix_item *output[output_length];
     unsigned int stack_pos = 0;
@@ -148,18 +154,24 @@ evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struc
                     return !operand;
                 }
                 case POINTER_TYPE:
-                    return operand_item->var->val == NULL;
+                {
+                    int offset_ = operand_item->var->iter ? offset : 0;
+                    return operand_item->var->val + offset_  == NULL;
+                }
                 case VARIABLE_TYPE:
+                {
+                    int offset_ = operand_item->var->iter ? offset : 0;
                     switch(operand_item->ch) {
                         case 'b':
-                            return !*(bool *) operand_item->var->val;
+                            return !*((bool *) operand_item->var->val + offset_);
                         case 'u':
-                            return !*(unsigned int *) operand_item->var->val;
+                            return !*((unsigned int *) operand_item->var->val + offset_);
                         case 'd':
-                            return !*(int *) operand_item->var->val;
+                            return !*((int *) operand_item->var->val + offset_);
                         default:
                             printf("Default reached at %s %d\n", __FILE__, __LINE__);
                     }
+                }
                 default:
                     printf("Default reached at %s %d\n", __FILE__, __LINE__);
             }
@@ -169,10 +181,10 @@ evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struc
 
 
         operand2_item = output[--stack_pos];
-        operand2 = evaluate_variable(operand2_item, hotcall_config);
+        operand2 = evaluate_variable(operand2_item, hotcall_config, offset);
 
         operand1_item = output[--stack_pos];
-        operand1 = evaluate_variable(operand1_item, hotcall_config);
+        operand1 = evaluate_variable(operand1_item, hotcall_config, offset);
 
 
         switch(it->ch) {
@@ -195,7 +207,7 @@ evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struc
     }
 
     operand1_item = output[--stack_pos];
-    return evaluate_variable(operand1_item, hotcall_config);
+    return evaluate_variable(operand1_item, hotcall_config, 0);
 }
 
 #endif

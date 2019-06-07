@@ -19,7 +19,7 @@ void printf(const char *fmt, ...)
 void
 execute_function(struct hotcall_function *fc){
 
-    argument_list * args;
+    struct hotcall_function_arg_list * args;
     args       = &fc->args;
 
     switch (fc->id) {
@@ -52,6 +52,9 @@ execute_function(struct hotcall_function *fc){
             break;
         case hotcall_ecall_plus:
             *(int *) fc->return_value = ecall_plus(*(int *) args->args[0], *(int *) args->args[1]);
+            break;
+        case hotcall_ecall_revert:
+            *(bool *) fc->return_value = ecall_revert(*(bool *) args->args[0]);
             break;
         default:
             printf("unknown hotcall function %d.\n", fc->id);
@@ -120,4 +123,9 @@ ecall_plus_plus(int *x, int *y) {
 int
 ecall_plus(int x, int y) {
     return x + y;
+}
+
+bool
+ecall_revert(bool x) {
+    return x == true ? false : true;
 }

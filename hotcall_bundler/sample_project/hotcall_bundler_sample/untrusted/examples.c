@@ -1,11 +1,10 @@
 #include "examples.h"
 #include "hotcall-untrusted.h"
 #include "functions.h"
-#include "hotcall_syntax.h"
 
 void hotcall_bundle_example_if(struct shared_memory_ctx *sm_ctx) {
     int x = 0;
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     bool res1, res2, res3;
     HCALL(sm_ctx, ecall_always_false, false, &res1, 0, NULL);
     HCALL(sm_ctx, ecall_always_false, false, &res2, 0, NULL);
@@ -18,7 +17,6 @@ void hotcall_bundle_example_if(struct shared_memory_ctx *sm_ctx) {
         (struct predicate_variable) { &res3, VARIABLE_TYPE, 'b' },
     };
     struct predicate predicate = {
-        .expected = 1,
         .fmt = fmt,
         .n_variables = n_variables,
         .variables = variables
@@ -48,7 +46,7 @@ void hotcall_bundle_example_if(struct shared_memory_ctx *sm_ctx) {
 }
 
 void hotcall_bundle_example_for(struct shared_memory_ctx *sm_ctx) {
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     unsigned int n_ecalls = 3, n_params = 2;
     int xs[N_FOR_ITERS] = { 0 };
     int ys[N_FOR_ITERS] = { 0 };
@@ -77,15 +75,15 @@ void hotcall_bundle_example_for(struct shared_memory_ctx *sm_ctx) {
 }
 
 void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx) {
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     unsigned int n_ecalls = 2, n_params = 1, n_variables = 3;
-    char fmt[] = "b&b|b";
+    char fmt[] = "!(b&b|b)";
     int x = 0;
     bool b = false;
     void *args[n_params] = { &x };
     struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
-        .args = (argument_list) {
+        .args = (struct hotcall_function_arg_list) {
             .n_args = 1,
             .args = { &x }
         }
@@ -96,7 +94,6 @@ void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx) {
         (struct predicate_variable) { &b, VARIABLE_TYPE, 'b' }
     };
     struct predicate predicate = {
-        .expected = 0,
         .fmt = fmt,
         .n_variables = n_variables,
         .variables = variables
@@ -118,16 +115,17 @@ void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx) {
 }
 
 void hotcall_bundle_example_for_each(struct shared_memory_ctx *sm_ctx) {
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     unsigned int n_params = 1, n_iters = 10;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    struct function_parameter params_in[n_params] = {
+    struct function_parameter function_params[n_params] = {
         (struct function_parameter) { .arg = xs, .fmt = 'd', .iter = true }
     };
+    struct function_parameters_in params_in = {
+        .params = function_params, .n_params = 1, .iters = &n_iters
+    };
     struct for_each_args for_each_args = {
-        .params_in = (struct function_parameters_in) {
-            .params = params_in, .n_params = 1, .iters = n_iters
-        },
+        .params_in = &params_in
     };
     FOR_EACH(
       sm_ctx,
@@ -144,7 +142,7 @@ void hotcall_bundle_example_for_each(struct shared_memory_ctx *sm_ctx) {
 }
 
 void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     char fmt[] = "b";
     unsigned int n_params = 1, n_iters = 10, out_length;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -152,7 +150,7 @@ void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
 
     struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
-        .args = (argument_list) {
+        .args = (struct hotcall_function_arg_list) {
             .n_args = 1
         }
     };
@@ -162,33 +160,31 @@ void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
         (struct predicate_variable) { &fc, FUNCTION_TYPE, 'b' }
     };
 
-    struct function_parameter params_in[n_params] = {
+    struct function_parameter function_params_in[n_params] = {
         (struct function_parameter) { .arg = xs, .fmt = 'd', .iter = true }
     };
-    struct function_parameter params_out[n_params] = {
+    struct function_parameters_in params_in = {
+        .params = function_params_in, .n_params = 1, .iters = &n_iters
+
+    };
+    struct function_parameter function_params_out[n_params] = {
         (struct function_parameter) { .arg = ys, .fmt = 'd', .iter = true }
     };
-
-    struct filter_args filter_args = {
-        .params_in = (const struct function_parameters_in) {
-            .params = params_in, .n_params = 1, .iters = n_iters
-        },
-        .params_out = (struct function_filter_out) {
-            .params = params_out, .len = &out_length
-        },
-        .predicate = (struct predicate)  {
-            .expected = 1,
-            .fmt = fmt,
-            .n_variables = n_variables,
-            .variables = variables
-        }
-
+    struct function_parameters_in params_out = {
+        .params = function_params_out, .n_params = 1, .iters = &out_length
     };
 
     FILTER(
         sm_ctx,
-        ecall_greater_than_two,
-        &filter_args
+        ((struct filter_args) {
+            .params_in = &params_in,
+            .params_out = &params_out,
+            .predicate = (struct predicate)  {
+                .fmt = fmt,
+                .n_variables = n_variables,
+                .variables = variables
+            }
+        })
     );
 
   hotcall_bundle_end(sm_ctx);
@@ -201,29 +197,33 @@ void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
 }
 
 void hotcall_bundle_example_map(struct shared_memory_ctx *sm_ctx) {
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
 
     unsigned int n_params = 1, n_iters = 10;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int ys[n_iters] = { 0 };
 
-    struct function_parameter params_in[n_params] = {
+    struct function_parameter function_params_in[n_params] = {
         (struct function_parameter) { .arg = xs, .fmt = 'd', .iter = true }
     };
+    struct function_parameters_in params_in = {
+        .params = function_params_in, .n_params = n_params, .iters = &n_iters
+    };
 
-    struct map_args map_args = {
-        .params_in = (const struct function_parameters_in) {
-            .params = params_in, .n_params = n_params, .iters = n_iters
-        },
-        .params_out = (struct function_map_out) {
-            .params = ys, .fmt = 'd'
-        }
+    struct function_parameter function_params_out[n_params] = {
+        (struct function_parameter) { .arg = ys, .fmt = 'd', .iter = true }
+    };
+    struct function_parameters_in params_out = {
+        .params = function_params_out, .n_params = n_params, .iters = &n_iters
     };
 
     MAP(
         sm_ctx,
         ecall_plus_one_ret,
-        &map_args
+        ((struct map_args) {
+            .params_in = &params_in,
+            .params_out = &params_out
+        })
     );
 
     hotcall_bundle_end(sm_ctx);

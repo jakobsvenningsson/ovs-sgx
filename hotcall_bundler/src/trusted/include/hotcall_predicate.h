@@ -7,10 +7,10 @@ struct predicate_variable {
     const void *val;
     enum variable_type type;
     char fmt;
+    bool iter;
 };
 
 struct predicate {
-    bool expected;
     char *fmt;
     uint8_t n_variables;
     struct predicate_variable *variables;

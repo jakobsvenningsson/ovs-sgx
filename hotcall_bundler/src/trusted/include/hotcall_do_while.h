@@ -8,7 +8,7 @@
     hotcall_bundle_do_while((SM_CTX), hotcall_ ## F, ARGS)
 
 struct do_while_args {
-    struct function_parameters_in params;
+    struct function_parameters_in *params;
     struct predicate predicate;
 };
 

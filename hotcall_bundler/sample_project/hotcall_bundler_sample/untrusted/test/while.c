@@ -11,15 +11,15 @@ TEST(while,1) {
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     unsigned int n_ecalls = 2, n_params = 1, n_variables = 3;
-    char fmt[] = "b&b|b";
+    char fmt[] = "!(b&b|b)";
     int x = 0;
     bool b = false;
     void *args[n_params] = { &x };
     struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
-        .args = (argument_list) {
+        .args = (struct hotcall_function_arg_list) {
             .n_args = 1,
             .args = { &x }
         }
@@ -30,7 +30,6 @@ TEST(while,1) {
         (struct predicate_variable) { &b, VARIABLE_TYPE, 'b' }
     };
     struct predicate predicate = {
-        .expected = 0,
         .fmt = fmt,
         .n_variables = n_variables,
         .variables = variables
@@ -60,7 +59,7 @@ TEST(while, 2) {
 
     int x = 0;
     int y = 10;
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     unsigned int n_ecalls = 1, n_params = 1, n_variables = 2;
     char fmt[] = "d<d";
     void *args[n_params] = { &x };
@@ -69,7 +68,6 @@ TEST(while, 2) {
         (struct predicate_variable) { &y, VARIABLE_TYPE, 'b' }
     };
     struct predicate predicate = {
-        .expected = 1,
         .fmt = fmt,
         .n_variables = n_variables,
         .variables = variables

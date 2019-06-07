@@ -13,6 +13,7 @@
 #include "hotcall_filter.h"
 #include "hotcall_map.h"
 #include "hotcall_if.h"
+#include "hotcall_error.h"
 #include "hotcall_predicate.h"
 
 #define QUEUE_ITEM_TYPE_IF 0
@@ -28,10 +29,14 @@
 #define QUEUE_ITEM_TYPE_WHILE_BEGIN 10
 #define QUEUE_ITEM_TYPE_WHILE_END 11
 #define QUEUE_ITEM_TYPE_MAP 12
+#define QUEUE_ITEM_TYPE_ERROR 13
 
 #define MAX_FCS 200
 #define MAX_TS 200
 #define MAX_N_VARIABLES 5
+
+#define CHAIN(N, ARGS...) \
+    hotcall_bundle_chain(N, ARGS)
 
 union hcall {
     struct hotcall_function fc;
@@ -44,14 +49,19 @@ union hcall {
     struct hotcall_while_start while_s;
     struct hotcall_while_end while_e;
     struct hotcall_map ma;
+    struct hotcall_error err;
 };
-
 
 struct ecall_queue_item {
     uint8_t type;
     union hcall call;
 };
 
+struct hotcall_batch {
+    struct ecall_queue_item *queue[MAX_FCS];
+    unsigned int queue_len;
+    int error;
+};
 
 struct hotcall {
     sgx_thread_mutex_t mutex;
@@ -62,11 +72,10 @@ struct hotcall {
     bool is_done;
     bool sleeping;
     int timeout_counter;
-    struct ecall_queue_item *ecall_queue[MAX_FCS];
-    unsigned int queue_length;
     bool hotcall_in_progress;
+    bool is_inside_chain;
+    struct hotcall_batch batch;
 };
-
 
 struct preallocated_function_calls {
     struct ecall_queue_item fcs[MAX_FCS];
@@ -101,6 +110,5 @@ struct shared_memory_ctx {
   void *custom_object_ptr[MAX_N_VARIABLES];
   struct preallocated_function_calls pfc;
 };
-
 
 #endif

@@ -9,11 +9,6 @@
 #include <hotcall.h>
 #include "sgx_eid.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef BATCHING
 #define ASYNC(SM_CTX, X) X || is_hotcall_in_progress(&(SM_CTX)->hcall)
 #else
@@ -21,18 +16,23 @@ extern "C" {
 #endif
 
 #define HCALL(SM_CTX, F, _ASYNC, RET, N_ARGS, ARGS) \
-    (SM_CTX)->hcall.ecall_queue[(SM_CTX)->hcall.queue_length++] = \
+    (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
         get_fcall(&(SM_CTX)->pfc, QUEUE_ITEM_TYPE_FUNCTION, hotcall_ ## F, RET, N_ARGS, ARGS); \
     if(ASYNC(SM_CTX, _ASYNC) != 1) { \
         make_hotcall(&(SM_CTX)->hcall); \
     }
 
 #define HCALL_CONTROL(SM_CTX, TYPE, _ASYNC, N_ARGS, ARGS) \
-    (SM_CTX)->hcall.ecall_queue[(SM_CTX)->hcall.queue_length++] = \
+    (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
         get_fcall(&(SM_CTX)->pfc, QUEUE_ITEM_TYPE_ ## TYPE, 0, NULL, N_ARGS, ARGS); \
     if(ASYNC(SM_CTX, _ASYNC) != 1) { \
         make_hotcall(&(SM_CTX)->hcall); \
     }
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 bool
 hotcall_test();
@@ -52,17 +52,37 @@ is_hotcall_in_progress(struct hotcall *hcall) {
 }
 
 extern inline void
-hotcall_bundle_begin(struct shared_memory_ctx *sm_ctx, int *transaction_error) {
-    //transaction_err = transaction_error;
+hotcall_bundle_begin(struct shared_memory_ctx *sm_ctx) {
+    sm_ctx->hcall.batch.error = 0;
     sm_ctx->hcall.hotcall_in_progress = true;
 }
 
 extern inline void
 hotcall_bundle_end(struct shared_memory_ctx *sm_ctx) {
     hotcall_bundle_flush(sm_ctx);
-    //transaction_err = NULL;
     sm_ctx->hcall.hotcall_in_progress = false;
 }
+
+extern inline int
+hotcall_bundle_get_error(struct shared_memory_ctx *sm_ctx) {
+    return sm_ctx->hcall.batch.error;
+}
+
+extern inline void
+hotcall_bundle_chain_begin(struct shared_memory_ctx *sm_ctx) {
+    sm_ctx->hcall.is_inside_chain = true;
+}
+
+extern inline void
+hotcall_bundle_chain_close(struct shared_memory_ctx *sm_ctx) {
+    sm_ctx->hcall.is_inside_chain = false;
+}
+
+extern inline bool
+is_inside_chain(struct shared_memory_ctx *sm_ctx) {
+    return sm_ctx->hcall.is_inside_chain;
+}
+
 
 
 extern inline
@@ -192,7 +212,7 @@ hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_args *args) {
     struct hotcall_if *tif;
     tif = &item->call.tif;
     tif->args = args;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
 }
 
 extern inline void
@@ -207,7 +227,7 @@ hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, struct filter
     fi = &item->call.fi;
     fi->f = f;
     fi->args = args;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
 }
 
 extern inline void
@@ -222,7 +242,16 @@ hotcall_bundle_map(struct shared_memory_ctx *sm_ctx, uint8_t f, struct map_args 
     ma = &item->call.ma;
     ma->f = f;
     ma->args = args;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+
+
+    if(is_inside_chain(sm_ctx)) {
+        args->params_in = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1]->call.fi.args->params_out;
+        //args->params_in.params = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1]->call.fi.args->params_out.params;
+        //args->params_in.n_params = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1]->call.fi.args->params_out.n_params;
+        //args->params_in.iters = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1]->call.fi.args->params_out.iters;
+    }
+
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
 }
 
 extern inline void
@@ -237,7 +266,7 @@ hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, uint8_t f, struct do_w
     dw = &item->call.dw;
     dw->f = f;
     dw->args = do_while_args;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
 }
 
 extern inline void
@@ -252,7 +281,7 @@ hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, struct for_
     tor = &item->call.tor;
     tor->args = args;
     tor->f = f;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
 }
 
 extern inline void
@@ -266,7 +295,7 @@ hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, struct for_args *args
     struct hotcall_for_start *for_s;
     for_s = &item->call.for_s;
     for_s->args = args;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
 }
 
 extern inline void
@@ -280,7 +309,7 @@ hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_args *
     struct hotcall_while_start *while_s;
     while_s = &item->call.while_s;
     while_s->args = args;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
 }
 
 extern inline void
@@ -294,7 +323,7 @@ hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx, struct for_args *args) 
     struct hotcall_for_end *for_e;
     for_e = &item->call.for_e;
     for_e->args = args;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
 }
 
 extern inline void
@@ -308,7 +337,27 @@ hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx, struct while_args *ar
     struct hotcall_while_end *while_e;
     while_e = &item->call.while_e;
     while_e->args = args;
-    sm_ctx->hcall.ecall_queue[sm_ctx->hcall.queue_length++] = item;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+}
+
+extern inline void
+hotcall_bundle_error(struct shared_memory_ctx *sm_ctx, int error_code) {
+    struct ecall_queue_item *item;
+    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item->type = QUEUE_ITEM_TYPE_ERROR;
+    if(sm_ctx->pfc.idx == MAX_TS) {
+        sm_ctx->pfc.idx = 0;
+    }
+    struct hotcall_error *error;
+    error = &item->call.err;
+    error->error_code = error_code;
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+}
+
+
+extern inline void
+hotcall_bundle_chain(int n, ...) {
+
 }
 
 

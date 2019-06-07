@@ -10,7 +10,7 @@ TEST(for,1) {
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     unsigned int n_ecalls = 3, n_params = 2, n_iters = 10;
     int xs[n_iters] = { 0 };
     int ys[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -40,7 +40,7 @@ TEST(for,2) {
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx, NULL);
+    hotcall_bundle_begin(sm_ctx);
     unsigned int n_ecalls = 3, n_params = 1, n_iters = 10, n_variables = 2;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     void *args[n_params] = { xs };
@@ -54,7 +54,7 @@ TEST(for,2) {
 
     struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
-        .args = (argument_list) {
+        .args = (struct hotcall_function_arg_list) {
             .n_args = 1,
             .args = { xs }
         }
@@ -69,7 +69,6 @@ TEST(for,2) {
         .then_branch_len = 1,
         .else_branch_len = 0,
         .predicate = (struct predicate) {
-            .expected = 1,
             .fmt = fmt,
             .n_variables = n_variables,
             .variables = variables
