@@ -13,5 +13,7 @@
 #define hotcall_ecall_plus 9
 #define hotcall_ecall_revert 10
 #define hotcall_DUMMY 100
+#define hotcall_ecall_plus_y 11
+#define hotcall_ecall_zero 12
 
 #endif

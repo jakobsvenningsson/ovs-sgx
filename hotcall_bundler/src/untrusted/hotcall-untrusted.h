@@ -17,17 +17,35 @@
 
 #define HCALL(SM_CTX, F, _ASYNC, RET, N_ARGS, ARGS) \
     (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
-        get_fcall(&(SM_CTX)->pfc, QUEUE_ITEM_TYPE_FUNCTION, hotcall_ ## F, RET, N_ARGS, ARGS); \
+        get_fcall((SM_CTX), QUEUE_ITEM_TYPE_FUNCTION, hotcall_ ## F, RET, N_ARGS, ARGS); \
     if(ASYNC(SM_CTX, _ASYNC) != 1) { \
         make_hotcall(&(SM_CTX)->hcall); \
     }
 
 #define HCALL_CONTROL(SM_CTX, TYPE, _ASYNC, N_ARGS, ARGS) \
     (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
-        get_fcall(&(SM_CTX)->pfc, QUEUE_ITEM_TYPE_ ## TYPE, 0, NULL, N_ARGS, ARGS); \
+        get_fcall((SM_CTX), QUEUE_ITEM_TYPE_ ## TYPE, 0, NULL, N_ARGS, ARGS); \
     if(ASYNC(SM_CTX, _ASYNC) != 1) { \
         make_hotcall(&(SM_CTX)->hcall); \
     }
+
+
+#define _HCALL_1(SM_CTX, UNIQUE_ID, CONFIG, ...) \
+    struct parameter CAT2(HCALL_ARGS_, UNIQUE_ID)[] = { \
+        __VA_ARGS__ \
+    }; \
+    struct hotcall_function_config CAT2(HCALL_CONFIG_, UNIQUE_ID) = CONFIG; \
+    CAT2(HCALL_CONFIG_, UNIQUE_ID).n_params = sizeof(CAT2(HCALL_ARGS_, UNIQUE_ID))/sizeof(struct parameter);\
+    (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
+        get_fcall_((SM_CTX), &CAT2(HCALL_CONFIG_, UNIQUE_ID), CAT2(HCALL_ARGS_, UNIQUE_ID));\
+    if(ASYNC(SM_CTX, false) != 1) { \
+        make_hotcall(&(SM_CTX)->hcall); \
+    }
+
+
+
+#define HCALL_1(SM_CTX, CONFIG, ...) \
+    _HCALL_1(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 
 #ifdef __cplusplus
@@ -44,6 +62,8 @@ void
 hotcall_bundle_expected_value(struct preallocated_function_calls *pfc, int expected, int error_code, bool has_else);
 void
 hotcall_destroy(struct shared_memory_ctx *sm_ctx);
+struct shared_memory_ctx *
+get_context();
 
 
 extern inline bool
@@ -83,11 +103,53 @@ is_inside_chain(struct shared_memory_ctx *sm_ctx) {
     return sm_ctx->hcall.is_inside_chain;
 }
 
+extern inline struct ecall_queue_item *
+next_queue_item(struct shared_memory_ctx *sm_ctx) {
+    struct ecall_queue_item *item;
+    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    if(sm_ctx->pfc.idx == MAX_TS) {
+        sm_ctx->pfc.idx = 0;
+    }
+    return item;
+}
 
+extern inline void *
+enqueue_item(struct shared_memory_ctx *sm_ctx, struct ecall_queue_item *item) {
+    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+}
 
 extern inline
-struct ecall_queue_item * get_fcall(struct preallocated_function_calls *pfc, uint8_t f_type, uint8_t f_id, void *ret, uint8_t n_args, void **args) {
-    struct ecall_queue_item *item = &pfc->fcs[pfc->idx++];
+struct ecall_queue_item * get_fcall_(struct shared_memory_ctx *sm_ctx, struct hotcall_function_config *config, struct parameter *params) {
+    struct ecall_queue_item *item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_FUNCTION;
+
+    struct hotcall_function_ *fcall;
+    fcall = &item->call.fc_;
+    //fcall->id = f_id;
+    fcall->config = config;
+    fcall->params = params;
+    if(config->has_return) {
+        fcall->return_value = fcall->params[--fcall->config->n_params].value.variable.arg;
+    }
+
+    /*fcall->args.n_args = (ret ? n_args - 1 : n_args);
+    if(ret) {
+        fcall->return_value = params[0].value.variable.arg;
+    }
+    for(int i = 0; i < fcall->args.n_args; ++i) {
+        fcall->args.args[i] = params[i].value.variable.arg;
+    }*/
+    return item;
+    //memcpy(fcall->args.args, args, fcall->args.n_args * sizeof(void *));
+}
+
+extern inline
+struct ecall_queue_item * get_fcall(struct shared_memory_ctx *sm_ctx, uint8_t f_type, uint8_t f_id, void *ret, uint8_t n_args, void **args) {
+    struct ecall_queue_item *item;
+    struct preallocated_function_calls *pfc;
+    pfc = &sm_ctx->pfc;
+    item = next_queue_item(sm_ctx);
     item->type = f_type;
     switch(item->type) {
         case QUEUE_ITEM_TYPE_IF:
@@ -200,167 +262,189 @@ next_int(struct preallocated_function_calls *pfc, int x) {
     return &pfc->int_ts[pfc->idx_int++];
 }
 
-
 extern inline void
-hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_args *args) {
+hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_config *config, struct parameter *args) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_IF;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
     struct hotcall_if *tif;
     tif = &item->call.tif;
     tif->args = args;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    tif->config = config;
+    enqueue_item(sm_ctx, item);
+}
+
+
+extern inline void
+chain_operators(struct shared_memory_ctx *sm_ctx, struct parameter *params) {
+    struct ecall_queue_item *prev_item;
+    prev_item = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1];
+    switch(prev_item->type) {
+        case QUEUE_ITEM_TYPE_FILTER:
+            params[0] = prev_item->call.fi.params[prev_item->call.fi.config->n_params - 1];
+            break;
+        case QUEUE_ITEM_TYPE_MAP:
+            params[0] = prev_item->call.ma.params[prev_item->call.ma.config->n_params - 1];
+            break;
+        case QUEUE_ITEM_TYPE_REDUCE:
+            params[0] = prev_item->call.ma.params[prev_item->call.re.config->n_params - 1];
+            break;
+        default:
+            printf("default chaining..\n");
+    }
 }
 
 extern inline void
-hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, uint8_t f, struct filter_args *args) {
+hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, struct filter_config *config, struct parameter *params) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_FILTER;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
     struct hotcall_filter *fi;
     fi = &item->call.fi;
-    fi->f = f;
-    fi->args = args;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    fi->config = config;
+    fi->params = params;
+    if(is_inside_chain(sm_ctx) && sm_ctx->hcall.batch.queue_len > 0) {
+        chain_operators(sm_ctx, params);
+    }
+    enqueue_item(sm_ctx, item);
 }
 
 extern inline void
-hotcall_bundle_map(struct shared_memory_ctx *sm_ctx, uint8_t f, struct map_args *args) {
+hotcall_bundle_map(struct shared_memory_ctx *sm_ctx, struct map_config *config, struct parameter *params) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_MAP;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
     struct hotcall_map *ma;
     ma = &item->call.ma;
-    ma->f = f;
-    ma->args = args;
-
-
-    if(is_inside_chain(sm_ctx)) {
-        args->params_in = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1]->call.fi.args->params_out;
-        //args->params_in.params = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1]->call.fi.args->params_out.params;
-        //args->params_in.n_params = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1]->call.fi.args->params_out.n_params;
-        //args->params_in.iters = sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len - 1]->call.fi.args->params_out.iters;
+    ma->config = config;
+    ma->params = params;
+    if(is_inside_chain(sm_ctx) && sm_ctx->hcall.batch.queue_len > 0) {
+        chain_operators(sm_ctx, params);
     }
-
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    enqueue_item(sm_ctx, item);
 }
 
 extern inline void
-hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, uint8_t f, struct do_while_args *do_while_args) {
+hotcall_bundle_reduce(struct shared_memory_ctx *sm_ctx, struct reduce_config *config, struct parameter *params) {
+    printf("reduce\n");
+
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
-    item->type = QUEUE_ITEM_TYPE_DO_WHILE;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_REDUCE;
+    struct hotcall_reduce *re;
+    re = &item->call.re;
+    re->config = config;
+    re->params = params;
+    if(is_inside_chain(sm_ctx) && sm_ctx->hcall.batch.queue_len > 0) {
+        chain_operators(sm_ctx, params);
     }
+    enqueue_item(sm_ctx, item);
+
+    printf("reduce\n");
+}
+
+extern inline void
+hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, struct do_while_config *config, struct parameter *body_params, struct parameter *condition_params) {
+    struct ecall_queue_item *item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_DO_WHILE;
     struct hotcall_do_while *dw;
     dw = &item->call.dw;
-    dw->f = f;
-    dw->args = do_while_args;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    dw->config = config;
+    dw->body_params = body_params;
+    dw->condition_params = condition_params;
+    enqueue_item(sm_ctx, item);
 }
 
 extern inline void
-hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, uint8_t f, struct for_each_args *args) {
+hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, struct for_each_config *config, struct parameter *params) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_FOR_EACH;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
     struct hotcall_for_each *tor;
     tor = &item->call.tor;
-    tor->args = args;
-    tor->f = f;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    tor->params = params;
+    tor->config = config;
+    enqueue_item(sm_ctx, item);
 }
 
 extern inline void
-hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, struct for_args *args) {
+hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, struct for_config *config) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_FOR_BEGIN;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
     struct hotcall_for_start *for_s;
     for_s = &item->call.for_s;
-    for_s->args = args;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    for_s->config = config;
+    for_s->config->loop_in_process = false;
+    enqueue_item(sm_ctx, item);
 }
 
 extern inline void
-hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_args *args) {
+hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_config *config, struct parameter *params) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_WHILE_BEGIN;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
     struct hotcall_while_start *while_s;
     while_s = &item->call.while_s;
-    while_s->args = args;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    while_s->config = config;
+    while_s->params = params;
+    while_s->config->loop_in_process = false;
+    enqueue_item(sm_ctx, item);
+}
+
+
+extern inline void
+calculate_loop_length(struct hotcall_batch *batch, int type) {
+    unsigned body_len = 0, nesting = 0;
+    struct ecall_queue_item *it;
+    for(it = batch->queue[batch->queue_len - 1]; it->type != type || nesting > 0 ; --it) {
+        switch(it->type) {
+            case QUEUE_ITEM_TYPE_LOOP_END: nesting++; break;
+            case QUEUE_ITEM_TYPE_WHILE_BEGIN: case QUEUE_ITEM_TYPE_FOR_BEGIN: nesting--; break;
+        }
+        body_len++;
+    }
+    switch(type) {
+        case QUEUE_ITEM_TYPE_FOR_BEGIN:
+            it->call.for_s.config->body_len = body_len;
+            break;
+        case QUEUE_ITEM_TYPE_WHILE_BEGIN:
+            it->call.while_s.config->body_len = body_len;
+            break;
+        default:
+            SWITCH_DEFAULT_REACHED
+    }
 }
 
 extern inline void
-hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx, struct for_args *args) {
+hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
-    item->type = QUEUE_ITEM_TYPE_FOR_END;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
-    struct hotcall_for_end *for_e;
-    for_e = &item->call.for_e;
-    for_e->args = args;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_LOOP_END;
+    calculate_loop_length(&sm_ctx->hcall.batch, QUEUE_ITEM_TYPE_FOR_BEGIN);
+    enqueue_item(sm_ctx, item);
 }
 
 extern inline void
-hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx, struct while_args *args) {
+hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
-    item->type = QUEUE_ITEM_TYPE_WHILE_END;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
-    struct hotcall_while_end *while_e;
-    while_e = &item->call.while_e;
-    while_e->args = args;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_LOOP_END;
+    calculate_loop_length(&sm_ctx->hcall.batch, QUEUE_ITEM_TYPE_WHILE_BEGIN);
+    enqueue_item(sm_ctx, item);
 }
 
 extern inline void
 hotcall_bundle_error(struct shared_memory_ctx *sm_ctx, int error_code) {
     struct ecall_queue_item *item;
-    item = &sm_ctx->pfc.fcs[sm_ctx->pfc.idx++];
+    item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_ERROR;
-    if(sm_ctx->pfc.idx == MAX_TS) {
-        sm_ctx->pfc.idx = 0;
-    }
     struct hotcall_error *error;
     error = &item->call.err;
     error->error_code = error_code;
-    sm_ctx->hcall.batch.queue[sm_ctx->hcall.batch.queue_len++] = item;
+    enqueue_item(sm_ctx, item);
 }
-
-
-extern inline void
-hotcall_bundle_chain(int n, ...) {
-
-}
-
-
 
 #ifdef __cplusplus
 }

@@ -2,6 +2,7 @@
 #include "hotcall-trusted.h"
 #include <stdio.h>
 #include <ctype.h>
+#include "assert.h"
 #include "boolean_expression_translator.h"
 
 void
@@ -9,120 +10,222 @@ hotcall_register_config(struct hotcall_config *config) {
     hotcall_config = config;
 }
 
-
 static inline bool
 hotcall_handle_if(struct hotcall_if *tif, uint8_t *exclude_list, int pos, int exclude_list_len) {
-    struct postfix_item output[strlen(tif->args->predicate.fmt)];
+    struct postfix_item output[strlen(tif->config->predicate_fmt)];
     unsigned int output_length;
-    to_postfix(&tif->args->predicate, output, &output_length);
+    to_postfix(tif->config->predicate_fmt, tif->args, output, &output_length);
     int res = evaluate_postfix(output, output_length, hotcall_config, 0);
-
-    if(res && tif->args->else_branch_len > 0) {
-        exclude_else_branch(exclude_list, pos, tif->args->then_branch_len, tif->args->else_branch_len);
+    if(res && tif->config->else_branch_len > 0) {
+        exclude_else_branch(exclude_list, pos, tif->config->then_branch_len, tif->config->else_branch_len);
     } else if(!res) {
-        if(tif->args->then_branch_len > 0) {
-            exclude_if_branch(exclude_list, pos, tif->args->then_branch_len);
+        if(tif->config->then_branch_len > 0) {
+            exclude_if_branch(exclude_list, pos, tif->config->then_branch_len);
         }
-        if(tif->args->return_if_false) {
-            exclude_rest(exclude_list, pos, tif->args->then_branch_len ,tif->args->else_branch_len, exclude_list_len);
-        }
-    }
-}
-
-static inline void
-hotcall_set_function_in_arguments(const struct function_parameters_in *params_in, struct hotcall_function *fc, int iter) {
-    fc->args.n_args = params_in->n_params;
-    struct function_parameter *param;
-    int offset;
-    for(int n = 0; n < params_in->n_params; ++n) {
-        param = &params_in->params[n];
-        offset = param->iter ? iter : 0;
-        switch(param->fmt) {
-            case 'u':
-                fc->args.args[n] = ((unsigned int *) param->arg) + offset;
-                break;
-            case 'b':
-                fc->args.args[n] = ((bool *) param->arg) + offset;
-                break;
-            case 'd':
-                fc->args.args[n] = ((int *) param->arg) + offset;
-                break;
-            default:
-                printf("Switch default at %s %d.\n", __FILE__, __LINE__);
-                break;
-        }
-    }
-}
-
-static inline void
-hotcall_set_function_out_arguments(struct function_parameters_in *params_out, const struct function_parameters_in *params_in, struct hotcall_function *fc, int iter, int n_include) {
-    struct function_parameter *param_i, *param_o;
-    int offset;
-    for(int n = 0; n < params_in->n_params; ++n) {
-        param_i = &params_in->params[n];
-        param_o = &params_out->params[n];
-        offset = param_i->iter ? iter : 0;
-        switch(param_i->fmt) {
-            case 'u':
-                ((unsigned int *) param_o->arg)[n_include] = ((unsigned int *) param_i->arg)[offset];
-                break;
-            case 'b':
-                ((bool *) param_o->arg)[n_include] = ((bool *) param_i->arg)[offset];
-                break;
-            case 'd':
-                ((int *) param_o->arg)[n_include] = ((int *) param_i->arg)[offset];
-                break;
-            default:
-                printf("Switch default at %s %d.\n", __FILE__, __LINE__);
-                break;
+        if(tif->config->return_if_false) {
+            exclude_rest(exclude_list, pos, tif->config->then_branch_len ,tif->config->else_branch_len, exclude_list_len);
         }
     }
 }
 
 static inline void
 hotcall_handle_do_while(struct hotcall_do_while *dw) {
-    struct postfix_item output[strlen(dw->args->predicate.fmt)];
+    struct postfix_item output[strlen(dw->config->condition_fmt)];
     unsigned int output_length;
-    to_postfix(&dw->args->predicate, output, &output_length);
-
-    struct hotcall_function *fc, fc_body;
-    fc_body.id = dw->f;
-    hotcall_set_function_in_arguments(dw->args->params, &fc_body, 0);
-    unsigned int res;
+    to_postfix(dw->config->condition_fmt, dw->condition_params, output, &output_length);
+    struct hotcall_function_ fc;
+    struct hotcall_function_config config = {
+        .f_id = dw->config->f_id,
+        .n_params = dw->config->body_n_params
+    };
+    fc.config = &config;
+    fc.params = dw->body_params;;
     while(true) {
-        res = evaluate_postfix(output, output_length, hotcall_config, 0);
-        if(!res) {
+        if(!evaluate_postfix(output, output_length, hotcall_config, 0)) {
             return;
         }
-        hotcall_config->execute_function(&fc_body);
+        hotcall_config->execute_function(&fc);
+    }
+}
+
+static inline void
+combine_result(char op, struct parameter *accumulator, void *ret, int n) {
+
+    if(n == 0) {
+        switch(accumulator->value.variable.fmt) {
+            case 'd': case 'b':
+                *(int *) accumulator->value.variable.arg = *(int *) ret;
+                break;
+            case 'u':
+                *(unsigned int *) accumulator->value.variable.arg = *(unsigned int *) ret;
+                break;
+            default:
+                SWITCH_DEFAULT_REACHED
+        }
+        return;
+    }
+
+    switch(op) {
+        case '+':
+            switch(accumulator->value.variable.fmt) {
+                case 'd': case 'b':
+                    *(int *) accumulator->value.variable.arg += *(int *) ret;
+                    break;
+                case 'u':
+                    *(unsigned int *) accumulator->value.variable.arg += *(unsigned int *) ret;
+                    break;
+                default:
+                    SWITCH_DEFAULT_REACHED
+            }
+            break;
+        case '-':
+            switch(accumulator->value.variable.fmt) {
+                case 'd': case 'b':
+                    *(int *) accumulator->value.variable.arg -= *(int *) ret;
+                    break;
+                case 'u':
+                    *(unsigned int *) accumulator->value.variable.arg -= *(unsigned int *) ret;
+                    break;
+                default:
+                    SWITCH_DEFAULT_REACHED
+            }
+            break;
+        case '&':
+            switch(accumulator->value.variable.fmt) {
+                case 'd': case 'b':
+                    *(int *) accumulator->value.variable.arg = *(int *) accumulator->value.variable.arg && *(int *) ret;
+                    break;
+                case 'u':
+                    *(unsigned int *) accumulator->value.variable.arg = *(unsigned int *) accumulator->value.variable.arg  && *(unsigned int *) ret;
+                    break;
+                default:
+                    SWITCH_DEFAULT_REACHED
+            }
+            break;
+        case '|':
+            switch(accumulator->value.variable.fmt) {
+                case 'd': case 'b':
+                    *(int *) accumulator->value.variable.arg = *(int *) accumulator->value.variable.arg || *(int *) ret;
+                    break;
+                case 'u':
+                    *(unsigned int *) accumulator->value.variable.arg =  *(unsigned int *) accumulator->value.variable.arg || *(unsigned int *) ret;
+                    break;
+                default:
+                    SWITCH_DEFAULT_REACHED
+            }
+            break;
+        default:
+            SWITCH_DEFAULT_REACHED
+    }
+}
+
+static inline void
+hotcall_handle_reduce(struct hotcall_reduce *re) {
+    printf("hotcall_handle_reduce\n");
+    struct parameter *accumulator = &re->params[re->config->n_params - 1];
+    unsigned int in_len = *re->params[0].len;
+
+    // No function is used in reduce, we shall only combine the input elements.
+    if(re->config->f_id == 255) {
+        for(int i = 0; i < in_len; ++i) {
+            switch(re->params[0].value.variable.fmt) {
+                case 'd':
+                    combine_result(re->config->op, accumulator, ((int *) re->params[0].value.variable.arg) + i, i);
+
+                    break;
+                case 'u':
+                    combine_result(re->config->op, accumulator, ((unsigned int *) re->params[0].value.variable.arg) + i, i);
+
+                    break;
+                case 'b':
+                    combine_result(re->config->op, accumulator, ((bool *) re->params[0].value.variable.arg) + i, i);
+                    break;
+                default: SWITCH_DEFAULT_REACHED
+            }
+        }
+        return;
+    }
+
+    int ret = 0;
+    for(int i = 0; i < *re->params[0].len; ++i) {
+        struct hotcall_function_ fc;
+        struct hotcall_function_config config = {
+            .f_id = re->config->f_id,
+            .n_params = re->config->n_params - 1,
+        };
+        fc.config = &config;
+        fc.params = re->params;
+        fc.return_value = &ret;
+        struct variable_parameter *param_var;
+        for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
+            param_var = &re->params[j].value.variable;
+            if(!param_var->iter) continue;
+            switch(param_var->fmt) {
+                case 'd':
+                    param_var->arg = ((int *) param_var->arg) + 1;
+                    break;
+                case 'u':
+                    param_var->arg = ((unsigned int *) param_var->arg) + 1;
+                    break;
+                case 'b':
+                    param_var->arg = ((bool *) param_var->arg) + 1;
+                    break;
+                default: SWITCH_DEFAULT_REACHED
+            }
+        }
+        hotcall_config->execute_function(&fc);
+        combine_result(re->config->op, accumulator, &ret, i);
     }
 }
 
 
 static inline void
 hotcall_handle_map(struct hotcall_map *ma) {
-    const struct function_parameters_in *params_in, *params_out;
-    params_in = ma->args->params_in;
-    params_out = ma->args->params_out;
+    const struct variable_parameter *params_in_var, *params_out_var;
+    const struct parameter *params_in;
+    params_in = &ma->params[0];
+    params_in_var = &params_in->value.variable;
+    params_out_var = &ma->params[ma->config->n_params - 1].value.variable;
 
-    struct hotcall_function fc;
-    fc.id = ma->f;
-    fc.args.n_args = params_in->n_params;
+    struct hotcall_function_ fc;
+    struct hotcall_function_config config = {
+        .f_id = ma->config->f_id,
+        .n_params = ma->config->n_params - 1,
+    };
+    fc.config = &config;
+    fc.params = ma->params;
 
-    for(int i = 0; i < *params_in->iters; ++i) {
-        hotcall_set_function_in_arguments(params_in, &fc, i);
-        switch(params_out->params[0].fmt) {
+    for(int i = 0; i < *params_in->len; ++i) {
+        struct variable_parameter *param_var;
+        for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
+            param_var = &ma->params[j].value.variable;
+            if(!param_var->iter) continue;
+            switch(param_var->fmt) {
+                case 'd':
+                    param_var->arg = ((int *) param_var->arg) + 1;
+                    break;
+                case 'u':
+                    param_var->arg = ((unsigned int *) param_var->arg) + 1;
+                    break;
+                case 'b':
+                    param_var->arg = ((bool *) param_var->arg) + 1;
+                    break;
+                default: SWITCH_DEFAULT_REACHED
+            }
+        }
+
+        switch(params_out_var->fmt) {
             case 'u':
-                fc.return_value = ((unsigned int *) params_out->params[0].arg) + i;
+                fc.return_value = ((unsigned int *) params_out_var->arg) + i;
                 break;
             case 'b':
-                fc.return_value = ((bool *) params_out->params[0].arg) + i;
+                fc.return_value = ((bool *) params_out_var->arg) + i;
                 break;
             case 'd':
-                fc.return_value = ((int *) params_out->params[0].arg) + i;
+                fc.return_value = ((int *) params_out_var->arg) + i;
                 break;
             default:
-                printf("Switch default at %s %d.\n", __FILE__, __LINE__, params_out->params[0].fmt, params_out->n_params);
+                SWITCH_DEFAULT_REACHED
                 break;
         }
         hotcall_config->execute_function(&fc);
@@ -131,60 +234,94 @@ hotcall_handle_map(struct hotcall_map *ma) {
 
 static inline void
 hotcall_handle_filter(struct hotcall_filter *fi) {
-    struct postfix_item output[strlen(fi->args->predicate.fmt)];
-    unsigned int output_length;
-    to_postfix(&fi->args->predicate, output, &output_length);
+    struct variable_parameter *input_var = NULL, *output_var = NULL;
+    struct parameter *input, *output;
+    input = &fi->params[0];
+    switch(input->type) {
+        case FUNCTION_TYPE_:
+            for(int i = 0; i < input->value.function.n_params; ++i) {
+                if(input->value.function.params[i].value.variable.iter) {
+                    input_var = &input->value.function.params[i].value.variable;
+                }
+            }
+            break;
+        case VARIABLE_TYPE_:
+            if(input->value.variable.iter) {
+                input_var = &input->value.variable;
+            }
+            break;
+        default:
+            break;
+    }
+    sgx_assert(input_var != NULL, "ERROR, input parameter contains no iterator. Undefined behaviour from now on..");
 
-    struct hotcall_function *fc;
-    unsigned int res, n_include = 0;
-    for(int n = 0; n < *fi->args->params_in->iters; ++n) {
-        for(int j = 0; j < fi->args->predicate.n_variables; ++j) {
-            switch(fi->args->predicate.variables[j].type) {
-                case FUNCTION_TYPE:
-                    fc = (struct hotcall_function *) fi->args->predicate.variables[j].val;
-                    fc->args.n_args = fi->args->params_in->n_params;
-                    hotcall_set_function_in_arguments(fi->args->params_in, fc, n);
+    output = &fi->params[fi->config->n_params - 1];
+    switch(output->type) {
+        case VARIABLE_TYPE_:
+            output_var = &output->value.variable;
+            break;
+        default:
+            sgx_assert(true, "ERROR, return parameter is not of variable type. Undefined behaviour from now...");
+    }
+    sgx_assert(output_var != NULL, "ERROR, return parameter is not of variable type. Undefined behaviour from now...");
+
+    struct postfix_item postfix_output[strlen(fi->config->condition_fmt)];
+    unsigned int postfix_output_length;
+    to_postfix(fi->config->condition_fmt, fi->params, postfix_output, &postfix_output_length);
+    int res, offset, n_include = 0;
+    for(int n = 0; n < *input->len; ++n) {
+        res = evaluate_postfix(postfix_output, postfix_output_length, hotcall_config, n);
+        if(res) {
+            offset = n;
+            switch(output_var->fmt) {
+                case 'u':
+                    ((unsigned int *) output_var->arg)[n_include] = ((unsigned int *) input_var->arg)[offset];
                     break;
-                case POINTER_TYPE:
+                case 'b':
+                    ((bool *) output_var->arg)[n_include] = ((bool *) input_var->arg)[offset];
                     break;
-                case VARIABLE_TYPE:
+                case 'd':
+                    ((int *) output_var->arg)[n_include] = ((int *) input_var->arg)[offset];
                     break;
                 default:
-                    printf("Switch default at %s %d.\n", __FILE__, __LINE__);
+                    SWITCH_DEFAULT_REACHED
                     break;
             }
-        }
-        res = evaluate_postfix(output, output_length, hotcall_config, n);
-        if(res) {
-            hotcall_set_function_out_arguments(fi->args->params_out, fi->args->params_in, fc, n, n_include++);
+            n_include++;
         }
     }
-    *(fi->args->params_out->iters) = n_include;
+    *(output->len) = n_include;
+
 }
 
 static inline void
 hotcall_handle_for_each(struct hotcall_for_each *tor) {
-    struct hotcall_function fc;
-    fc.id = tor->f;
-    fc.args.n_args = tor->args->params_in->n_params;
-    struct function_parameter *param;
-    int offset;
-    for(int i = 0; i < *tor->args->params_in->iters; ++i) {
-        for(int j = 0; j < tor->args->params_in->n_params; ++j) {
-            param = &tor->args->params_in->params[j];
-            offset = param->iter ? i : 0;
-            switch(param->fmt) {
+    struct hotcall_function_ fc;
+    struct hotcall_function_config config = {
+        .f_id = tor->config->f_id,
+        .n_params = tor->config->n_params
+    };
+    fc.config = &config;
+    fc.params = tor->params;
+
+    for(int i = 0; i < *tor->params[0].len; ++i) {
+        struct variable_parameter *param_var;
+        for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
+            param_var = &tor->params[j].value.variable;
+            if(!param_var->iter) {
+                continue;
+            }
+            switch(param_var->fmt) {
                 case 'd':
-                    fc.args.args[j] = (int *) param->arg + i;
+                    param_var->arg = ((int *) param_var->arg) + 1;
                     break;
                 case 'u':
-                    fc.args.args[j] = (unsigned int *) param->arg + i;
+                    param_var->arg = ((unsigned int *) param_var->arg) + 1;
                     break;
                 case 'b':
-                    fc.args.args[j] = (bool *) param->arg + i;
-                        break;
-                default:
+                    param_var->arg = ((bool *) param_var->arg) + 1;
                     break;
+                default: SWITCH_DEFAULT_REACHED
             }
         }
         hotcall_config->execute_function(&fc);
@@ -192,47 +329,87 @@ hotcall_handle_for_each(struct hotcall_for_each *tor) {
 }
 
 static inline void
-hotcall_handle_for_begin(struct hotcall_for_start *for_s, unsigned int *for_loop_nesting, uint8_t *exclude_list, int pos) {
-    bool continue_loop = for_s->args->n_iters-- > 0;
+hotcall_handle_for_begin(struct hotcall_for_start *for_s, struct loop_stack_item *loop_stack, unsigned int *loop_stack_pos, uint8_t *exclude_list, int pos, int batch_len, struct ecall_queue_item **queue) {
+    bool continue_loop = *loop_stack_pos == 0 ? true : loop_stack[*loop_stack_pos - 1].index < *for_s->config->n_iters - 1;
     if(continue_loop) {
-        (*for_loop_nesting)++;
-    } else {
-        for_loop_indices[*for_loop_nesting] = 0;
-    }
-    memset(exclude_list + pos + 1, continue_loop ? 0 : 1, for_s->args->n_rows + 1);
-}
+        if(for_s->config->loop_in_process == false) {
+            for_s->config->loop_in_process = true;
+            loop_stack[*loop_stack_pos].body_len = for_s->config->body_len;
+            loop_stack[*loop_stack_pos].index = 0;
+            (*loop_stack_pos)++;
+        } else {
+            memset(exclude_list + pos, 0, loop_stack[*loop_stack_pos - 1].body_len + 2);
+            loop_stack[*loop_stack_pos - 1].index++;
 
-static inline void
-hotcall_handle_for_end(struct hotcall_for_end *for_e, int *pos, unsigned int *for_loop_nesting, unsigned int *for_loop_indices) {
-    *pos = *pos - (for_e->args->n_rows + 2);
-    (*for_loop_nesting)--;
-    for_loop_indices[*for_loop_nesting]++;
-}
-
-static inline void
-hotcall_handle_while_begin(struct hotcall_while_start *while_s, unsigned int *for_loop_nesting, uint8_t *exclude_list, int pos) {
-    struct postfix_item output[strlen(while_s->args->predicate.fmt)];
-    unsigned int output_length;
-    to_postfix(&while_s->args->predicate, output, &output_length);
-    int res = evaluate_postfix(output, output_length, hotcall_config, 0);
-    if(res) {
+            struct ecall_queue_item *it;
+            struct parameter *param;
+            for(it = queue[pos + 1]; it != *queue + batch_len; ++it) {
+                if(it->type != QUEUE_ITEM_TYPE_FUNCTION) {
+                    continue;
+                }
+                for(int j = 0; j < it->call.fc_.config->n_params; ++j) {
+                    param = &it->call.fc_.params[j];
+                    if(!param->value.variable.iter) {
+                        continue;
+                    }
+                    switch(param->value.variable.fmt) {
+                        case 'd':
+                            param->value.variable.arg = ((int *) param->value.variable.arg) + 1;
+                            break;
+                        case 'u':
+                            param->value.variable.arg = ((unsigned int *) param->value.variable.arg) + 1;
+                            break;
+                        case 'b':
+                            param->value.variable.arg = ((bool *) param->value.variable.arg) + 1;
+                            break;
+                        default: SWITCH_DEFAULT_REACHED
+                    }
+                }
+            }
+        }
         return;
     }
-    memset(exclude_list + pos + 1, 1, while_s->args->n_rows + 1);
+    memset(exclude_list + pos, 1, loop_stack[*loop_stack_pos - 1].body_len + 2);
+    for_s->config->loop_in_process = false;
+    (*loop_stack_pos)--;
+}
+
+
+static inline void
+hotcall_handle_while_begin(struct hotcall_while_start *while_s, struct loop_stack_item *loop_stack, unsigned int *loop_stack_pos, uint8_t *exclude_list, int pos) {
+    struct postfix_item output[strlen(while_s->config->predicate_fmt)];
+    unsigned int output_length;
+    to_postfix(while_s->config->predicate_fmt, while_s->params, output, &output_length);
+    int res = evaluate_postfix(output, output_length, hotcall_config, 0);
+    if(res) {
+        if(while_s->config->loop_in_process == false) {
+            while_s->config->loop_in_process = true;
+            loop_stack[*loop_stack_pos].body_len = while_s->config->body_len;
+            loop_stack[*loop_stack_pos].index = 0;
+            (*loop_stack_pos)++;
+        } else {
+            memset(exclude_list + pos, 0, loop_stack[*loop_stack_pos - 1].body_len + 2);
+            loop_stack[*loop_stack_pos - 1].index++;
+        }
+        return;
+    }
+    while_s->config->loop_in_process = false;
+    memset(exclude_list + pos, 1, loop_stack[*loop_stack_pos - 1].body_len + 2);
+    --(*loop_stack_pos);
 }
 
 static inline void
-hotcall_handle_while_end(struct hotcall_while_end *while_e, int *pos, unsigned int *for_loop_nesting, unsigned int *for_loop_indices) {
-    *pos = *pos - (while_e->args->n_rows + 2);
-    //(*for_loop_nesting)--;
-    //for_loop_indices[*for_loop_nesting]++;
+hotcall_end_loop(struct loop_stack_item *loop_stack, unsigned int loop_stack_pos, int *pos) {
+    *pos = *pos - (loop_stack[loop_stack_pos - 1].body_len + 2);
 }
 
 int
 ecall_start_poller(struct shared_memory_ctx *sm_ctx){
 
-    struct ecall_queue_item *queue_item, *queue_item_next;
-    struct hotcall_function *fc, *prev_fc;
+    struct ecall_queue_item *queue_item;
+    struct hotcall_function *fc;
+    struct hotcall_function_ *fc_;
+
 
     while (1) {
 
@@ -245,9 +422,14 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
             uint8_t exclude_list[sm_ctx->hcall.batch.queue_len];
             memset(exclude_list, 0, sm_ctx->hcall.batch.queue_len);
 
+            struct loop_stack_item loop_stack[MAX_LOOP_RECURSION] = { 0 };
+            unsigned int loop_stack_pos = 0;
 
             int n;
-            for(n = 0; n < sm_ctx->hcall.batch.queue_len; ++n) {
+
+            unsigned int queue_length = sm_ctx->hcall.batch.queue_len;
+
+            for(n = 0; n < queue_length; ++n) {
                     queue_item = sm_ctx->hcall.batch.queue[n];
                     if(exclude_list[n]) {
                         continue;
@@ -257,20 +439,16 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                         case QUEUE_ITEM_TYPE_DESTROY:
                             goto exit;
                         case QUEUE_ITEM_TYPE_FUNCTION:
-                            hotcall_handle_function(&queue_item->call.fc);
-                            prev_fc = &queue_item->call.fc;
+                            hotcall_config->execute_function(&queue_item->call.fc_);
                             break;
                         case QUEUE_ITEM_TYPE_IF: case QUEUE_ITEM_TYPE_IF_NULL:
-                            hotcall_handle_if(&queue_item->call.tif, exclude_list, n, sm_ctx->hcall.batch.queue_len);
+                            hotcall_handle_if(&queue_item->call.tif, exclude_list, n, queue_length);
                             break;
                         case QUEUE_ITEM_TYPE_FOR_EACH:
                             hotcall_handle_for_each(&queue_item->call.tor);
                             break;
                         case QUEUE_ITEM_TYPE_FOR_BEGIN:
-                            hotcall_handle_for_begin(&queue_item->call.for_s, &for_loop_nesting, exclude_list, n);
-                            break;
-                        case QUEUE_ITEM_TYPE_FOR_END:
-                            hotcall_handle_for_end(&queue_item->call.for_e, &n, &for_loop_nesting, for_loop_indices);
+                            hotcall_handle_for_begin(&queue_item->call.for_s, loop_stack, &loop_stack_pos, exclude_list, n, queue_length, sm_ctx->hcall.batch.queue);
                             break;
                         case QUEUE_ITEM_TYPE_FILTER:
                             hotcall_handle_filter(&queue_item->call.fi);
@@ -279,19 +457,22 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                             hotcall_handle_do_while(&queue_item->call.dw);
                             break;
                         case QUEUE_ITEM_TYPE_WHILE_BEGIN:
-                            hotcall_handle_while_begin(&queue_item->call.while_s, &for_loop_nesting, exclude_list, n);
+                            hotcall_handle_while_begin(&queue_item->call.while_s, loop_stack, &loop_stack_pos, exclude_list, n);
                             break;
-                        case QUEUE_ITEM_TYPE_WHILE_END:
-                            hotcall_handle_while_end(&queue_item->call.while_e, &n, &for_loop_nesting, for_loop_indices);
+                        case QUEUE_ITEM_TYPE_LOOP_END:
+                            hotcall_end_loop(loop_stack, loop_stack_pos, &n);
                             break;
                         case QUEUE_ITEM_TYPE_MAP:
                             hotcall_handle_map(&queue_item->call.ma);
+                            break;
+                        case QUEUE_ITEM_TYPE_REDUCE:
+                            hotcall_handle_reduce(&queue_item->call.re);
                             break;
                         case QUEUE_ITEM_TYPE_ERROR:
                             sm_ctx->hcall.batch.error = queue_item->call.err.error_code;
                             goto batch_done;
                         default:
-                            printf("Error, the default statement should never happen... %d\n", queue_item->type);
+                            SWITCH_DEFAULT_REACHED
                     }
                 }
                 batch_done:

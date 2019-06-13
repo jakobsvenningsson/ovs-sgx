@@ -9,6 +9,8 @@ enclave {
     untrusted {
       void
       ocall_print([in, string] const char *str);
+      void
+      ocall_assert([in, string] const char *str);
     };
 
     trusted {
@@ -36,5 +38,7 @@ enclave {
       ecall_plus(int x, int y);
       public bool
       ecall_revert(bool x);
+      public void
+      ecall_zero([user_check] int *x);
     };
 };

@@ -10,45 +10,75 @@ TEST(do_while,1) {
     //Contract: the body of the while loop should execute 3 times and hence x should be 3 after termination.
 
     hotcall_test_setup();
+
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
     hotcall_bundle_begin(sm_ctx);
 
-    unsigned int n_params = 1, n_variables = 1, x = 0;
+    int x = 0;
 
-    struct function_parameter function_params[n_params] = {
-        (struct function_parameter) { .arg = &x, .fmt = 'u', .iter = false }
-    };
-    struct function_parameters_in params = {
-        .params = function_params, .n_params = n_params
+    struct parameter function_parameter[] = {
+        { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &x, .fmt = 'd' }}}
     };
 
-    struct hotcall_function fc = {
-        .id = hotcall_ecall_greater_than_two,
-        .args = (struct hotcall_function_arg_list) {
-            .n_args = 1,
-            .args = { &x }
-        }
-    };
-
-    struct predicate_variable variables[n_variables] = {
-        (struct predicate_variable) { &fc, FUNCTION_TYPE, 'b' }
-    };
-
-    char fmt[] = "!b";
-    struct do_while_args dw_args = {
-        .params = &params,
-        .predicate = (struct predicate)  {
-            .fmt = fmt,
-            .n_variables = n_variables,
-            .variables = variables
-        }
-    };
 
     DO_WHILE(
         sm_ctx,
-        ecall_plus_one,
-        &dw_args
+        ((struct do_while_config) {
+            .f_id = hotcall_ecall_plus_one,
+            .condition_fmt = "!b"
+        }),
+        CONDITION_PARAMS(
+            (struct parameter) { .type = FUNCTION_TYPE_,
+                                 .value = { .function = { .f_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1}}}
+        ),
+        FUNCTION_PARAMS(
+            (struct parameter) { .type = VARIABLE_TYPE_,
+                                 .value = { .variable = { .arg = &x, .fmt = 'd', .iter = false }}}
+        )
+    );
+
+    hotcall_bundle_end(sm_ctx);
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 3);
+}
+
+TEST(do_while,2) {
+    //Contract: the body of the while loop should execute 3 times and hence x should be 3 after termination.
+
+    hotcall_test_setup();
+
+    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
+
+    hotcall_bundle_begin(sm_ctx);
+
+    int x = 0, y = 5;
+
+    struct parameter function_parameter[] = {
+        { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &x, .fmt = 'd' }}}
+    };
+
+
+    DO_WHILE(
+        sm_ctx,
+        ((struct do_while_config) {
+            .f_id = hotcall_ecall_plus_one,
+            .condition_fmt = "d<d&!b"
+        }),
+        CONDITION_PARAMS(
+            (struct parameter) { .type = VARIABLE_TYPE_,
+                                 .value = { .variable = { .arg = &x, .fmt = 'd', .iter = false }}},
+            (struct parameter) { .type = VARIABLE_TYPE_,
+                                 .value = { .variable = { .arg = &y, .fmt = 'd', .iter = false }}},
+            (struct parameter) { .type = FUNCTION_TYPE_,
+                                 .value = { .function = { .f_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1 }}},
+        ),
+        FUNCTION_PARAMS(
+            (struct parameter) { .type = VARIABLE_TYPE_,
+                                 .value = { .variable = { .arg = &x, .fmt = 'd', .iter = false }}}
+        )
     );
 
     hotcall_bundle_end(sm_ctx);

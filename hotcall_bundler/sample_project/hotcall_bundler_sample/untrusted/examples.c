@@ -1,7 +1,7 @@
 #include "examples.h"
 #include "hotcall-untrusted.h"
 #include "functions.h"
-
+/*
 void hotcall_bundle_example_if(struct shared_memory_ctx *sm_ctx) {
     int x = 0;
     hotcall_bundle_begin(sm_ctx);
@@ -237,4 +237,4 @@ void hotcall_bundle_example_map(struct shared_memory_ctx *sm_ctx) {
 
 void hotcall_bundle_example_do_while(struct shared_memory_ctx *sm_ctx) {
 
-}
+}*/

@@ -61,6 +61,9 @@ cmpfunc (const void * a, const void * b);
 void
 benchmark(struct shared_memory_ctx *sm_ctx, unsigned int (*f_benchmark)(struct shared_memory_ctx *, unsigned int), unsigned int n_rounds, unsigned int n_iters);
 
+
+unsigned int
+benchmark_hotcall(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
 unsigned int
 benchmark_variadic_function(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
 

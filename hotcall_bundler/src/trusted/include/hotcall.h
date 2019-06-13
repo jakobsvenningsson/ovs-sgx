@@ -12,6 +12,7 @@
 #include "hotcall_for_each.h"
 #include "hotcall_filter.h"
 #include "hotcall_map.h"
+#include "hotcall_reduce.h"
 #include "hotcall_if.h"
 #include "hotcall_error.h"
 #include "hotcall_predicate.h"
@@ -30,6 +31,8 @@
 #define QUEUE_ITEM_TYPE_WHILE_END 11
 #define QUEUE_ITEM_TYPE_MAP 12
 #define QUEUE_ITEM_TYPE_ERROR 13
+#define QUEUE_ITEM_TYPE_REDUCE 14
+#define QUEUE_ITEM_TYPE_LOOP_END 15
 
 #define MAX_FCS 200
 #define MAX_TS 200
@@ -38,18 +41,26 @@
 #define CHAIN(N, ARGS...) \
     hotcall_bundle_chain(N, ARGS)
 
+
+#define CAT3(a, b, c) a ## b ## c
+#define CAT2(a, b) a ## b
+#define CAT(a, b, c) CAT3(a, b, c)
+#define UNIQUE_ID CAT(_uid_, __LINE__,  __func__)
+
+#define SWITCH_DEFAULT_REACHED printf("Default reached at %s %d\n", __FILE__, __LINE__);
+
 union hcall {
     struct hotcall_function fc;
     struct hotcall_if tif;
     struct hotcall_for_start for_s;
-    struct hotcall_for_end for_e;
     struct hotcall_for_each tor;
     struct hotcall_filter fi;
     struct hotcall_do_while dw;
     struct hotcall_while_start while_s;
-    struct hotcall_while_end while_e;
     struct hotcall_map ma;
     struct hotcall_error err;
+    struct hotcall_reduce re;
+    struct hotcall_function_ fc_;
 };
 
 struct ecall_queue_item {

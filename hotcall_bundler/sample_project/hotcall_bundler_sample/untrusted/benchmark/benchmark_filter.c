@@ -1,7 +1,7 @@
 #include "benchmark.h"
 #include "hotcall-untrusted.h"
 #include "functions.h"
-
+/*
 unsigned int
 benchmark_filter_naive(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     unsigned int warmup = n_rounds / 10;
@@ -93,4 +93,4 @@ benchmark_filter_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_roun
     }
     qsort(rounds, n_rounds, sizeof(unsigned int), cmpfunc);
     return rounds[n_rounds / 2];
-}
+}*/

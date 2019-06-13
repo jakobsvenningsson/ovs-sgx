@@ -58,6 +58,7 @@ App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/test/error.c \
 			   $(UNTRUSTED_DIR)/test/map.c \
 			   $(UNTRUSTED_DIR)/test/filter.c \
+			   $(UNTRUSTED_DIR)/test/reduce.c \
 			   $(UNTRUSTED_DIR)/test/functional_chaining.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_hotcall.c \

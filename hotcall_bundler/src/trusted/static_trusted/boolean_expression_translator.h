@@ -7,7 +7,7 @@ enum postfix_item_type { OPERAND, OPERATOR };
 struct postfix_item {
         char ch;
         enum postfix_item_type type;
-        struct predicate_variable *var;
+        struct parameter *elem;
 };
 
 static inline
@@ -15,7 +15,7 @@ int presedence(char c) {
     switch(c) {
         case '!':
             return 4;
-        case '>': case '<':
+        case '>': case '<': case '%':
             return 3;
         case '&': case '|':
             return 2;
@@ -25,15 +25,15 @@ int presedence(char c) {
 }
 
 extern inline void
-to_postfix(struct predicate *predicate, struct postfix_item *output, unsigned int *output_length) {
+to_postfix(const char *condition_fmt, struct parameter *predicate_args, struct postfix_item *output, unsigned int *output_length) {
     char chs[128];
     unsigned int pos = 0, output_index = 0, variable_index = 0;
     char tmp;
-    char *input = predicate->fmt;
+    const char *input = condition_fmt;
     for(int i = 0; i < strlen(input); ++i) {
         if(input[i] >= 'a' && input[i] <= 'z') {
             output[output_index].ch = input[i];
-            output[output_index].var = &predicate->variables[variable_index++];
+            output[output_index].elem = &predicate_args[variable_index++];
             output[output_index].type = OPERAND;
             output_index++;
             continue;
@@ -70,45 +70,147 @@ to_postfix(struct predicate *predicate, struct postfix_item *output, unsigned in
     *output_length = output_index;
 }
 
+extern void inline
+load_function_arguments(struct hotcall_function *fc, const struct variable_parameter *params, int offset) {
+    const struct variable_parameter *param;
+    for(int i = 0; i < fc->args.n_args; ++i) {
+        param = &params[i];
+        switch(param->fmt) {
+            case 'b':
+                fc->args.args[i] = (bool *) param->arg + (param->iter ? offset : 0);
+                break;
+            case 'd':
+                fc->args.args[i] = (int *) param->arg + (param->iter ? offset : 0);
+                break;
+            case 'u':
+                fc->args.args[i] = (unsigned int *) param->arg + (param->iter ? offset : 0);
+                break;
+            default:
+                SWITCH_DEFAULT_REACHED
+        }
+    }
+}
 
+extern void inline
+load_function_arguments_(struct hotcall_function *fc, const struct parameter *params, int offset) {
+    const struct parameter *param;
+    const struct variable_parameter *var_param;
 
-extern unsigned int for_loop_indices[3];
-extern unsigned int for_loop_nesting;
+    for(int i = 0; i < fc->args.n_args; ++i) {
+        param = &params[i];
+        switch(param->type) {
+            case FUNCTION_TYPE_:
+                break;
+            case VARIABLE_TYPE_:
+                var_param = &param->value.variable;
+                switch(var_param->fmt) {
+                    case 'b':
+                        fc->args.args[i] = (bool *) var_param->arg + (var_param->iter ? offset : 0);
+                        break;
+                    case 'd':
+                        fc->args.args[i] = (int *) var_param->arg + (var_param->iter ? offset : 0);
+                        break;
+                    case 'u':
+                        fc->args.args[i] = (unsigned int *) var_param->arg + (var_param->iter ? offset : 0);
+                        break;
+                    default:
+                        SWITCH_DEFAULT_REACHED
+                    }
+                break;
+            case POINTER_TYPE_:
+                break;
+            default:
+                SWITCH_DEFAULT_REACHED
+        }
+    }
+}
 
 extern inline int
 evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotcall_config, int offset) {
-    switch(operand_item->var->type) {
+    switch(operand_item->elem->type) {
         case FUNCTION_TYPE:
         {
-            struct hotcall_function *fc;
-            fc = (struct hotcall_function *) operand_item->var->val;
-            bool operand;
-            fc->return_value = &operand;
-            //hotcall_config->execute_function(fc);
-            hotcall_handle_function(fc);
-            return operand;
+            struct hotcall_function_ fc;
+            struct hotcall_function_config config = {
+                .f_id = operand_item->elem->value.function.f_id,
+                .n_params = operand_item->elem->value.function.n_params
+            };
+            fc.config = &config;
+            fc.params = operand_item->elem->value.function.params;
+
+            struct variable_parameter *param_var;
+
+
+            void *tmp[fc.config->n_params];
+            for(int j = 0; j < fc.config->n_params && offset > 0; ++j) {
+                param_var = &fc.params[j].value.variable;
+                if(!param_var->iter) {
+                    continue;
+                }
+                tmp[j] = param_var->arg;
+                switch(param_var->fmt) {
+                    case 'd':
+                        param_var->arg = ((int *) param_var->arg) + offset;
+                        break;
+                    case 'u':
+                        param_var->arg = ((unsigned int *) param_var->arg) + offset;
+                        break;
+                    case 'b':
+                        param_var->arg = ((bool *) param_var->arg) + offset;
+                        break;
+                    default: SWITCH_DEFAULT_REACHED
+                }
+            }
+
+
+            //fc.id = operand_item->elem->value.function.f_id;
+            //fc.args.n_args = operand_item->elem->value.function.n_params;
+            //load_function_arguments_(&fc, operand_item->elem->value.function.params, offset);
+            int operand = 0;
+            fc.return_value = &operand;
+            hotcall_config->execute_function(&fc);
+
+            for(int j = 0; j < fc.config->n_params && offset > 0; ++j) {
+                param_var = &fc.params[j].value.variable;
+                if(!param_var->iter) {
+                    continue;
+                }
+                param_var->arg = tmp[j];
+            }
+
+
+            switch(operand_item->ch) {
+                case 'b':
+                    return ((bool) operand);
+                case 'd':
+                    return operand;
+                case 'u':
+                    return ((unsigned int) operand);
+                default:
+                    SWITCH_DEFAULT_REACHED
+            }
         }
         case POINTER_TYPE:
         {
-            int offset_ = operand_item->var->iter ? offset : 0;
-            return (operand_item->var->val + offset_) != NULL;
+            int offset_ = operand_item->elem->value.variable.iter ? offset : 0;
+            return (operand_item->elem->value.pointer.arg + offset_) != NULL;
         }
         case VARIABLE_TYPE:
         {
-            int offset_ = operand_item->var->iter ? offset : 0;
+            int offset_ = operand_item->elem->value.variable.iter ? offset : 0;
             switch(operand_item->ch) {
                 case 'b':
-                    return *((bool *) operand_item->var->val + offset_);
+                    return *((bool *) operand_item->elem->value.variable.arg + offset_);
                 case 'u':
-                    return *((unsigned int *) operand_item->var->val + offset_);
+                    return *((unsigned int *) operand_item->elem->value.variable.arg + offset_);
                 case 'd':
-                    return *((int *) operand_item->var->val + offset_);
+                    return *((int *) operand_item->elem->value.variable.arg + offset_);
                 default:
-                    printf("Default reached at %s %d\n", __FILE__, __LINE__);
+                    SWITCH_DEFAULT_REACHED
             }
         }
         default:
-            printf("Default reached at %s %d\n", __FILE__, __LINE__);
+            SWITCH_DEFAULT_REACHED
     }
 }
 
@@ -124,68 +226,34 @@ evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struc
 
     struct postfix_item *operand1_item, *operand2_item;
 
-    struct predicate_variable p_var = {
+    struct parameter p_var = {
         .type = VARIABLE_TYPE,
-        .val = &res
+        .value = { .variable = { .arg = &res }}
     };
     struct postfix_item res_item = {
         .ch = 'b',
         .type = OPERAND,
-        .var = &p_var
+        .elem = &p_var
     };
 
+
     for(int i = 0; i < output_length; ++i) {
+
         it = &postfix[i];
-        if(it->ch >= 'a' && it->ch <= 'z') {
+        if(it->ch >= 'a' && it->ch <= 'z' || it->ch == '!') {
             output[stack_pos++] = it;
             continue;
         }
-        if(it->ch == '!') {
-            struct postfix_item *operand_item;
-            operand_item = output[stack_pos - 1];
-            switch(operand_item->var->type) {
-                case FUNCTION_TYPE:
-                {
-                    struct hotcall_function *fc;
-                    fc = (struct hotcall_function *) operand_item->var->val;
-                    bool operand;
-                    fc->return_value = &operand;
-                    hotcall_config->execute_function(fc);
-                    return !operand;
-                }
-                case POINTER_TYPE:
-                {
-                    int offset_ = operand_item->var->iter ? offset : 0;
-                    return operand_item->var->val + offset_  == NULL;
-                }
-                case VARIABLE_TYPE:
-                {
-                    int offset_ = operand_item->var->iter ? offset : 0;
-                    switch(operand_item->ch) {
-                        case 'b':
-                            return !*((bool *) operand_item->var->val + offset_);
-                        case 'u':
-                            return !*((unsigned int *) operand_item->var->val + offset_);
-                        case 'd':
-                            return !*((int *) operand_item->var->val + offset_);
-                        default:
-                            printf("Default reached at %s %d\n", __FILE__, __LINE__);
-                    }
-                }
-                default:
-                    printf("Default reached at %s %d\n", __FILE__, __LINE__);
-            }
-
-            continue;
-        }
-
 
         operand2_item = output[--stack_pos];
-        operand2 = evaluate_variable(operand2_item, hotcall_config, offset);
+        operand2 = operand2_item->ch == '!'
+            ? !evaluate_variable(output[--stack_pos], hotcall_config, offset)
+            : evaluate_variable(operand2_item, hotcall_config, offset);
 
         operand1_item = output[--stack_pos];
-        operand1 = evaluate_variable(operand1_item, hotcall_config, offset);
-
+        operand1 = operand1_item->ch == '!'
+            ? !evaluate_variable(output[--stack_pos], hotcall_config, offset)
+            : evaluate_variable(operand1_item, hotcall_config, offset);
 
         switch(it->ch) {
             case '&':
@@ -200,14 +268,19 @@ evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struc
             case '<':
                 res = operand1 < operand2;
                 break;
+            case '%':
+                res = operand1 % operand2;
+                break;
             default:
-                printf("Default reached at %s %d\n", __FILE__, __LINE__);
+                SWITCH_DEFAULT_REACHED
         }
         output[stack_pos++] = &res_item;
     }
 
     operand1_item = output[--stack_pos];
-    return evaluate_variable(operand1_item, hotcall_config, 0);
+    return operand1_item->ch == '!'
+        ? !evaluate_variable(output[--stack_pos], hotcall_config, offset)
+        : evaluate_variable(operand1_item, hotcall_config, offset);
 }
 
 #endif

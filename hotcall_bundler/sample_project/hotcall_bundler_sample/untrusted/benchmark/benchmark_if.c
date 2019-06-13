@@ -10,9 +10,15 @@ benchmark_if_naive(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
         clear_cache();
         BEGIN
         bool res;
-        HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
+        //HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
+        HCALL_1(
+                sm_ctx,
+                ((struct hotcall_function_config) { .f_id = hotcall_ecall_always_true, .has_return = true }),
+		        (struct parameter) { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &res }}}
+        );
         if(res) {
-            HCALL(sm_ctx, ecall_foo, false, NULL, 0, NULL)
+            //HCALL(sm_ctx, ecall_foo, false, NULL, 0, NULL);
+            HCALL_1(sm_ctx, ((struct hotcall_function_config) { .f_id = hotcall_ecall_foo, .has_return = false }));
         }
         CLOSE
         if(i >= warmup) {
@@ -32,31 +38,27 @@ benchmark_if_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) 
         clear_cache();
         BEGIN
         hotcall_bundle_begin(sm_ctx);
-        bool res;
-        HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
-        int n_variables = 1;
-        struct predicate_variable variables[n_variables] = {
-            (struct predicate_variable) { &res, VARIABLE_TYPE, 'b' }
-        };
-        char fmt[] = "b";
-        struct if_args if_args = {
-            .then_branch_len = 1,
-            .else_branch_len = 0,
-            .predicate = (struct predicate) {
-                .fmt = fmt,
-                .n_variables = n_variables,
-                .variables = variables
-            },
-            .return_if_false = false
-        };
+        //bool res;
+        //HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
         IF(
             sm_ctx,
-            &if_args
+            ((struct if_config) {
+                .then_branch_len = 1,
+                .else_branch_len = 0,
+                .predicate_fmt = "b",
+                .return_if_false = false
+            }),
+            (struct parameter) { .type = FUNCTION_TYPE_,  .value = { .function = { .f_id = hotcall_ecall_always_true, .params =  NULL }}}
+            //(struct parameter) { .type = VARIABLE_TYPE_,  .value = { .variable = { .arg = &res, .fmt = 'b' }}}
         );
-        THEN(HCALL(sm_ctx, ecall_foo, false, NULL, 0, NULL));
-        ELSE(NULL);
+        THEN
+            HCALL_1(
+                    sm_ctx,
+                    ((struct hotcall_function_config) { .f_id = hotcall_ecall_foo, .has_return = false })
+                );
 
         hotcall_bundle_end(sm_ctx);
+
         CLOSE
         if(i >= warmup) {
             rounds[i - warmup] = GET_TIME

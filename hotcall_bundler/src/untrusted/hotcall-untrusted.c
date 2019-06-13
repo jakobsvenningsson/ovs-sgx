@@ -1,14 +1,15 @@
 #include "hotcall_bundler_u.h"
 #include "hotcall-untrusted.h"
 #include <pthread.h>
+#include <assert.h>
 
+struct shared_memory_ctx *_sm_ctx;
 static sgx_enclave_id_t global_eid;
-struct shared_memory_ctx *sm_ctx;
 
 void *
 start_enclave_thread(void * vargp){
     int ecall_return;
-    ecall_start_poller(global_eid, &ecall_return, sm_ctx);
+    ecall_start_poller(global_eid, &ecall_return, _sm_ctx);
     if (ecall_return == 0) {
         printf("Application ran with success\n");
     } else {
@@ -30,7 +31,7 @@ hotcall_init(struct shared_memory_ctx *ctx, sgx_enclave_id_t eid) {
     ctx->pfc.idx_sizet = 0;
 
     global_eid = eid;
-    sm_ctx = ctx;
+    _sm_ctx = ctx;
 
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, start_enclave_thread, NULL);
@@ -51,6 +52,15 @@ hotcall_test() {
     return true;
 }
 
+void ocall_assert(char *msg) {
+    printf("Assert: %s.\n", msg);
+    assert(true);
+};
+
+struct shared_memory_ctx *
+get_context() {
+    return _sm_ctx;
+}
 
 
 /*

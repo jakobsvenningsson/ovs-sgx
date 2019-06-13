@@ -10,7 +10,18 @@ benchmark_hotcall(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     for(int i = 0; i < (n_rounds + warmup); ++i) {
         clear_cache();
         BEGIN
-        HCALL(sm_ctx, ecall_foo, false, NULL, 0, NULL)
+        int x = 0;
+        //void *args[] = { &x };
+        //HCALL(sm_ctx, ecall_plus_one, false, NULL, 1, args);
+        HCALL_1(
+            sm_ctx,
+            ((struct hotcall_function_config) {
+                .f_id = hotcall_ecall_plus_one,
+                .has_return = false
+            }),
+            (struct parameter) { .type = VARIABLE_TYPE_,  .value = { .variable = { .arg = &x }}}
+        );
+
         CLOSE
         if(i >= warmup) {
             rounds[i - warmup] = GET_TIME

@@ -3,14 +3,25 @@
 
 #include "hotcall_function.h"
 
-#define FOR_EACH(SM_CTX, FUNCTION, ARGS) hotcall_bundle_for_each(SM_CTX, hotcall_ ## FUNCTION, ARGS)
+#define _FOR_EACH(SM_CTX, ID, CONFIG, ...) \
+    struct parameter CAT2(FOR_EACH_ARG_,ID)[] = { \
+        __VA_ARGS__\
+    }; \
+    struct for_each_config CAT2(FOR_EACH_CONFIG_,ID) = CONFIG;\
+    CAT2(FOR_EACH_CONFIG_,ID).n_params = sizeof(CAT2(FOR_EACH_ARG_,ID))/sizeof(struct parameter);\
+    hotcall_bundle_for_each(SM_CTX, &CAT2(FOR_EACH_CONFIG_,ID), CAT2(FOR_EACH_ARG_,ID))
 
-struct for_each_args {
-    struct function_parameters_in *params_in;
+#define FOR_EACH(SM_CTX, CONFIG, ...) \
+    _FOR_EACH(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
+
+struct for_each_config {
+    uint8_t f_id;
+    unsigned int n_params;
 };
+
 struct hotcall_for_each {
-    uint8_t f;
-    struct for_each_args *args;
+    struct for_each_config *config;
+    struct parameter *params;
 };
 
 #endif

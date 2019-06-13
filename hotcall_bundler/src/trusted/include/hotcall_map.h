@@ -3,25 +3,25 @@
 
 #include "hotcall_function.h"
 
-#define _MAP(SM_CTX, FUNCTION, ARGS, UNIQUE_ID) \
-    struct map_args UNIQUE_ID = ARGS; \
-    hotcall_bundle_map(SM_CTX, hotcall_ ## FUNCTION,  &UNIQUE_ID)
+#define _MAP(SM_CTX, ID, CONFIG, ...) \
+    struct parameter CAT2(MAP_ARG_,ID)[] = { \
+        __VA_ARGS__\
+    }; \
+    struct map_config CAT2(MAP_CONFIG_,ID) = CONFIG;\
+    CAT2(MAP_CONFIG_,ID).n_params = sizeof(CAT2(MAP_ARG_,ID))/sizeof(struct parameter);\
+    hotcall_bundle_map(SM_CTX, &CAT2(MAP_CONFIG_,ID), CAT2(MAP_ARG_, ID))
 
-#define MAP(SM_CTX, FUNCTION, ARGS) \
-    _MAP(SM_CTX, FUNCTION, ARGS, UNIQUE_ID)
+#define MAP(SM_CTX, CONFIG, ...) \
+    _MAP(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
-/*
-struct function_map_out {
-    void *params;
-    char fmt;
-};*/
-struct map_args {
-    struct function_parameters_in *params_in;
-    struct function_parameters_in *params_out;
+
+struct map_config {
+    uint8_t f_id;
+    unsigned int n_params;
 };
 struct hotcall_map {
-    uint8_t f;
-    struct map_args *args;
+    struct parameter *params;
+    struct map_config *config;
 };
 
 #endif
