@@ -61,7 +61,7 @@ union hcall {
     struct hotcall_map ma;
     struct hotcall_error err;
     struct hotcall_reduce re;
-    struct hotcall_function fc_;
+    struct hotcall_function fc;
 };
 
 struct ecall_queue_item {

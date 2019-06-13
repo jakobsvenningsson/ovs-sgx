@@ -18,7 +18,6 @@ struct loop_stack_item {
     bool has_calculated_length;
 };
 
-//unsigned int for_loop_nesting = 0;
 static struct hotcall_config *hotcall_config;
 
 void
@@ -38,6 +37,46 @@ static inline void
 exclude_rest(uint8_t *exclude_list, int pos, int then_branch_len, int else_branch_len, int len) {
     int exclude_start = pos + then_branch_len + else_branch_len + 1;
     memset(exclude_list + exclude_start, 1, len - exclude_start);
+}
+
+extern inline void *
+parse_argument(const struct parameter *param, unsigned int offset) {
+    void *arg;
+    char fmt;
+    unsigned int _offset = 0;
+    switch(param->type) {
+        case VARIABLE_TYPE: arg = param->value.variable.arg; fmt = param->value.variable.fmt; break;
+        case VECTOR_TYPE:   arg = param->value.vector.arg; fmt = param->value.vector.fmt; _offset = offset; break;
+        default: SWITCH_DEFAULT_REACHED
+    }
+    switch(fmt) {
+        case 'd': return ((int *) arg) + _offset;
+        case 'u': return ((unsigned int *) arg) + _offset;
+        case 'b': return ((bool *) arg) + _offset;
+        default: SWITCH_DEFAULT_REACHED
+    }
+}
+
+
+extern inline void *
+load_variable_argument(const struct variable_parameter *var) {
+    switch(var->fmt) {
+        case 'd': return ((int *) var->arg);
+        case 'u': return ((unsigned int *) var->arg);
+        case 'b': return ((bool *) var->arg);
+        default: SWITCH_DEFAULT_REACHED
+    }
+}
+
+
+extern inline void *
+load_vector_argument(const struct vector_parameter *vec, unsigned int offset) {
+    switch(vec->fmt) {
+        case 'd': return ((int *) vec->arg) + offset;
+        case 'u': return ((unsigned int *) vec->arg) + offset;
+        case 'b': return ((bool *) vec->arg) + offset;
+        default: SWITCH_DEFAULT_REACHED
+    }
 }
 
 

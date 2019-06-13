@@ -24,13 +24,13 @@ void printf(const char *fmt, ...)
 }
 
 void
-execute_function(struct hotcall_function *fc){
-    switch (fc->config->function_id) {
+execute_function(uint8_t function_id, void *args[], void *return_value){
+    switch (function_id) {
         case hotcall_ecall_always_true:
-            *(bool *) fc->return_value = ecall_always_true();
+            *(bool *) return_value = ecall_always_true();
             break;
         case hotcall_ecall_always_false:
-            *(bool *) fc->return_value = ecall_always_false();
+            *(bool *) return_value = ecall_always_false();
             break;
         case hotcall_ecall_foo:
             ecall_foo();
@@ -39,45 +39,34 @@ execute_function(struct hotcall_function *fc){
             ecall_bar();
             break;
         case hotcall_ecall_plus_one:
-            //ecall_plus_one((int *) fc->args.args);
-            ecall_plus_one((int *) fc->params[0].value.variable.arg);
+            ecall_plus_one((int *) args[0]);
             break;
         case hotcall_ecall_greater_than_two:
-            //*(bool *) fc->return_value = ecall_greater_than_two((int *) fc->args.args[0]);
-            *(bool *) fc->return_value = ecall_greater_than_two((int *) fc->params[0].value.variable.arg);
+            *(bool *) return_value = ecall_greater_than_two((int *) args[0]);
             break;
         case hotcall_ecall_greater_than_y:
-            //*(bool *) fc->return_value = ecall_greater_than_y((int *) args->args[0], *(int *) args->args[1]);
-            *(bool *) fc->return_value = ecall_greater_than_y((int *) fc->params[0].value.variable.arg, *(int *) fc->params[1].value.variable.arg);
+            *(bool *) return_value = ecall_greater_than_y((int *) args[0], *(int *) args[1]);
             break;
         case hotcall_ecall_plus_plus:
-            //ecall_plus_plus((int *) fc->args.args[0], (int *) fc->args.args[1]);
-            ecall_plus_plus((int *) fc->params[0].value.variable.arg, (int *) fc->params[1].value.variable.arg);
+            ecall_plus_plus((int *) args[0], (int *) args[1]);
             break;
         case hotcall_ecall_plus_one_ret:
-            *(int *) fc->return_value = ecall_plus_one_ret(*(int *) fc->params[0].value.variable.arg);
-            //*(int *) fc->return_value = ecall_plus_one_ret(*(int *) args->args[0]);
+            *(int *) return_value = ecall_plus_one_ret(*(int *) args[0]);
             break;
         case hotcall_ecall_plus:
-            //*(int *) fc->return_value = ecall_plus(*(int *) args->args[0], *(int *) args->args[1]);
-            *(int *) fc->return_value = ecall_plus(*(int *) fc->params[0].value.variable.arg, *(int *) fc->params[1].value.variable.arg);
+            *(int *) return_value = ecall_plus(*(int *) args[0], *(int *) args[1]);
             break;
         case hotcall_ecall_revert:
-            //*(bool *) fc->return_value = ecall_revert(*(bool *) args->args[0]);
-            *(bool *) fc->return_value = ecall_revert(*(bool *) fc->params[0].value.variable.arg);
-
+            *(bool *) return_value = ecall_revert(*(bool *) args[0]);
             break;
         case hotcall_ecall_plus_y:
-            //ecall_plus_y((int *) args->args[0], *(int *) args->args[1]);
-            ecall_plus_y((int *) fc->params[0].value.variable.arg, *(int *) fc->params[1].value.variable.arg);
-
+            ecall_plus_y((int *) args[0], *(int *) args[1]);
             break;
         case hotcall_ecall_zero:
-            //ecall_zero((int *) args->args[0]);
-            ecall_zero((int *) fc->params[0].value.variable.arg);
+            ecall_zero((int *) args[0]);
             break;
         default:
-            //printf("unknown hotcall function %d.\n", fc->id);
+            printf("unknown hotcall function %d.\n", function_id);
             break;
         }
   }
@@ -143,7 +132,6 @@ ecall_plus(int x, int y) {
 
 int
 ecall_plus_y(int *x, int y) {
-    printf("%d %d\n", *x, y);
     *x = *x + y;
 }
 

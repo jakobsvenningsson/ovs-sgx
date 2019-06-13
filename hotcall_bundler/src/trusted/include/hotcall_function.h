@@ -54,6 +54,7 @@ struct hotcall_function {
     struct parameter *params;
     struct hotcall_functionconfig *config;
     void *return_value;
+    void *args[HOTCALL_MAX_ARG];
 };
 
 #endif

@@ -49,7 +49,7 @@ TEST(for,2) {
     BEGIN_FOR({ .n_iters = &n_iters });
 
         HCALL(CONFIG(.function_id = hotcall_ecall_greater_than_two, .has_return = true), VECTOR(xs, 'd'), VAR(&ret, 'b'));
-        
+
         IF(
             ((struct if_config) { .predicate_fmt = "!b&b" }),
             PTR(NULL),

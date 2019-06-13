@@ -115,7 +115,7 @@ struct ecall_queue_item * get_fcall_(struct shared_memory_ctx *sm_ctx, struct ho
     item->type = QUEUE_ITEM_TYPE_FUNCTION;
 
     struct hotcall_function *fcall;
-    fcall = &item->call.fc_;
+    fcall = &item->call.fc;
     //fcall->function_id = f_id;
     fcall->config = config;
     fcall->params = params;
@@ -304,8 +304,6 @@ hotcall_bundle_map(struct shared_memory_ctx *sm_ctx, struct map_config *config, 
 
 extern inline void
 hotcall_bundle_reduce(struct shared_memory_ctx *sm_ctx, struct reduce_config *config, struct parameter *params) {
-    printf("reduce\n");
-
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_REDUCE;
@@ -317,8 +315,6 @@ hotcall_bundle_reduce(struct shared_memory_ctx *sm_ctx, struct reduce_config *co
         chain_operators(sm_ctx, params);
     }
     enqueue_item(sm_ctx, item);
-
-    printf("reduce\n");
 }
 
 extern inline void
