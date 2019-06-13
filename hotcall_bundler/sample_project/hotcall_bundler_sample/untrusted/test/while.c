@@ -22,23 +22,21 @@ TEST(while,1) {
         ((struct while_config) {
             .predicate_fmt = "!(b&b|b)"
         }),
-        (struct parameter) { .type = FUNCTION_TYPE_,   .value = { .function = { .f_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 1 }}},
-        (struct parameter) { .type = FUNCTION_TYPE_,   .value = { .function = { .f_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 1 }}},
+        (struct parameter) { .type = FUNCTION_TYPE_,   .value = { .function = { .function_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 1 }}},
+        (struct parameter) { .type = FUNCTION_TYPE_,   .value = { .function = { .function_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 1 }}},
         (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &b, .fmt = 'b', .iter = false }}}
     );
 
-    HCALL_1(
-        sm_ctx,
+    HCALL(
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function_id = hotcall_ecall_plus_one,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &x, .fmt = 'd' }}}
     );
-    HCALL_1(
-        sm_ctx,
+    HCALL(
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function_id = hotcall_ecall_plus_one,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &x, .fmt = 'd' }}}
@@ -71,10 +69,9 @@ TEST(while, 2) {
         (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &x, .fmt = 'd' }}},
         (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &y, .fmt = 'd' }}}
     );
-    HCALL_1(
-        sm_ctx,
+    HCALL(
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function_id = hotcall_ecall_plus_one,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &x, .fmt = 'd' }}}
@@ -107,10 +104,9 @@ TEST(while, 3) {
         (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &y, .fmt = 'd' }}}
     );
 
-    HCALL_1(
-        sm_ctx,
+    HCALL(
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function_id = hotcall_ecall_plus_one,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &x, .fmt = 'd' }}}
@@ -124,18 +120,16 @@ TEST(while, 3) {
         (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &y, .fmt = 'd' }}}
     );
 
-    HCALL_1(
-        sm_ctx,
+    HCALL(
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function_id = hotcall_ecall_plus_one,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &z, .fmt = 'd' }}}
     );
-    HCALL_1(
-        sm_ctx,
+    HCALL(
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function_id = hotcall_ecall_plus_one,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &counter, .fmt = 'd' }}}
@@ -143,10 +137,9 @@ TEST(while, 3) {
 
     END_WHILE(sm_ctx);
 
-    HCALL_1(
-        sm_ctx,
+    HCALL(
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_zero,
+            .function_id = hotcall_ecall_zero,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &z, .fmt = 'd' }}}

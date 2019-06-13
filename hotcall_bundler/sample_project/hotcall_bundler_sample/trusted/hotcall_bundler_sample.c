@@ -25,13 +25,7 @@ void printf(const char *fmt, ...)
 
 void
 execute_function(struct hotcall_function_ *fc){
-//execute_function(struct hotcall_function *fc){
-
-    //struct hotcall_function_arg_list * args;
-    //args       = &fc->args;
-
-    //switch(fc->id) {
-    switch (fc->config->f_id) {
+    switch (fc->config->function_id) {
         case hotcall_ecall_always_true:
             *(bool *) fc->return_value = ecall_always_true();
             break;

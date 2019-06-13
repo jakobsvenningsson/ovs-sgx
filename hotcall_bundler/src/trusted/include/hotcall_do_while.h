@@ -24,7 +24,7 @@
 #define FUNCTION_PARAMS(...) { __VA_ARGS__ }
 
 struct do_while_config {
-    uint8_t f_id;
+    uint8_t function_id;
     const char *condition_fmt;
     unsigned int body_n_params;
     unsigned int condition_n_params;

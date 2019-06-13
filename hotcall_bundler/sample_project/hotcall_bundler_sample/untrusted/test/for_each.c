@@ -20,7 +20,7 @@ TEST(for_each,1) {
     FOR_EACH(
         sm_ctx,
         ((struct for_each_config) {
-            .f_id = hotcall_ecall_plus_one
+            .function_id = hotcall_ecall_plus_one
         }),
         (struct parameter) { .type = VARIABLE_TYPE_,
                              .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}, .len = &n_iters }
@@ -48,7 +48,7 @@ TEST(for_each,2) {
     FOR_EACH(
         sm_ctx,
         ((struct for_each_config) {
-            .f_id = hotcall_ecall_plus_plus
+            .function_id = hotcall_ecall_plus_plus
         }),
         (struct parameter) { .type = VARIABLE_TYPE_,
                              .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}, .len = &n_iters },
@@ -79,7 +79,7 @@ TEST(for_each,3) {
     FOR_EACH(
         sm_ctx,
         ((struct for_each_config) {
-            .f_id = hotcall_ecall_plus_y
+            .function_id = hotcall_ecall_plus_y
         }),
         (struct parameter) { .type = VARIABLE_TYPE_,
                              .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}, .len = &n_iters },

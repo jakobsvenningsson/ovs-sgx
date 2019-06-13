@@ -132,7 +132,7 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
         {
             struct hotcall_function_ fc;
             struct hotcall_function_config config = {
-                .f_id = operand_item->elem->value.function.f_id,
+                .function_id = operand_item->elem->value.function.function_id,
                 .n_params = operand_item->elem->value.function.n_params
             };
             fc.config = &config;

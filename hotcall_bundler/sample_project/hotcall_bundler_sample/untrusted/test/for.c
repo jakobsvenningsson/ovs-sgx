@@ -18,27 +18,27 @@ TEST(for,1) {
     BEGIN_FOR(sm_ctx, ((struct for_config) {
         .n_iters = &n_iters
     }));
-    HCALL_1(
+    HCALL(
         sm_ctx,
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_plus,
+            .function = hotcall_ecall_plus_plus,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}},
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = ys, .fmt = 'd', .iter = true }}}
     );
-    HCALL_1(
+    HCALL(
         sm_ctx,
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function = hotcall_ecall_plus_one,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}}
     );
-    HCALL_1(
+    HCALL(
         sm_ctx,
         ((struct hotcall_function_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function = hotcall_ecall_plus_one,
             .has_return = false
         }),
         { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}}
@@ -65,7 +65,7 @@ TEST(for,2) {
     bool ret;
 
     BEGIN_FOR(sm_ctx, { .n_iters = &n_iters });
-    HCALL_1(sm_ctx, ((struct hotcall_function_config) { .f_id = hotcall_ecall_greater_than_two, .has_return = true }),
+    HCALL(sm_ctx, ((struct hotcall_function_config) { .function = hotcall_ecall_greater_than_two, .has_return = true }),
         (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}},
         (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &ret, .fmt = 'b', .iter = false }}},
     );
@@ -81,10 +81,10 @@ TEST(for,2) {
         (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &ret, .fmt = 'b' }}}
     );
     THEN(
-        HCALL_1(
+        HCALL(
             sm_ctx,
             ((struct hotcall_function_config) {
-                .f_id = hotcall_ecall_plus_one,
+                .function = hotcall_ecall_plus_one,
                 .has_return = false
             }),
             (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}}

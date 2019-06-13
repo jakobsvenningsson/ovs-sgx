@@ -16,38 +16,22 @@ TEST(error,1) {
     hotcall_bundle_begin(sm_ctx);
     int x = 0;
     bool res;
-    HCALL_1(
-        sm_ctx,
-        CONFIG({ .f_id = hotcall_ecall_always_false, .has_return = true }),
-        VARIABLE_PARAM(&res, 'b')
-    );
+    HCALL(CONFIG({ .function_id = hotcall_ecall_always_false, .has_return = true }), VAR(&res, 'b'));
     IF(
-        sm_ctx,
         ((struct if_config) {
             .then_branch_len = 0,
             .else_branch_len = 3,
             .predicate_fmt = "b",
             .return_if_false = false
         }),
-        (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &res, .fmt = 'b', .iter = false }}},
+        VAR(&res, 'b')
     );
     THEN
         NULL;
     ELSE
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'b')
-        );
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one, .has_return = false }), VAR(&x, 'b'));
         ERROR(sm_ctx, TEST_ERROR_CODE_1);
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'b')
-        );
-
-
-
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one, .has_return = false }), VAR(&x, 'b'));
 
     hotcall_bundle_end(sm_ctx);
 
@@ -68,27 +52,18 @@ TEST(error, 2) {
     hotcall_bundle_begin(sm_ctx);
     int x = 0;
     bool res;
-    HCALL_1(
-        sm_ctx,
-        CONFIG({ .f_id = hotcall_ecall_always_false, .has_return = true }),
-        VARIABLE_PARAM(&res, 'b')
-    );
+    HCALL(CONFIG({ .function_id = hotcall_ecall_always_false, .has_return = true }), VAR(&res, 'b'));
     IF(
-        sm_ctx,
         ((struct if_config) {
             .then_branch_len = 1,
             .else_branch_len = 1,
             .predicate_fmt = "!b",
             .return_if_false = false
         }),
-        (struct parameter) { .type = VARIABLE_TYPE_,   .value = { .variable = { .arg = &res, .fmt = 'b', .iter = false }}},
+        VAR(&res, 'b')
     );
     THEN
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'b')
-        );
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one, .has_return = false }), VAR(&x, 'b'));
     ELSE
         ERROR(sm_ctx, TEST_ERROR_CODE_1);
 

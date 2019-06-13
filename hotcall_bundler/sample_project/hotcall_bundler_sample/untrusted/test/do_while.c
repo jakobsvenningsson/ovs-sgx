@@ -25,12 +25,12 @@ TEST(do_while,1) {
     DO_WHILE(
         sm_ctx,
         ((struct do_while_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function_id = hotcall_ecall_plus_one,
             .condition_fmt = "!b"
         }),
         CONDITION_PARAMS(
             (struct parameter) { .type = FUNCTION_TYPE_,
-                                 .value = { .function = { .f_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1}}}
+                                 .value = { .function = { .function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1}}}
         ),
         FUNCTION_PARAMS(
             (struct parameter) { .type = VARIABLE_TYPE_,
@@ -64,7 +64,7 @@ TEST(do_while,2) {
     DO_WHILE(
         sm_ctx,
         ((struct do_while_config) {
-            .f_id = hotcall_ecall_plus_one,
+            .function_id = hotcall_ecall_plus_one,
             .condition_fmt = "d<d&!b"
         }),
         CONDITION_PARAMS(
@@ -73,7 +73,7 @@ TEST(do_while,2) {
             (struct parameter) { .type = VARIABLE_TYPE_,
                                  .value = { .variable = { .arg = &y, .fmt = 'd', .iter = false }}},
             (struct parameter) { .type = FUNCTION_TYPE_,
-                                 .value = { .function = { .f_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1 }}},
+                                 .value = { .function = { .function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1 }}},
         ),
         FUNCTION_PARAMS(
             (struct parameter) { .type = VARIABLE_TYPE_,

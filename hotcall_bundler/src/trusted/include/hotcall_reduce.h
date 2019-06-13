@@ -15,7 +15,7 @@
     _REDUCE(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 struct reduce_config {
-    uint8_t f_id;
+    uint8_t function_id;
     char op;
     unsigned int n_params;
 };

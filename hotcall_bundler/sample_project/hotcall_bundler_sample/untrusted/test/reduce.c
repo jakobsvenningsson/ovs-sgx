@@ -19,7 +19,7 @@ TEST(reduce,1) {
     REDUCE(
         sm_ctx,
         ((struct reduce_config) {
-            .f_id = hotcall_ecall_plus_one_ret,
+            .function_id = hotcall_ecall_plus_one_ret,
             .op = '+',
         }),
         (struct parameter) { .type = VARIABLE_TYPE_ ,
@@ -50,7 +50,7 @@ TEST(reduce, 2) {
     REDUCE(
         sm_ctx,
         ((struct reduce_config) {
-            .f_id = hotcall_ecall_plus,
+            .function_id = hotcall_ecall_plus,
             .op = '+',
         }),
         (struct parameter) { .type = VARIABLE_TYPE_,
@@ -90,7 +90,7 @@ TEST(reduce, 3) {
     REDUCE(
         sm_ctx,
         ((struct reduce_config) {
-            .f_id = hotcall_ecall_greater_than_two,
+            .function_id = hotcall_ecall_greater_than_two,
             .op = '&',
         }),
         (struct parameter) { .type = VARIABLE_TYPE_,

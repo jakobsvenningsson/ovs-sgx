@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <hotcall.h>
+#include "shared_memory_ctx.h"
 #include "sgx_eid.h"
 
 #ifdef BATCHING
@@ -14,13 +15,13 @@
 #else
 #define ASYNC(SM_CTX, X) false || is_hotcall_in_progress(&(SM_CTX)->hcall)
 #endif
-
+/*
 #define HCALL(SM_CTX, F, _ASYNC, RET, N_ARGS, ARGS) \
     (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
         get_fcall((SM_CTX), QUEUE_ITEM_TYPE_FUNCTION, hotcall_ ## F, RET, N_ARGS, ARGS); \
     if(ASYNC(SM_CTX, _ASYNC) != 1) { \
         make_hotcall(&(SM_CTX)->hcall); \
-    }
+    }*/
 
 #define HCALL_CONTROL(SM_CTX, TYPE, _ASYNC, N_ARGS, ARGS) \
     (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
@@ -30,7 +31,7 @@
     }
 
 
-#define _HCALL_1(SM_CTX, UNIQUE_ID, CONFIG, ...) \
+#define _HCALL(SM_CTX, UNIQUE_ID, CONFIG, ...) \
     struct parameter CAT2(HCALL_ARGS_, UNIQUE_ID)[] = { \
         __VA_ARGS__ \
     }; \
@@ -44,8 +45,8 @@
 
 
 
-#define HCALL_1(SM_CTX, CONFIG, ...) \
-    _HCALL_1(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
+#define HCALL(CONFIG, ...) \
+    _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 
 #ifdef __cplusplus
@@ -126,7 +127,7 @@ struct ecall_queue_item * get_fcall_(struct shared_memory_ctx *sm_ctx, struct ho
 
     struct hotcall_function_ *fcall;
     fcall = &item->call.fc_;
-    //fcall->id = f_id;
+    //fcall->function_id = f_id;
     fcall->config = config;
     fcall->params = params;
     if(config->has_return) {
@@ -164,7 +165,7 @@ struct ecall_queue_item * get_fcall(struct shared_memory_ctx *sm_ctx, uint8_t f_
         {
             struct hotcall_function *fcall;
             fcall = &item->call.fc;
-            fcall->id = f_id;
+            fcall->function_id = f_id;
             fcall->args.n_args = n_args;
             fcall->return_value = ret;
             memcpy(fcall->args.args, args, fcall->args.n_args * sizeof(void *));

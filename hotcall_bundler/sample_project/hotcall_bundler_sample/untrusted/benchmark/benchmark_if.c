@@ -11,14 +11,13 @@ benchmark_if_naive(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
         BEGIN
         bool res;
         //HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
-        HCALL_1(
-                sm_ctx,
-                ((struct hotcall_function_config) { .f_id = hotcall_ecall_always_true, .has_return = true }),
+        HCALL(
+                ((struct hotcall_function_config) { .function_id = hotcall_ecall_always_true, .has_return = true }),
 		        (struct parameter) { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &res }}}
         );
         if(res) {
             //HCALL(sm_ctx, ecall_foo, false, NULL, 0, NULL);
-            HCALL_1(sm_ctx, ((struct hotcall_function_config) { .f_id = hotcall_ecall_foo, .has_return = false }));
+            HCALL(((struct hotcall_function_config) { .function_id = hotcall_ecall_foo, .has_return = false }));
         }
         CLOSE
         if(i >= warmup) {
@@ -41,20 +40,18 @@ benchmark_if_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) 
         //bool res;
         //HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
         IF(
-            sm_ctx,
             ((struct if_config) {
                 .then_branch_len = 1,
                 .else_branch_len = 0,
                 .predicate_fmt = "b",
                 .return_if_false = false
             }),
-            (struct parameter) { .type = FUNCTION_TYPE_,  .value = { .function = { .f_id = hotcall_ecall_always_true, .params =  NULL }}}
+            (struct parameter) { .type = FUNCTION_TYPE_,  .value = { .function = { .function_id = hotcall_ecall_always_true, .params =  NULL }}}
             //(struct parameter) { .type = VARIABLE_TYPE_,  .value = { .variable = { .arg = &res, .fmt = 'b' }}}
         );
         THEN
-            HCALL_1(
-                    sm_ctx,
-                    ((struct hotcall_function_config) { .f_id = hotcall_ecall_foo, .has_return = false })
+            HCALL(
+                    ((struct hotcall_function_config) { .function_id = hotcall_ecall_foo, .has_return = false })
                 );
 
         hotcall_bundle_end(sm_ctx);

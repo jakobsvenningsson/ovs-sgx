@@ -16,52 +16,23 @@ TEST(if,1) {
     bool res1, res2, res3;
     bool *ptr = NULL;
 
-    HCALL_1(
-        sm_ctx,
-        CONFIG({ .f_id = hotcall_ecall_always_false, .has_return = true }),
-        VARIABLE_PARAM(&res1, 'b')
-    );
-    HCALL_1(
-        sm_ctx,
-        CONFIG({ .f_id = hotcall_ecall_always_true, .has_return = true }),
-        VARIABLE_PARAM(&res2, 'b')
-    );
-    HCALL_1(
-        sm_ctx,
-        CONFIG({ .f_id = hotcall_ecall_always_true, .has_return = true }),
-        VARIABLE_PARAM(&res3, 'b')
-    );
-
+    HCALL(CONFIG({ .function_id = hotcall_ecall_always_false, .has_return = true }), VAR(&res1, 'b'));
+    HCALL(CONFIG({ .function_id = hotcall_ecall_always_true, .has_return = true }), VAR(&res2, 'b'));
+    HCALL(CONFIG({ .function_id = hotcall_ecall_always_true, .has_return = true }), VAR(&res3, 'b'));
     IF(
-        sm_ctx,
         ((struct if_config) {
             .then_branch_len = 1,
             .else_branch_len = 2,
             .predicate_fmt = "!b&(b|b)&b",
             .return_if_false = false
         }),
-        (struct parameter) { .type = POINTER_TYPE_,   .value = { .variable = { .arg = ptr, .fmt = 'b', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,  .value = { .variable = { .arg = &res1, .fmt = 'b', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,  .value = { .variable = { .arg = &res2, .fmt = 'b', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,  .value = { .variable = { .arg = &res3, .fmt = 'b', .iter = false }}}
+        PTR(ptr), VAR(&res1, 'b'), VAR(&res2, 'b'), VAR(&res3, 'b')
     );
     THEN
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
     ELSE
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
     END
 
     hotcall_bundle_end(sm_ctx);
@@ -83,35 +54,18 @@ TEST(if,2) {
     hotcall_bundle_begin(sm_ctx);
 
     bool res;
-    HCALL_1(
-        sm_ctx,
-        CONFIG({ .f_id = hotcall_ecall_always_false, .has_return = true }),
-        VARIABLE_PARAM(&res, 'b')
-    );
+    HCALL(CONFIG({ .function_id = hotcall_ecall_always_false, .has_return = true }), VAR(&res, 'b'));
     IF(
-        sm_ctx,
         INIT_IF_CONF(1, 2, "b|!b", false),
-        (struct parameter) { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &res, .fmt = 'b' }}},
-        (struct parameter) { .type = FUNCTION_TYPE_, .value = { .function = { .f_id = hotcall_ecall_always_true, .params = NULL}}}
+        VAR(&res, 'b'),
+        FUNC(hotcall_ecall_always_true, NULL)
     );
     THEN
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
     ELSE
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
-
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
+    END
 
     hotcall_bundle_end(sm_ctx);
 
@@ -130,60 +84,27 @@ TEST(if,3) {
     hotcall_bundle_begin(sm_ctx);
 
     bool res;
-    HCALL_1(
-        sm_ctx,
-        CONFIG({ .f_id = hotcall_ecall_always_false, .has_return = true }),
-        VARIABLE_PARAM(&res, 'b')
-    );
-
+    HCALL(CONFIG({ .function_id = hotcall_ecall_always_false, .has_return = true }), VAR(&res, 'b'));
     int a = 6, b = 3;
-    struct parameter function_parameters[] = {
-        { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &a, .fmt = 'd' }}},
-        { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &b, .fmt = 'd' }}}
-    };
-
+    struct parameter function_parameters[] = { VAR(&a, 'd'), VAR(&b, 'd') };
     IF(
-        sm_ctx,
         ((struct if_config) {
             .then_branch_len = 1,
             .else_branch_len = 2,
             .predicate_fmt = "b|!b",
             .return_if_false = true
         }),
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = &res, .fmt = 'b' }}},
-        (struct parameter) { .type = FUNCTION_TYPE_,
-                            .value = { .function = { .f_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2}}}
+        VAR( &res, 'b' ), FUNC( .function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2 )
     );
     THEN
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
     ELSE
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
-
-
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
+    END
+    
     hotcall_bundle_end(sm_ctx);
 
     hotcall_test_teardown();
@@ -198,29 +119,20 @@ TEST(if,4) {
     int x = 0;
     hotcall_bundle_begin(sm_ctx);
     bool res;
-    HCALL_1(
-        sm_ctx,
-        CONFIG({ .f_id = hotcall_ecall_always_true, .has_return = true }),
-        VARIABLE_PARAM(&res, 'b')
-    );
+    HCALL(CONFIG({ .function_id = hotcall_ecall_always_true }), VAR(&res, 'b'));
 
     IF(
-        sm_ctx,
         ((struct if_config) {
             .then_branch_len = 1,
             .else_branch_len = 0,
             .predicate_fmt = "b",
             .return_if_false = false
         }),
-        (struct parameter) { .type = VARIABLE_TYPE_,  .value = { .variable = { .arg = &res, .fmt = 'b' }}},
+        VAR(&res, 'b')
     );
     THEN
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
-
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
+    END
 
     hotcall_bundle_end(sm_ctx);
 
@@ -238,21 +150,16 @@ TEST(if,5) {
     int x = 0;
     hotcall_bundle_begin(sm_ctx);
     IF(
-        sm_ctx,
         ((struct if_config) {
             .then_branch_len = 1,
             .else_branch_len = 0,
             .predicate_fmt = "b",
             .return_if_false = false
         }),
-        (struct parameter) { .type = FUNCTION_TYPE_,  .value = { .function = { .f_id = hotcall_ecall_always_true, .params =  NULL }}}
+        FUNC(.function_id = hotcall_ecall_always_true, .params = NULL)
     );
     THEN
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
 
 
     hotcall_bundle_end(sm_ctx);
@@ -269,21 +176,16 @@ TEST(if,6) {
     int x = 0;
     hotcall_bundle_begin(sm_ctx);
     IF(
-        sm_ctx,
         ((struct if_config) {
             .then_branch_len = 1,
             .else_branch_len = 0,
             .predicate_fmt = "!b",
             .return_if_false = false
         }),
-        (struct parameter) { .type = FUNCTION_TYPE_,  .value = { .function = { .f_id = hotcall_ecall_always_false, .params =  NULL }}}
+        FUNC(.function_id = hotcall_ecall_always_false, .params =  NULL)
     );
     THEN
-        HCALL_1(
-            sm_ctx,
-            CONFIG({ .f_id = hotcall_ecall_plus_one, .has_return = false }),
-            VARIABLE_PARAM(&x, 'd')
-        );
+        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one }), VAR(&x, 'd'));
 
 
     hotcall_bundle_end(sm_ctx);

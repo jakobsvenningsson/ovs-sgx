@@ -19,7 +19,7 @@ TEST(map,1) {
     MAP(
         sm_ctx,
         ((struct map_config) {
-            .f_id = hotcall_ecall_plus_one_ret,
+            .function_id = hotcall_ecall_plus_one_ret,
             .n_params = n_params
         }),
         (struct parameter) { .type = VARIABLE_TYPE_,
@@ -55,7 +55,7 @@ TEST(map,2) {
     MAP(
         sm_ctx,
         ((struct map_config) {
-            .f_id = hotcall_ecall_plus,
+            .function_id = hotcall_ecall_plus,
             .n_params = n_params
         }),
         (struct parameter) { .type = VARIABLE_TYPE_,

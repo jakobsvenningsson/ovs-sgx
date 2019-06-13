@@ -26,7 +26,7 @@ TEST(filter,1) {
             .condition_fmt = "b"
         }),
         (struct parameter) { .type = FUNCTION_TYPE_,
-                            .value = { .function = { .f_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1}},
+                            .value = { .function = { .function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1}},
                             .len = &n_iters },
         (struct parameter) { .type = VARIABLE_TYPE_,
                             .value = { .variable = { .arg = ys, .fmt = 'd', .iter = false }},
@@ -119,7 +119,7 @@ TEST(filter,3) {
             .condition_fmt = "b"
         }),
         (struct parameter) { .type = FUNCTION_TYPE_,
-                            .value = { .function = { .f_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2 }},
+                            .value = { .function = { .function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2 }},
                             .len = &n_iters },
         (struct parameter) { .type = VARIABLE_TYPE_,
                             .value = { .variable = { .arg = ys, .fmt = 'd', .iter = true }},

@@ -35,7 +35,7 @@ hotcall_handle_do_while(struct hotcall_do_while *dw) {
     to_postfix(dw->config->condition_fmt, dw->condition_params, output, &output_length);
     struct hotcall_function_ fc;
     struct hotcall_function_config config = {
-        .f_id = dw->config->f_id,
+        .function_id = dw->config->function_id,
         .n_params = dw->config->body_n_params
     };
     fc.config = &config;
@@ -126,7 +126,7 @@ hotcall_handle_reduce(struct hotcall_reduce *re) {
     unsigned int in_len = *re->params[0].len;
 
     // No function is used in reduce, we shall only combine the input elements.
-    if(re->config->f_id == 255) {
+    if(re->config->function_id == 255) {
         for(int i = 0; i < in_len; ++i) {
             switch(re->params[0].value.variable.fmt) {
                 case 'd':
@@ -150,7 +150,7 @@ hotcall_handle_reduce(struct hotcall_reduce *re) {
     for(int i = 0; i < *re->params[0].len; ++i) {
         struct hotcall_function_ fc;
         struct hotcall_function_config config = {
-            .f_id = re->config->f_id,
+            .function_id = re->config->function_id,
             .n_params = re->config->n_params - 1,
         };
         fc.config = &config;
@@ -189,7 +189,7 @@ hotcall_handle_map(struct hotcall_map *ma) {
 
     struct hotcall_function_ fc;
     struct hotcall_function_config config = {
-        .f_id = ma->config->f_id,
+        .function_id = ma->config->function_id,
         .n_params = ma->config->n_params - 1,
     };
     fc.config = &config;
@@ -298,7 +298,7 @@ static inline void
 hotcall_handle_for_each(struct hotcall_for_each *tor) {
     struct hotcall_function_ fc;
     struct hotcall_function_config config = {
-        .f_id = tor->config->f_id,
+        .function_id = tor->config->function_id,
         .n_params = tor->config->n_params
     };
     fc.config = &config;

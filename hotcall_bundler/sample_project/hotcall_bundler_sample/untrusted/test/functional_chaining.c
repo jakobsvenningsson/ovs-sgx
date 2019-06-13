@@ -36,7 +36,7 @@ TEST(chaining,1) {
             .condition_fmt = "b"
         }),
         (struct parameter) { .type = FUNCTION_TYPE_,
-                            .value = { .function = { .f_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2 }},
+                            .value = { .function = { .function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2 }},
                             .len = &n_iters },
         (struct parameter) { .type = VARIABLE_TYPE_,
                             .value = { .variable = { .arg = ys, .fmt = 'd', .iter = true }},
@@ -45,7 +45,7 @@ TEST(chaining,1) {
     MAP(
         sm_ctx,
         ((struct map_config) {
-            .f_id = hotcall_ecall_plus,
+            .function_id = hotcall_ecall_plus,
             .n_params = 2
         }),
         (struct parameter) {},
@@ -57,7 +57,7 @@ TEST(chaining,1) {
     MAP(
         sm_ctx,
         ((struct map_config) {
-            .f_id = hotcall_ecall_plus,
+            .function_id = hotcall_ecall_plus,
             .n_params = 2
         }),
         (struct parameter) {},
@@ -69,7 +69,7 @@ TEST(chaining,1) {
     MAP(
         sm_ctx,
         ((struct map_config) {
-            .f_id = hotcall_ecall_plus_one_ret,
+            .function_id = hotcall_ecall_plus_one_ret,
             .n_params = 1
         }),
         (struct parameter) {},
@@ -136,7 +136,7 @@ TEST(chaining, 2) {
     MAP(
         sm_ctx,
         ((struct map_config) {
-            .f_id = hotcall_ecall_plus,
+            .function_id = hotcall_ecall_plus,
             .n_params = 2
         }),
         (struct parameter) { .type = VARIABLE_TYPE_,
@@ -149,7 +149,7 @@ TEST(chaining, 2) {
     REDUCE(
         sm_ctx,
         ((struct reduce_config) {
-            .f_id = 255,
+            .function_id = 255,
             .op = '+',
         }),
         (struct parameter) {},

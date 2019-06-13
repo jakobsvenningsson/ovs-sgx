@@ -25,7 +25,7 @@ struct variable_parameter {
 };
 
 struct function_parameter {
-    uint8_t f_id;
+    uint8_t function_id;
     struct parameter *params;
     unsigned int n_params;
 };
@@ -75,7 +75,7 @@ struct function_parameters_in {
 };
 
 struct hotcall_function_config {
-    uint8_t f_id;
+    uint8_t function_id;
     bool has_return;
     bool async;
     unsigned int n_params;
@@ -88,7 +88,7 @@ struct hotcall_function_ {
 };
 
 struct hotcall_function {
-    uint8_t id;
+    uint8_t function_id;
     struct hotcall_function_arg_list args;
     void *return_value;
     bool async;
