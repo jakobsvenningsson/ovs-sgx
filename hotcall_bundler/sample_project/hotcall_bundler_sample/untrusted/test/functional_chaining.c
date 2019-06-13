@@ -10,9 +10,8 @@
 
 TEST(chaining,1) {
     hotcall_test_setup();
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
     unsigned int n_params = 2, n_iters = 10, out_length1, out_length2;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int ys[n_iters] = { 0 };
@@ -23,78 +22,40 @@ TEST(chaining,1) {
 
     int y = 6, z = 2, w = 3, v = 14;
 
-    struct parameter function_parameters[] = {
-        { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = xs, .fmt = 'd' , .iter = true }}},
-        { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &y, .fmt = 'd' , .iter = false }}}
-    };
+    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(&y, 'd') };
 
-    hotcall_bundle_chain_begin(sm_ctx);
+    CHAIN_BEGIN();
 
     FILTER(
-        sm_ctx,
-        ((struct filter_config) {
-            .condition_fmt = "b"
-        }),
-        (struct parameter) { .type = FUNCTION_TYPE_,
-                            .value = { .function = { .function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2 }},
-                            .len = &n_iters },
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = ys, .fmt = 'd', .iter = true }},
-                            .len = &out_length1 }
+        ((struct filter_config) { .condition_fmt = "b" }),
+        FUNC(.function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2),
+        VECTOR(ys, 'd', &out_length1)
     );
     MAP(
-        sm_ctx,
-        ((struct map_config) {
-            .function_id = hotcall_ecall_plus,
-            .n_params = 2
-        }),
-        (struct parameter) {},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = &z, .fmt = 'd', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = ws, .fmt = 'd', .iter = true }}, .len = &out_length1 }
+        ((struct map_config) { .function_id = hotcall_ecall_plus }),
+        VECTOR(),
+        VAR(&z, 'd'), VECTOR(ws, 'd', &out_length1)
     );
     MAP(
-        sm_ctx,
-        ((struct map_config) {
-            .function_id = hotcall_ecall_plus,
-            .n_params = 2
-        }),
-        (struct parameter) {},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = &w, .fmt = 'd', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = us, .fmt = 'd', .iter = true }}, .len = &out_length1}
+        ((struct map_config) { .function_id = hotcall_ecall_plus }),
+        VECTOR(),
+        VAR(&w, 'd'), VECTOR(us, 'd', &out_length1)
     );
     MAP(
-        sm_ctx,
-        ((struct map_config) {
-            .function_id = hotcall_ecall_plus_one_ret,
-            .n_params = 1
-        }),
-        (struct parameter) {},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = ts, .fmt = 'd', .iter = true }}, .len = &out_length1}
+        ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret }),
+        VECTOR(),
+        VECTOR(ts, 'd', &out_length1)
     );
     FILTER(
-        sm_ctx,
-        ((struct filter_config) {
-            .condition_fmt = "d>d",
-            .n_params = 2
-        }),
-        (struct parameter) {},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = &v, .fmt = 'd', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = ks, .fmt = 'd', .iter = true }},
-                            .len = &out_length2 }
+        ((struct filter_config) { .condition_fmt = "d>d" }),
+        VECTOR(),
+        VAR(&v, 'd'),
+        VECTOR(ks, 'd', &out_length2)
     );
 
+    CHAIN_CLOSE();
 
-    hotcall_bundle_chain_close(sm_ctx);
-
-
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 
@@ -121,9 +82,8 @@ TEST(chaining,1) {
 
 TEST(chaining, 2) {
     hotcall_test_setup();
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
 
     unsigned int n_iters = 10;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -131,36 +91,26 @@ TEST(chaining, 2) {
 
     int y = 2, res = 0;
 
-    hotcall_bundle_chain_begin(sm_ctx);
+
+    CHAIN_BEGIN();
 
     MAP(
-        sm_ctx,
-        ((struct map_config) {
-            .function_id = hotcall_ecall_plus,
-            .n_params = 2
-        }),
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}, .len = &n_iters },
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = &y, .fmt = 'd', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = ys, .fmt = 'd', .iter = true }}, .len = &n_iters}
+        ((struct map_config) { .function_id = hotcall_ecall_plus }),
+        VECTOR(xs, 'd', &n_iters),
+        VAR(&y, 'd'),
+        VECTOR(ys, 'd', &n_iters)
     );
     REDUCE(
-        sm_ctx,
         ((struct reduce_config) {
             .function_id = 255,
             .op = '+',
         }),
-        (struct parameter) {},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = &res, .fmt = 'd', .iter = false }}},
+        VECTOR(), VAR(&res, 'd')
     );
 
+    CHAIN_CLOSE();
 
-    hotcall_bundle_chain_close(sm_ctx);
-
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 
@@ -186,7 +136,7 @@ TEST(chaining, 2) {
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
     unsigned int n_params = 1, n_iters = 10, out_length;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int ys[n_iters] = { true, true, true };

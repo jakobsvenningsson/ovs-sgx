@@ -41,8 +41,6 @@ benchmark_if_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) 
         //HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
         IF(
             ((struct if_config) {
-                .then_branch_len = 1,
-                .else_branch_len = 0,
                 .predicate_fmt = "b",
                 .return_if_false = false
             }),

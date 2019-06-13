@@ -11,8 +11,8 @@
     CAT2(MAP_CONFIG_,ID).n_params = sizeof(CAT2(MAP_ARG_,ID))/sizeof(struct parameter);\
     hotcall_bundle_map(SM_CTX, &CAT2(MAP_CONFIG_,ID), CAT2(MAP_ARG_, ID))
 
-#define MAP(SM_CTX, CONFIG, ...) \
-    _MAP(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
+#define MAP(CONFIG, ...) \
+    _MAP(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 
 struct map_config {

@@ -10,12 +10,12 @@
     hotcall_bundle_for_begin(SM_CTX, &CAT2(FOR_CONFIG_,ID))
 
 
-#define BEGIN_FOR(SM_CTX, CONFIG) \
-    _BEGIN_FOR(SM_CTX, UNIQUE_ID, CONFIG)
+#define BEGIN_FOR(CONFIG) \
+    _BEGIN_FOR(_sm_ctx, UNIQUE_ID, CONFIG)
 
 
-#define END_FOR(SM_CTX) \
-    hotcall_bundle_for_end(SM_CTX)
+#define END_FOR() \
+    hotcall_bundle_for_end(_sm_ctx)
 
 
 struct for_config {

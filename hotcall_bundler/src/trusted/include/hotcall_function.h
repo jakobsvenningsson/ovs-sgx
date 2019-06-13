@@ -5,7 +5,7 @@
 
 #include "hotcall.h"
 
-enum parameter_type { FUNCTION_TYPE_, VARIABLE_TYPE_, POINTER_TYPE_ };
+enum parameter_type { FUNCTION_TYPE_, VARIABLE_TYPE_, POINTER_TYPE_, VECTOR_TYPE_ };
 
 #define _INIT_FUNCTION_ARG(ID, ARG_LIST, FUNCTION, ...)\
     uint8_t F_ ## ID = hotcall_ ## FUNCTION; \
@@ -21,7 +21,12 @@ enum parameter_type { FUNCTION_TYPE_, VARIABLE_TYPE_, POINTER_TYPE_ };
 struct variable_parameter {
     void *arg;
     char fmt;
-    bool iter;
+};
+
+struct vector_parameter {
+    void *arg;
+    char fmt;
+    unsigned int *len;
 };
 
 struct function_parameter {
@@ -35,20 +40,16 @@ struct pointer_parameter {
     bool iter;
 };
 
-
-
 union parameter_types {
     struct variable_parameter variable;
     struct function_parameter function;
     struct pointer_parameter pointer;
-
+    struct vector_parameter vector;
 };
 
 struct parameter {
     enum parameter_type type;
     union parameter_types value;
-    unsigned int *len;
-
 };
 
 struct hotcall_function_arg_list {

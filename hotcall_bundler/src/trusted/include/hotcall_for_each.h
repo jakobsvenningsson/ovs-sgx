@@ -11,8 +11,8 @@
     CAT2(FOR_EACH_CONFIG_,ID).n_params = sizeof(CAT2(FOR_EACH_ARG_,ID))/sizeof(struct parameter);\
     hotcall_bundle_for_each(SM_CTX, &CAT2(FOR_EACH_CONFIG_,ID), CAT2(FOR_EACH_ARG_,ID))
 
-#define FOR_EACH(SM_CTX, CONFIG, ...) \
-    _FOR_EACH(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
+#define FOR_EACH(CONFIG, ...) \
+    _FOR_EACH(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 struct for_each_config {
     uint8_t function_id;

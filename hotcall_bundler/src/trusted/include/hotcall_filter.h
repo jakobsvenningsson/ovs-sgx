@@ -21,8 +21,8 @@
     CAT2(FILTER_CONFIG_,ID).n_params = sizeof(CAT2(FILTER_ARG_,ID))/sizeof(struct parameter);\
     hotcall_bundle_filter(SM_CTX, &CAT2(FILTER_CONFIG_,ID), CAT2(FILTER_ARG_, ID))
 
-#define FILTER(SM_CTX, CONFIG, ...) \
-    _FILTER(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
+#define FILTER(CONFIG, ...) \
+    _FILTER(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 
 struct filter_config {

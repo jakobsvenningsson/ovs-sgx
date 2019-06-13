@@ -11,8 +11,8 @@
     CAT2(REDUCE_CONFIG_,ID).n_params = sizeof(CAT2(REDUCE_ARG_,ID))/sizeof(struct parameter);\
     hotcall_bundle_reduce(SM_CTX, &CAT2(REDUCE_CONFIG_,ID), CAT2(REDUCE_ARG_, ID))
 
-#define REDUCE(SM_CTX, CONFIG, ...) \
-    _REDUCE(SM_CTX, UNIQUE_ID, CONFIG, __VA_ARGS__)
+#define REDUCE(CONFIG, ...) \
+    _REDUCE(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 struct reduce_config {
     uint8_t function_id;

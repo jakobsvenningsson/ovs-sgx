@@ -8,28 +8,20 @@
 TEST(map,1) {
     //Contract: Map shoud add 1 to each element in the output list. The input list shall be unmodified.
     hotcall_test_setup();
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
 
-    unsigned int n_params = 1, n_iters = 10;
+    unsigned int n_iters = 10;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int ys[n_iters] = { 0 };
 
     MAP(
-        sm_ctx,
-        ((struct map_config) {
-            .function_id = hotcall_ecall_plus_one_ret,
-            .n_params = n_params
-        }),
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }},
-                            .len = &n_iters },
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = ys, .fmt = 'd', .iter = true }}}
+        ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret }),
+        VECTOR(xs, 'd', &n_iters),
+        VECTOR(ys, 'd', &n_iters)
     );
 
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 
@@ -43,9 +35,8 @@ TEST(map,1) {
 TEST(map,2) {
     //Contract: Map should add z to each element in the output list. The input list shall be unmodified.
     hotcall_test_setup();
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
 
     unsigned int n_params = 2, n_iters = 10;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -53,21 +44,13 @@ TEST(map,2) {
     int z = 1;
 
     MAP(
-        sm_ctx,
-        ((struct map_config) {
-            .function_id = hotcall_ecall_plus,
-            .n_params = n_params
-        }),
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }},
-                            .len = &n_iters },
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = &z, .fmt = 'd', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                            .value = { .variable = { .arg = ys, .fmt = 'd', .iter = true }}}
+        ((struct map_config) { .function_id = hotcall_ecall_plus }),
+        VECTOR(xs, 'd', &n_iters),
+        VAR(&z, 'd'),
+        VECTOR(ys, 'd', &n_iters)
     );
 
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 

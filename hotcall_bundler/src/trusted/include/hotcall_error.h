@@ -7,5 +7,4 @@ struct hotcall_error {
 
 #define ERROR(SM_CTX, ERROR_CODE) \
     hotcall_bundle_error(SM_CTX, ERROR_CODE)
-
 #endif

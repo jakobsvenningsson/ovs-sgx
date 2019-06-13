@@ -69,7 +69,7 @@ to_postfix(const char *condition_fmt, struct parameter *predicate_args, struct p
     }
     *output_length = output_index;
 }
-
+/*
 extern void inline
 load_function_arguments(struct hotcall_function *fc, const struct variable_parameter *params, int offset) {
     const struct variable_parameter *param;
@@ -89,12 +89,12 @@ load_function_arguments(struct hotcall_function *fc, const struct variable_param
                 SWITCH_DEFAULT_REACHED
         }
     }
-}
+}*/
 
 extern void inline
 load_function_arguments_(struct hotcall_function *fc, const struct parameter *params, int offset) {
     const struct parameter *param;
-    const struct variable_parameter *var_param;
+    const struct vector_parameter *vector_param;
 
     for(int i = 0; i < fc->args.n_args; ++i) {
         param = &params[i];
@@ -102,16 +102,18 @@ load_function_arguments_(struct hotcall_function *fc, const struct parameter *pa
             case FUNCTION_TYPE_:
                 break;
             case VARIABLE_TYPE_:
-                var_param = &param->value.variable;
-                switch(var_param->fmt) {
+                break;
+            case VECTOR_TYPE_:
+                vector_param = &param->value.vector;
+                switch(vector_param->fmt) {
                     case 'b':
-                        fc->args.args[i] = (bool *) var_param->arg + (var_param->iter ? offset : 0);
+                        fc->args.args[i] = (bool *) vector_param->arg + offset;
                         break;
                     case 'd':
-                        fc->args.args[i] = (int *) var_param->arg + (var_param->iter ? offset : 0);
+                        fc->args.args[i] = (int *) vector_param->arg + offset;
                         break;
                     case 'u':
-                        fc->args.args[i] = (unsigned int *) var_param->arg + (var_param->iter ? offset : 0);
+                        fc->args.args[i] = (unsigned int *) vector_param->arg + offset;
                         break;
                     default:
                         SWITCH_DEFAULT_REACHED
@@ -138,25 +140,28 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
             fc.config = &config;
             fc.params = operand_item->elem->value.function.params;
 
-            struct variable_parameter *param_var;
+            struct vector_parameter *vec_param;
 
 
             void *tmp[fc.config->n_params];
             for(int j = 0; j < fc.config->n_params && offset > 0; ++j) {
-                param_var = &fc.params[j].value.variable;
-                if(!param_var->iter) {
+
+                if(fc.params[j].type != VECTOR_TYPE_) {
                     continue;
                 }
-                tmp[j] = param_var->arg;
-                switch(param_var->fmt) {
+
+                vec_param = &fc.params[j].value.vector;
+
+                tmp[j] = vec_param->arg;
+                switch(vec_param->fmt) {
                     case 'd':
-                        param_var->arg = ((int *) param_var->arg) + offset;
+                        vec_param->arg = ((int *) vec_param->arg) + offset;
                         break;
                     case 'u':
-                        param_var->arg = ((unsigned int *) param_var->arg) + offset;
+                        vec_param->arg = ((unsigned int *) vec_param->arg) + offset;
                         break;
                     case 'b':
-                        param_var->arg = ((bool *) param_var->arg) + offset;
+                        vec_param->arg = ((bool *) vec_param->arg) + offset;
                         break;
                     default: SWITCH_DEFAULT_REACHED
                 }
@@ -171,11 +176,11 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
             hotcall_config->execute_function(&fc);
 
             for(int j = 0; j < fc.config->n_params && offset > 0; ++j) {
-                param_var = &fc.params[j].value.variable;
-                if(!param_var->iter) {
+                if(fc.params[j].type != VECTOR_TYPE_) {
                     continue;
                 }
-                param_var->arg = tmp[j];
+                vec_param = &fc.params[j].value.vector;
+                vec_param->arg = tmp[j];
             }
 
 
@@ -192,19 +197,30 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
         }
         case POINTER_TYPE:
         {
-            int offset_ = operand_item->elem->value.variable.iter ? offset : 0;
-            return (operand_item->elem->value.pointer.arg + offset_) != NULL;
+            return operand_item->elem->value.pointer.arg != NULL;
+        }
+        case VECTOR_TYPE_:
+        {
+            switch(operand_item->ch) {
+                case 'b':
+                    return *((bool *) operand_item->elem->value.vector.arg + offset);
+                case 'u':
+                    return *((unsigned int *) operand_item->elem->value.vector.arg + offset);
+                case 'd':
+                    return *((int *) operand_item->elem->value.vector.arg + offset);
+                default:
+                    SWITCH_DEFAULT_REACHED
+            }
         }
         case VARIABLE_TYPE:
         {
-            int offset_ = operand_item->elem->value.variable.iter ? offset : 0;
             switch(operand_item->ch) {
                 case 'b':
-                    return *((bool *) operand_item->elem->value.variable.arg + offset_);
+                    return *(bool *) operand_item->elem->value.variable.arg;
                 case 'u':
-                    return *((unsigned int *) operand_item->elem->value.variable.arg + offset_);
+                    return *(unsigned int *) operand_item->elem->value.variable.arg;
                 case 'd':
-                    return *((int *) operand_item->elem->value.variable.arg + offset_);
+                    return *(int *) operand_item->elem->value.variable.arg;
                 default:
                     SWITCH_DEFAULT_REACHED
             }

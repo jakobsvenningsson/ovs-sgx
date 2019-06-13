@@ -123,7 +123,7 @@ static inline void
 hotcall_handle_reduce(struct hotcall_reduce *re) {
     printf("hotcall_handle_reduce\n");
     struct parameter *accumulator = &re->params[re->config->n_params - 1];
-    unsigned int in_len = *re->params[0].len;
+    unsigned int in_len = *re->params[0].value.vector.len;
 
     // No function is used in reduce, we shall only combine the input elements.
     if(re->config->function_id == 255) {
@@ -147,7 +147,7 @@ hotcall_handle_reduce(struct hotcall_reduce *re) {
     }
 
     int ret = 0;
-    for(int i = 0; i < *re->params[0].len; ++i) {
+    for(int i = 0; i < in_len; ++i) {
         struct hotcall_function_ fc;
         struct hotcall_function_config config = {
             .function_id = re->config->function_id,
@@ -156,19 +156,19 @@ hotcall_handle_reduce(struct hotcall_reduce *re) {
         fc.config = &config;
         fc.params = re->params;
         fc.return_value = &ret;
-        struct variable_parameter *param_var;
+        struct vector_parameter *vec_param;
         for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
-            param_var = &re->params[j].value.variable;
-            if(!param_var->iter) continue;
-            switch(param_var->fmt) {
+            if(re->params[j].type != VECTOR_TYPE_) continue;
+            vec_param = &re->params[j].value.vector;
+            switch(vec_param->fmt) {
                 case 'd':
-                    param_var->arg = ((int *) param_var->arg) + 1;
+                    vec_param->arg = ((int *) vec_param->arg) + 1;
                     break;
                 case 'u':
-                    param_var->arg = ((unsigned int *) param_var->arg) + 1;
+                    vec_param->arg = ((unsigned int *) vec_param->arg) + 1;
                     break;
                 case 'b':
-                    param_var->arg = ((bool *) param_var->arg) + 1;
+                    vec_param->arg = ((bool *) vec_param->arg) + 1;
                     break;
                 default: SWITCH_DEFAULT_REACHED
             }
@@ -181,11 +181,11 @@ hotcall_handle_reduce(struct hotcall_reduce *re) {
 
 static inline void
 hotcall_handle_map(struct hotcall_map *ma) {
-    const struct variable_parameter *params_in_var, *params_out_var;
+    const struct vector_parameter *params_in_vec, *params_out_vec;
     const struct parameter *params_in;
     params_in = &ma->params[0];
-    params_in_var = &params_in->value.variable;
-    params_out_var = &ma->params[ma->config->n_params - 1].value.variable;
+    params_in_vec = &params_in->value.vector;
+    params_out_vec = &ma->params[ma->config->n_params - 1].value.vector;
 
     struct hotcall_function_ fc;
     struct hotcall_function_config config = {
@@ -195,34 +195,34 @@ hotcall_handle_map(struct hotcall_map *ma) {
     fc.config = &config;
     fc.params = ma->params;
 
-    for(int i = 0; i < *params_in->len; ++i) {
-        struct variable_parameter *param_var;
+    for(int i = 0; i < *params_in_vec->len; ++i) {
+        struct vector_parameter *vec_param;
         for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
-            param_var = &ma->params[j].value.variable;
-            if(!param_var->iter) continue;
-            switch(param_var->fmt) {
+            if(ma->params[j].type != VECTOR_TYPE_) continue;
+            vec_param = &ma->params[j].value.vector;
+            switch(vec_param->fmt) {
                 case 'd':
-                    param_var->arg = ((int *) param_var->arg) + 1;
+                    vec_param->arg = ((int *) vec_param->arg) + 1;
                     break;
                 case 'u':
-                    param_var->arg = ((unsigned int *) param_var->arg) + 1;
+                    vec_param->arg = ((unsigned int *) vec_param->arg) + 1;
                     break;
                 case 'b':
-                    param_var->arg = ((bool *) param_var->arg) + 1;
+                    vec_param->arg = ((bool *) vec_param->arg) + 1;
                     break;
                 default: SWITCH_DEFAULT_REACHED
             }
         }
 
-        switch(params_out_var->fmt) {
+        switch(params_out_vec->fmt) {
             case 'u':
-                fc.return_value = ((unsigned int *) params_out_var->arg) + i;
+                fc.return_value = ((unsigned int *) params_out_vec->arg) + i;
                 break;
             case 'b':
-                fc.return_value = ((bool *) params_out_var->arg) + i;
+                fc.return_value = ((bool *) params_out_vec->arg) + i;
                 break;
             case 'd':
-                fc.return_value = ((int *) params_out_var->arg) + i;
+                fc.return_value = ((int *) params_out_vec->arg) + i;
                 break;
             default:
                 SWITCH_DEFAULT_REACHED
@@ -234,54 +234,51 @@ hotcall_handle_map(struct hotcall_map *ma) {
 
 static inline void
 hotcall_handle_filter(struct hotcall_filter *fi) {
-    struct variable_parameter *input_var = NULL, *output_var = NULL;
+    struct vector_parameter *input_vec = NULL, *output_vec = NULL;
     struct parameter *input, *output;
     input = &fi->params[0];
     switch(input->type) {
         case FUNCTION_TYPE_:
             for(int i = 0; i < input->value.function.n_params; ++i) {
-                if(input->value.function.params[i].value.variable.iter) {
-                    input_var = &input->value.function.params[i].value.variable;
-                }
+                if(input->value.function.params[i].type != VECTOR_TYPE_) continue;
+                input_vec = &input->value.function.params[i].value.vector;
             }
             break;
-        case VARIABLE_TYPE_:
-            if(input->value.variable.iter) {
-                input_var = &input->value.variable;
-            }
+        case VECTOR_TYPE_:
+            input_vec = &input->value.vector;
             break;
         default:
             break;
     }
-    sgx_assert(input_var != NULL, "ERROR, input parameter contains no iterator. Undefined behaviour from now on..");
+    sgx_assert(input_vec != NULL, "ERROR, input parameter contains no iterator. Undefined behaviour from now on..");
 
     output = &fi->params[fi->config->n_params - 1];
     switch(output->type) {
-        case VARIABLE_TYPE_:
-            output_var = &output->value.variable;
+        case VECTOR_TYPE_:
+            output_vec = &output->value.vector;
             break;
         default:
             sgx_assert(true, "ERROR, return parameter is not of variable type. Undefined behaviour from now...");
     }
-    sgx_assert(output_var != NULL, "ERROR, return parameter is not of variable type. Undefined behaviour from now...");
+    sgx_assert(output_vec != NULL, "ERROR, return parameter is not of variable type. Undefined behaviour from now...");
 
     struct postfix_item postfix_output[strlen(fi->config->condition_fmt)];
     unsigned int postfix_output_length;
     to_postfix(fi->config->condition_fmt, fi->params, postfix_output, &postfix_output_length);
     int res, offset, n_include = 0;
-    for(int n = 0; n < *input->len; ++n) {
+    for(int n = 0; n < *input_vec->len; ++n) {
         res = evaluate_postfix(postfix_output, postfix_output_length, hotcall_config, n);
         if(res) {
             offset = n;
-            switch(output_var->fmt) {
+            switch(output_vec->fmt) {
                 case 'u':
-                    ((unsigned int *) output_var->arg)[n_include] = ((unsigned int *) input_var->arg)[offset];
+                    ((unsigned int *) output_vec->arg)[n_include] = ((unsigned int *) input_vec->arg)[offset];
                     break;
                 case 'b':
-                    ((bool *) output_var->arg)[n_include] = ((bool *) input_var->arg)[offset];
+                    ((bool *) output_vec->arg)[n_include] = ((bool *) input_vec->arg)[offset];
                     break;
                 case 'd':
-                    ((int *) output_var->arg)[n_include] = ((int *) input_var->arg)[offset];
+                    ((int *) output_vec->arg)[n_include] = ((int *) input_vec->arg)[offset];
                     break;
                 default:
                     SWITCH_DEFAULT_REACHED
@@ -290,7 +287,7 @@ hotcall_handle_filter(struct hotcall_filter *fi) {
             n_include++;
         }
     }
-    *(output->len) = n_include;
+    *(output_vec->len) = n_include;
 
 }
 
@@ -304,22 +301,20 @@ hotcall_handle_for_each(struct hotcall_for_each *tor) {
     fc.config = &config;
     fc.params = tor->params;
 
-    for(int i = 0; i < *tor->params[0].len; ++i) {
-        struct variable_parameter *param_var;
+    for(int i = 0; i < *tor->params[0].value.vector.len; ++i) {
+        struct vector_parameter *vec_param;
         for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
-            param_var = &tor->params[j].value.variable;
-            if(!param_var->iter) {
-                continue;
-            }
-            switch(param_var->fmt) {
+            if(tor->params[j].type != VECTOR_TYPE_) continue;
+            vec_param = &tor->params[j].value.vector;
+            switch(vec_param->fmt) {
                 case 'd':
-                    param_var->arg = ((int *) param_var->arg) + 1;
+                    vec_param->arg = ((int *) vec_param->arg) + 1;
                     break;
                 case 'u':
-                    param_var->arg = ((unsigned int *) param_var->arg) + 1;
+                    vec_param->arg = ((unsigned int *) vec_param->arg) + 1;
                     break;
                 case 'b':
-                    param_var->arg = ((bool *) param_var->arg) + 1;
+                    vec_param->arg = ((bool *) vec_param->arg) + 1;
                     break;
                 default: SWITCH_DEFAULT_REACHED
             }
@@ -349,18 +344,18 @@ hotcall_handle_for_begin(struct hotcall_for_start *for_s, struct loop_stack_item
                 }
                 for(int j = 0; j < it->call.fc_.config->n_params; ++j) {
                     param = &it->call.fc_.params[j];
-                    if(!param->value.variable.iter) {
+                    if(param->type != VECTOR_TYPE_) {
                         continue;
                     }
-                    switch(param->value.variable.fmt) {
+                    switch(param->value.vector.fmt) {
                         case 'd':
-                            param->value.variable.arg = ((int *) param->value.variable.arg) + 1;
+                            param->value.vector.arg = ((int *) param->value.vector.arg) + 1;
                             break;
                         case 'u':
-                            param->value.variable.arg = ((unsigned int *) param->value.variable.arg) + 1;
+                            param->value.vector.arg = ((unsigned int *) param->value.vector.arg) + 1;
                             break;
                         case 'b':
-                            param->value.variable.arg = ((bool *) param->value.variable.arg) + 1;
+                            param->value.vector.arg = ((bool *) param->value.vector.arg) + 1;
                             break;
                         default: SWITCH_DEFAULT_REACHED
                     }
@@ -471,6 +466,8 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                         case QUEUE_ITEM_TYPE_ERROR:
                             sm_ctx->hcall.batch.error = queue_item->call.err.error_code;
                             goto batch_done;
+                        case QUEUE_ITEM_TYPE_IF_ELSE:
+                            break;
                         default:
                             SWITCH_DEFAULT_REACHED
                     }

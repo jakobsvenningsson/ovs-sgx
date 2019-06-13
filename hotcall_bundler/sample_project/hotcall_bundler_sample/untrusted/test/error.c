@@ -13,32 +13,28 @@ TEST(error,1) {
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
+
+    ASSERT_EQ(0, hotcall_bundle_get_error());
+
     int x = 0;
     bool res;
-    HCALL(CONFIG({ .function_id = hotcall_ecall_always_false, .has_return = true }), VAR(&res, 'b'));
-    IF(
-        ((struct if_config) {
-            .then_branch_len = 0,
-            .else_branch_len = 3,
-            .predicate_fmt = "b",
-            .return_if_false = false
-        }),
-        VAR(&res, 'b')
-    );
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(&res, 'b'));
+    IF((struct if_config) { .predicate_fmt = "b" }, VAR(&res, 'b'));
     THEN
-        NULL;
     ELSE
-        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one, .has_return = false }), VAR(&x, 'b'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'b'));
         ERROR(sm_ctx, TEST_ERROR_CODE_1);
-        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one, .has_return = false }), VAR(&x, 'b'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'b'));
+    END
 
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 
     ASSERT_EQ(x, 1);
-    ASSERT_EQ(TEST_ERROR_CODE_1, hotcall_bundle_get_error(sm_ctx));
+
+    ASSERT_EQ(TEST_ERROR_CODE_1, hotcall_bundle_get_error());
 
 }
 
@@ -49,29 +45,25 @@ TEST(error, 2) {
     hotcall_test_setup();
     struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
+
+    // Check that error is 0 before we begin.
+    ASSERT_EQ(0, hotcall_bundle_get_error());
+
     int x = 0;
     bool res;
-    HCALL(CONFIG({ .function_id = hotcall_ecall_always_false, .has_return = true }), VAR(&res, 'b'));
-    IF(
-        ((struct if_config) {
-            .then_branch_len = 1,
-            .else_branch_len = 1,
-            .predicate_fmt = "!b",
-            .return_if_false = false
-        }),
-        VAR(&res, 'b')
-    );
+    HCALL(CONFIG(.function_id = hotcall_ecall_always_false, .has_return = true), VAR(&res, 'b'));
+    IF((struct if_config) { .predicate_fmt = "!b" }, VAR(&res, 'b'));
     THEN
-        HCALL(CONFIG({ .function_id = hotcall_ecall_plus_one, .has_return = false }), VAR(&x, 'b'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(&x, 'b'));
     ELSE
         ERROR(sm_ctx, TEST_ERROR_CODE_1);
+    END
 
-
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 
     ASSERT_EQ(x, 1);
-    ASSERT_EQ(NULL, hotcall_bundle_get_error(sm_ctx));
+    ASSERT_EQ(0, hotcall_bundle_get_error());
 }

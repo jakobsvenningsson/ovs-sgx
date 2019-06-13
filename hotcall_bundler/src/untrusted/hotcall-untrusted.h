@@ -44,6 +44,12 @@
     }
 
 
+#define BUNDLE_END() hotcall_bundle_end(_sm_ctx)
+#define BUNDLE_BEGIN() hotcall_bundle_begin(_sm_ctx)
+
+#define CHAIN_BEGIN() hotcall_bundle_chain_begin(_sm_ctx)
+#define CHAIN_CLOSE() hotcall_bundle_chain_close(_sm_ctx)
+
 
 #define HCALL(CONFIG, ...) \
     _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
@@ -66,7 +72,6 @@ hotcall_destroy(struct shared_memory_ctx *sm_ctx);
 struct shared_memory_ctx *
 get_context();
 
-
 extern inline bool
 is_hotcall_in_progress(struct hotcall *hcall) {
     return hcall->hotcall_in_progress;
@@ -85,8 +90,8 @@ hotcall_bundle_end(struct shared_memory_ctx *sm_ctx) {
 }
 
 extern inline int
-hotcall_bundle_get_error(struct shared_memory_ctx *sm_ctx) {
-    return sm_ctx->hcall.batch.error;
+hotcall_bundle_get_error() {
+    return _sm_ctx->hcall.batch.error;
 }
 
 extern inline void
@@ -274,6 +279,38 @@ hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_config *config, s
     tif->config = config;
     enqueue_item(sm_ctx, item);
 }
+
+extern inline void
+hotcall_bundle_if_then(struct shared_memory_ctx *sm_ctx) {
+
+}
+
+extern inline void
+hotcall_bundle_if_else(struct shared_memory_ctx *sm_ctx) {
+    struct ecall_queue_item *item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_IF_ELSE;
+    enqueue_item(sm_ctx, item);
+}
+
+extern inline void
+hotcall_bundle_if_end(struct shared_memory_ctx *sm_ctx) {
+    struct hotcall_batch *batch;
+    struct ecall_queue_item *it;
+    batch = &sm_ctx->hcall.batch;
+    unsigned int branch_len = 0, else_len = 0, then_len = 0;
+    for(it = batch->queue[batch->queue_len - 1]; it-> type != QUEUE_ITEM_TYPE_IF; --it) {
+        if(it->type == QUEUE_ITEM_TYPE_IF_ELSE) {
+            else_len = branch_len;
+            branch_len = 1;
+        } else {
+            branch_len++;
+        }
+    }
+    it->call.tif.config->else_branch_len = else_len;
+    it->call.tif.config->then_branch_len = branch_len;
+}
+
 
 
 extern inline void

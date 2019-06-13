@@ -23,16 +23,15 @@
 #define QUEUE_ITEM_TYPE_DESTROY 3
 #define QUEUE_ITEM_TYPE_FUNCTION 4
 #define QUEUE_ITEM_TYPE_FOR_EACH 5
-#define QUEUE_ITEM_TYPE_FOR_END 6
 #define QUEUE_ITEM_TYPE_FOR_BEGIN 7
 #define QUEUE_ITEM_TYPE_FILTER 8
 #define QUEUE_ITEM_TYPE_DO_WHILE 9
 #define QUEUE_ITEM_TYPE_WHILE_BEGIN 10
-#define QUEUE_ITEM_TYPE_WHILE_END 11
 #define QUEUE_ITEM_TYPE_MAP 12
 #define QUEUE_ITEM_TYPE_ERROR 13
 #define QUEUE_ITEM_TYPE_REDUCE 14
 #define QUEUE_ITEM_TYPE_LOOP_END 15
+#define QUEUE_ITEM_TYPE_IF_ELSE 16
 
 #define MAX_FCS 200
 #define MAX_TS 200
@@ -48,6 +47,13 @@
 #define UNIQUE_ID CAT(_uid_, __LINE__,  __func__)
 
 #define SWITCH_DEFAULT_REACHED printf("Default reached at %s %d\n", __FILE__, __LINE__);
+
+#define RETURN  hotcall_bundle_error(_sm_ctx, 0)
+
+#define PTR(...) (struct parameter) { .type = POINTER_TYPE_,   .value = { .pointer = { __VA_ARGS__ }}}
+#define VAR(...) { .type = VARIABLE_TYPE_, .value = { .variable = { __VA_ARGS__ }}}
+#define VECTOR(...) { .type = VECTOR_TYPE_, .value = { .vector = { __VA_ARGS__ }}}
+#define FUNC(...) (struct parameter) { .type = FUNCTION_TYPE_, .value = { .function = { __VA_ARGS__ }}}
 
 union hcall {
     struct hotcall_function fc;

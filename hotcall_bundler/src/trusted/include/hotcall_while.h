@@ -8,8 +8,8 @@
     hotcall_bundle_while_begin(SM_CTX, CONFIG)*/
 
 
-#define END_WHILE(SM_CTX) \
-    hotcall_bundle_while_end(SM_CTX)
+#define END_WHILE() \
+    hotcall_bundle_while_end(_sm_ctx)
 
 
 #define _BEGIN_WHILE(SM_CTX, ID, CONFIG, ...) \

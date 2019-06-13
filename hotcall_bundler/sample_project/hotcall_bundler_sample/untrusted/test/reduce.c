@@ -8,27 +8,22 @@
 TEST(reduce,1) {
     //Contract: res should be equal to the number of iterations.
     hotcall_test_setup();
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
 
     unsigned int n_iters = 10;
     int xs[n_iters] = { 0 };
     int res = 0;
 
     REDUCE(
-        sm_ctx,
         ((struct reduce_config) {
             .function_id = hotcall_ecall_plus_one_ret,
             .op = '+',
         }),
-        (struct parameter) { .type = VARIABLE_TYPE_ ,
-                             .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }}, .len = &n_iters },
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = &res, .fmt = 'd', .iter = false }}},
+        VECTOR(xs, 'd', &n_iters), VAR(&res, 'd')
     );
 
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 
@@ -39,32 +34,22 @@ TEST(reduce,1) {
 TEST(reduce, 2) {
     //Contract: Should return the sum of each element (x + y) where x is a member of xs.
     hotcall_test_setup();
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
-
-    unsigned int n_params = 1, n_iters = 10;
+    unsigned int n_iters = 10;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int res = 0, y = 5;
 
+    BUNDLE_BEGIN();
+
     REDUCE(
-        sm_ctx,
         ((struct reduce_config) {
             .function_id = hotcall_ecall_plus,
             .op = '+',
         }),
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }},
-                            .len = &n_iters },
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = &y, .fmt = 'd', .iter = false }}},
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = &res, .fmt = 'd', .iter = false }}},
+        VECTOR(xs, 'd', &n_iters), VAR(&y, 'd'), VAR(&res, 'd')
     );
 
-
-
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 
@@ -79,29 +64,23 @@ TEST(reduce, 2) {
 TEST(reduce, 3) {
     //Contract: Should return true since all elements in xs are greater than 2
     hotcall_test_setup();
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
 
-    hotcall_bundle_begin(sm_ctx);
+    BUNDLE_BEGIN();
 
-    unsigned int n_params = 1, n_iters = 7;
+    unsigned int n_iters = 7;
     int xs[n_iters] = { 3, 4, 5, 6, 7, 8, 9 };
     bool res;
 
     REDUCE(
-        sm_ctx,
         ((struct reduce_config) {
             .function_id = hotcall_ecall_greater_than_two,
             .op = '&',
         }),
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = xs, .fmt = 'd', .iter = true }},
-                            .len = &n_iters },
-        (struct parameter) { .type = VARIABLE_TYPE_,
-                             .value = { .variable = { .arg = &res, .fmt = 'b', .iter = false }}},
+        VECTOR(xs, 'd', &n_iters), VAR(&res, 'd')
     );
 
 
-    hotcall_bundle_end(sm_ctx);
+    BUNDLE_END();
 
     hotcall_test_teardown();
 
