@@ -15,27 +15,12 @@
 #else
 #define ASYNC(SM_CTX, X) false || is_hotcall_in_progress(&(SM_CTX)->hcall)
 #endif
-/*
-#define HCALL(SM_CTX, F, _ASYNC, RET, N_ARGS, ARGS) \
-    (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
-        get_fcall((SM_CTX), QUEUE_ITEM_TYPE_FUNCTION, hotcall_ ## F, RET, N_ARGS, ARGS); \
-    if(ASYNC(SM_CTX, _ASYNC) != 1) { \
-        make_hotcall(&(SM_CTX)->hcall); \
-    }*/
-
-#define HCALL_CONTROL(SM_CTX, TYPE, _ASYNC, N_ARGS, ARGS) \
-    (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
-        get_fcall((SM_CTX), QUEUE_ITEM_TYPE_ ## TYPE, 0, NULL, N_ARGS, ARGS); \
-    if(ASYNC(SM_CTX, _ASYNC) != 1) { \
-        make_hotcall(&(SM_CTX)->hcall); \
-    }
-
 
 #define _HCALL(SM_CTX, UNIQUE_ID, CONFIG, ...) \
     struct parameter CAT2(HCALL_ARGS_, UNIQUE_ID)[] = { \
         __VA_ARGS__ \
     }; \
-    struct hotcall_function_config CAT2(HCALL_CONFIG_, UNIQUE_ID) = CONFIG; \
+    struct hotcall_functionconfig CAT2(HCALL_CONFIG_, UNIQUE_ID) = CONFIG; \
     CAT2(HCALL_CONFIG_, UNIQUE_ID).n_params = sizeof(CAT2(HCALL_ARGS_, UNIQUE_ID))/sizeof(struct parameter);\
     (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
         get_fcall_((SM_CTX), &CAT2(HCALL_CONFIG_, UNIQUE_ID), CAT2(HCALL_ARGS_, UNIQUE_ID));\
@@ -53,7 +38,6 @@
 
 #define HCALL(CONFIG, ...) \
     _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,62 +109,18 @@ enqueue_item(struct shared_memory_ctx *sm_ctx, struct ecall_queue_item *item) {
 }
 
 extern inline
-struct ecall_queue_item * get_fcall_(struct shared_memory_ctx *sm_ctx, struct hotcall_function_config *config, struct parameter *params) {
+struct ecall_queue_item * get_fcall_(struct shared_memory_ctx *sm_ctx, struct hotcall_functionconfig *config, struct parameter *params) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_FUNCTION;
 
-    struct hotcall_function_ *fcall;
+    struct hotcall_function *fcall;
     fcall = &item->call.fc_;
     //fcall->function_id = f_id;
     fcall->config = config;
     fcall->params = params;
     if(config->has_return) {
         fcall->return_value = fcall->params[--fcall->config->n_params].value.variable.arg;
-    }
-
-    /*fcall->args.n_args = (ret ? n_args - 1 : n_args);
-    if(ret) {
-        fcall->return_value = params[0].value.variable.arg;
-    }
-    for(int i = 0; i < fcall->args.n_args; ++i) {
-        fcall->args.args[i] = params[i].value.variable.arg;
-    }*/
-    return item;
-    //memcpy(fcall->args.args, args, fcall->args.n_args * sizeof(void *));
-}
-
-extern inline
-struct ecall_queue_item * get_fcall(struct shared_memory_ctx *sm_ctx, uint8_t f_type, uint8_t f_id, void *ret, uint8_t n_args, void **args) {
-    struct ecall_queue_item *item;
-    struct preallocated_function_calls *pfc;
-    pfc = &sm_ctx->pfc;
-    item = next_queue_item(sm_ctx);
-    item->type = f_type;
-    switch(item->type) {
-        case QUEUE_ITEM_TYPE_IF:
-        {
-            struct hotcall_if *trans_if;
-            trans_if = &item->call.tif;
-            break;
-        }
-        case QUEUE_ITEM_TYPE_DESTROY:
-            break;
-        case QUEUE_ITEM_TYPE_FUNCTION:
-        {
-            struct hotcall_function *fcall;
-            fcall = &item->call.fc;
-            fcall->function_id = f_id;
-            fcall->args.n_args = n_args;
-            fcall->return_value = ret;
-            memcpy(fcall->args.args, args, fcall->args.n_args * sizeof(void *));
-            break;
-        }
-        default:
-            printf("unknown queue type\n");
-    }
-    if(pfc->idx == MAX_TS) {
-        pfc->idx = 0;
     }
     return item;
 }
@@ -269,13 +209,13 @@ next_int(struct preallocated_function_calls *pfc, int x) {
 }
 
 extern inline void
-hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_config *config, struct parameter *args) {
+hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_config *config, struct parameter *params) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_IF;
     struct hotcall_if *tif;
     tif = &item->call.tif;
-    tif->args = args;
+    tif->params = params;
     tif->config = config;
     enqueue_item(sm_ctx, item);
 }

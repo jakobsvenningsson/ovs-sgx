@@ -2,7 +2,7 @@
 #define _H_HOTCALL_FILTER_
 
 #include "hotcall_function.h"
-#include "hotcall_predicate.h"
+
 #include "hotcall.h"
 
 /*

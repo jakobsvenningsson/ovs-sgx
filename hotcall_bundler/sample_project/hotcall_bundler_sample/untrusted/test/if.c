@@ -112,7 +112,7 @@ TEST(if,4) {
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG( .function_id = hotcall_ecall_always_true ), VAR(&res, 'b'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_true, .has_return = true ), VAR(&res, 'b'));
     IF(
         ((struct if_config) { .predicate_fmt = "b" }),
         VAR(&res, 'b')

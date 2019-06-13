@@ -14,7 +14,7 @@ static inline bool
 hotcall_handle_if(struct hotcall_if *tif, uint8_t *exclude_list, int pos, int exclude_list_len) {
     struct postfix_item output[strlen(tif->config->predicate_fmt)];
     unsigned int output_length;
-    to_postfix(tif->config->predicate_fmt, tif->args, output, &output_length);
+    to_postfix(tif->config->predicate_fmt, tif->params, output, &output_length);
     int res = evaluate_postfix(output, output_length, hotcall_config, 0);
     if(res && tif->config->else_branch_len > 0) {
         exclude_else_branch(exclude_list, pos, tif->config->then_branch_len, tif->config->else_branch_len);
@@ -33,8 +33,8 @@ hotcall_handle_do_while(struct hotcall_do_while *dw) {
     struct postfix_item output[strlen(dw->config->condition_fmt)];
     unsigned int output_length;
     to_postfix(dw->config->condition_fmt, dw->condition_params, output, &output_length);
-    struct hotcall_function_ fc;
-    struct hotcall_function_config config = {
+    struct hotcall_function fc;
+    struct hotcall_functionconfig config = {
         .function_id = dw->config->function_id,
         .n_params = dw->config->body_n_params
     };
@@ -148,8 +148,8 @@ hotcall_handle_reduce(struct hotcall_reduce *re) {
 
     int ret = 0;
     for(int i = 0; i < in_len; ++i) {
-        struct hotcall_function_ fc;
-        struct hotcall_function_config config = {
+        struct hotcall_function fc;
+        struct hotcall_functionconfig config = {
             .function_id = re->config->function_id,
             .n_params = re->config->n_params - 1,
         };
@@ -158,7 +158,7 @@ hotcall_handle_reduce(struct hotcall_reduce *re) {
         fc.return_value = &ret;
         struct vector_parameter *vec_param;
         for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
-            if(re->params[j].type != VECTOR_TYPE_) continue;
+            if(re->params[j].type != VECTOR_TYPE) continue;
             vec_param = &re->params[j].value.vector;
             switch(vec_param->fmt) {
                 case 'd':
@@ -187,8 +187,8 @@ hotcall_handle_map(struct hotcall_map *ma) {
     params_in_vec = &params_in->value.vector;
     params_out_vec = &ma->params[ma->config->n_params - 1].value.vector;
 
-    struct hotcall_function_ fc;
-    struct hotcall_function_config config = {
+    struct hotcall_function fc;
+    struct hotcall_functionconfig config = {
         .function_id = ma->config->function_id,
         .n_params = ma->config->n_params - 1,
     };
@@ -198,7 +198,7 @@ hotcall_handle_map(struct hotcall_map *ma) {
     for(int i = 0; i < *params_in_vec->len; ++i) {
         struct vector_parameter *vec_param;
         for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
-            if(ma->params[j].type != VECTOR_TYPE_) continue;
+            if(ma->params[j].type != VECTOR_TYPE) continue;
             vec_param = &ma->params[j].value.vector;
             switch(vec_param->fmt) {
                 case 'd':
@@ -238,13 +238,13 @@ hotcall_handle_filter(struct hotcall_filter *fi) {
     struct parameter *input, *output;
     input = &fi->params[0];
     switch(input->type) {
-        case FUNCTION_TYPE_:
+        case FUNCTION_TYPE:
             for(int i = 0; i < input->value.function.n_params; ++i) {
-                if(input->value.function.params[i].type != VECTOR_TYPE_) continue;
+                if(input->value.function.params[i].type != VECTOR_TYPE) continue;
                 input_vec = &input->value.function.params[i].value.vector;
             }
             break;
-        case VECTOR_TYPE_:
+        case VECTOR_TYPE:
             input_vec = &input->value.vector;
             break;
         default:
@@ -254,7 +254,7 @@ hotcall_handle_filter(struct hotcall_filter *fi) {
 
     output = &fi->params[fi->config->n_params - 1];
     switch(output->type) {
-        case VECTOR_TYPE_:
+        case VECTOR_TYPE:
             output_vec = &output->value.vector;
             break;
         default:
@@ -293,8 +293,8 @@ hotcall_handle_filter(struct hotcall_filter *fi) {
 
 static inline void
 hotcall_handle_for_each(struct hotcall_for_each *tor) {
-    struct hotcall_function_ fc;
-    struct hotcall_function_config config = {
+    struct hotcall_function fc;
+    struct hotcall_functionconfig config = {
         .function_id = tor->config->function_id,
         .n_params = tor->config->n_params
     };
@@ -304,7 +304,7 @@ hotcall_handle_for_each(struct hotcall_for_each *tor) {
     for(int i = 0; i < *tor->params[0].value.vector.len; ++i) {
         struct vector_parameter *vec_param;
         for(int j = 0; j < fc.config->n_params && i > 0; ++j) {
-            if(tor->params[j].type != VECTOR_TYPE_) continue;
+            if(tor->params[j].type != VECTOR_TYPE) continue;
             vec_param = &tor->params[j].value.vector;
             switch(vec_param->fmt) {
                 case 'd':
@@ -344,7 +344,7 @@ hotcall_handle_for_begin(struct hotcall_for_start *for_s, struct loop_stack_item
                 }
                 for(int j = 0; j < it->call.fc_.config->n_params; ++j) {
                     param = &it->call.fc_.params[j];
-                    if(param->type != VECTOR_TYPE_) {
+                    if(param->type != VECTOR_TYPE) {
                         continue;
                     }
                     switch(param->value.vector.fmt) {
@@ -403,7 +403,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
 
     struct ecall_queue_item *queue_item;
     struct hotcall_function *fc;
-    struct hotcall_function_ *fc_;
+    struct hotcall_function *fc_;
 
 
     while (1) {

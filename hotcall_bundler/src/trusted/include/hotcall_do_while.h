@@ -2,8 +2,6 @@
 #define _H_HOTCALL_DO_WHILE
 
 #include "hotcall_function.h"
-#include "hotcall_predicate.h"
-//CAT2(DO_WHILE_CONFIG_,ID).n_params = sizeof(CAT2(DO_WHILE_ARG_,ID))/sizeof(struct parameter);\
 
 #define ESCAPE(...) __VA_ARGS__
 
@@ -24,7 +22,7 @@
 #define FUNCTION_PARAMS(...) { __VA_ARGS__ }
 
 struct do_while_config {
-    uint8_t function_id;
+    const uint8_t function_id;
     const char *condition_fmt;
     unsigned int body_n_params;
     unsigned int condition_n_params;

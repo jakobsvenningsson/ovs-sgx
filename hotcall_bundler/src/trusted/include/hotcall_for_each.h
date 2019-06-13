@@ -15,7 +15,7 @@
     _FOR_EACH(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 struct for_each_config {
-    uint8_t function_id;
+    const uint8_t function_id;
     unsigned int n_params;
 };
 

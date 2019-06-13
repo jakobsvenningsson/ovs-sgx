@@ -6,7 +6,7 @@
 #define MAX_SPINLOCK_JOBS 5
 
 struct hotcall_config {
-    void (*execute_function)(struct hotcall_function_ *);
+    void (*execute_function)(struct hotcall_function *);
     void (*spin_lock_tasks[MAX_SPINLOCK_JOBS])();
     unsigned int spin_lock_task_count[MAX_SPINLOCK_JOBS];
     unsigned int spin_lock_task_timeouts[MAX_SPINLOCK_JOBS];

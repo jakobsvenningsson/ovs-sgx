@@ -2,10 +2,6 @@
 #define _H_HOTCALL_WHILE
 
 #include "hotcall_function.h"
-#include "hotcall_predicate.h"
-/*
-#define BEGIN_WHILE(SM_CTX, CONFIG) \
-    hotcall_bundle_while_begin(SM_CTX, CONFIG)*/
 
 
 #define END_WHILE() \

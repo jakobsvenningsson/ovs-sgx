@@ -83,7 +83,7 @@ void hotcall_bundle_example_while(struct shared_memory_ctx *sm_ctx) {
     void *args[n_params] = { &x };
     struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
-        .args = (struct hotcall_function_arg_list) {
+        .args = (struct hotcall_functionarg_list) {
             .n_args = 1,
             .args = { &x }
         }
@@ -150,7 +150,7 @@ void hotcall_bundle_example_filter(struct shared_memory_ctx *sm_ctx) {
 
     struct hotcall_function fc = {
         .id = hotcall_ecall_greater_than_two,
-        .args = (struct hotcall_function_arg_list) {
+        .args = (struct hotcall_functionarg_list) {
             .n_args = 1
         }
     };

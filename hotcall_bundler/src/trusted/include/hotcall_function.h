@@ -5,18 +5,9 @@
 
 #include "hotcall.h"
 
-enum parameter_type { FUNCTION_TYPE_, VARIABLE_TYPE_, POINTER_TYPE_, VECTOR_TYPE_ };
+enum parameter_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE, VECTOR_TYPE };
 
-#define _INIT_FUNCTION_ARG(ID, ARG_LIST, FUNCTION, ...)\
-    uint8_t F_ ## ID = hotcall_ ## FUNCTION; \
-    struct f_argument ARGS_ ## ID[] = { __VA_ARGS__ }; \
-    unsigned int N_ARGS_ ## ID = sizeof(ARGS_ ## ID)/sizeof(void *);\
-    void *TMP_ ## ID[] = { &F_ ## ID, &N_ARGS_ ## ID, (void *) ARGS_ ## ID};\
-    ARG_LIST = TMP_ ## ID
-
-#define INIT_FUNCTION_ARG(ARG_LIST, FUNCTION, ...)\
-    _INIT_FUNCTION_ARG(UNIQUE_ID, ARG_LIST, FUNCTION, __VA_ARGS__)
-
+#define CONFIG(...) ((struct hotcall_functionconfig)  { __VA_ARGS__ })
 
 struct variable_parameter {
     void *arg;
@@ -52,48 +43,17 @@ struct parameter {
     union parameter_types value;
 };
 
-struct hotcall_function_arg_list {
-    int n_args;
-    void *args[HOTCALL_MAX_ARG];
-};
-
-struct hotcall_function_args {
-    void *return_value;
-    struct hotcall_function_arg_list args;
-    bool async;
-};
-/*
-struct function_parameter {
-    void *arg;
-    char fmt;
-    bool iter;
-};*/
-
-struct function_parameters_in {
-    struct function_parameter *params;
+struct hotcall_functionconfig {
+    const uint8_t function_id;
+    const bool has_return;
+    const bool async;
     unsigned int n_params;
-    unsigned int *iters;
-};
-
-struct hotcall_function_config {
-    uint8_t function_id;
-    bool has_return;
-    bool async;
-    unsigned int n_params;
-};
-
-struct hotcall_function_ {
-    struct parameter *params;
-    struct hotcall_function_config *config;
-    void *return_value;
 };
 
 struct hotcall_function {
-    uint8_t function_id;
-    struct hotcall_function_arg_list args;
+    struct parameter *params;
+    struct hotcall_functionconfig *config;
     void *return_value;
-    bool async;
 };
-
 
 #endif

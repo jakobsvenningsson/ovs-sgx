@@ -105,7 +105,8 @@ TEST(chaining, 2) {
             .function_id = 255,
             .op = '+',
         }),
-        VECTOR(), VAR(&res, 'd')
+        VECTOR(),
+        VAR(&res, 'd')
     );
 
     CHAIN_CLOSE();

@@ -44,7 +44,11 @@ hotcall_bundle_flush(struct shared_memory_ctx *sm_ctx) {
 
 void
 hotcall_destroy(struct shared_memory_ctx *sm_ctx) {
-  HCALL_CONTROL(sm_ctx, DESTROY, false, 0, NULL);
+    struct ecall_queue_item *item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_DESTROY;
+    enqueue_item(sm_ctx, item);
+    hotcall_bundle_flush(sm_ctx);
 }
 
 bool

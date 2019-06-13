@@ -16,7 +16,7 @@
 
 
 struct map_config {
-    uint8_t function_id;
+    const uint8_t function_id;
     unsigned int n_params;
 };
 struct hotcall_map {

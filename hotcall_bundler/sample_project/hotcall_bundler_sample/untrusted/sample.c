@@ -61,7 +61,7 @@ int SGX_CDECL main(int argc, char *argv[])
     ecall_configure_hotcall(global_eid);
     hotcall_init(&sm_ctx, global_eid);
 
-    benchmark(&sm_ctx, benchmark_if_naive, ROUNDS, ITERATIONS);
+    benchmark(&sm_ctx, benchmark_hotcall, ROUNDS, ITERATIONS);
 
     hotcall_destroy(&sm_ctx);
 

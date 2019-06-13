@@ -2,7 +2,7 @@
 #define _H_HOTCALL_IF
 
 #include "hotcall_function.h"
-#include "hotcall_predicate.h"
+
 
 #define PASTE(X, Y) X ## Y
 
@@ -21,24 +21,17 @@
 
 #define INIT_IF_CONF(FMT, RETURN_IF_FALSE) ((struct if_config) { FMT, RETURN_IF_FALSE })
 
-
-
-
-//#define VARIABLE_PARAM(VAL, FMT) { .type = VARIABLE_TYPE_, .value = { .variable = { __VA_ARGS__ }}}
-//#define POINTER_PARAM(VAL, FMT) { .type = POINTER_TYPE_, .value = { .variable = { __VA_ARGS__ }}}
-#define CONFIG(...) ((struct hotcall_function_config)  { __VA_ARGS__ })
-
 struct if_config {
     //struct predicate predicate;
     const char *predicate_fmt;
-    bool return_if_false;
+    const bool return_if_false;
     unsigned int then_branch_len;
     unsigned int else_branch_len;
     //struct parameter* predicate_args;
 };
 
 struct hotcall_if {
-    struct parameter *args;
+    struct parameter *params;
     struct if_config *config;
 };
 

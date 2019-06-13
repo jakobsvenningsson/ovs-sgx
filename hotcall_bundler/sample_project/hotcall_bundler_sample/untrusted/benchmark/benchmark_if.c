@@ -12,12 +12,12 @@ benchmark_if_naive(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
         bool res;
         //HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
         HCALL(
-                ((struct hotcall_function_config) { .function_id = hotcall_ecall_always_true, .has_return = true }),
-		        (struct parameter) { .type = VARIABLE_TYPE_, .value = { .variable = { .arg = &res }}}
+                ((struct hotcall_functionconfig) { .function_id = hotcall_ecall_always_true, .has_return = true }),
+		        (struct parameter) { .type = VARIABLE_TYPE, .value = { .variable = { .arg = &res }}}
         );
         if(res) {
             //HCALL(sm_ctx, ecall_foo, false, NULL, 0, NULL);
-            HCALL(((struct hotcall_function_config) { .function_id = hotcall_ecall_foo, .has_return = false }));
+            HCALL(((struct hotcall_functionconfig) { .function_id = hotcall_ecall_foo, .has_return = false }));
         }
         CLOSE
         if(i >= warmup) {
@@ -44,12 +44,12 @@ benchmark_if_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) 
                 .predicate_fmt = "b",
                 .return_if_false = false
             }),
-            (struct parameter) { .type = FUNCTION_TYPE_,  .value = { .function = { .function_id = hotcall_ecall_always_true, .params =  NULL }}}
-            //(struct parameter) { .type = VARIABLE_TYPE_,  .value = { .variable = { .arg = &res, .fmt = 'b' }}}
+            (struct parameter) { .type = FUNCTION_TYPE,  .value = { .function = { .function_id = hotcall_ecall_always_true, .params =  NULL }}}
+            //(struct parameter) { .type = VARIABLE_TYPE,  .value = { .variable = { .arg = &res, .fmt = 'b' }}}
         );
         THEN
             HCALL(
-                    ((struct hotcall_function_config) { .function_id = hotcall_ecall_foo, .has_return = false })
+                    ((struct hotcall_functionconfig) { .function_id = hotcall_ecall_foo, .has_return = false })
                 );
 
         hotcall_bundle_end(sm_ctx);
