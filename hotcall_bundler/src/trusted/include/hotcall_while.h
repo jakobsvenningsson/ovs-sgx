@@ -17,7 +17,7 @@
     hotcall_bundle_while_begin(SM_CTX, &CAT2(WHILE_CONFIG_,ID), CAT2(FILTER_ARG_, ID))
 
 #define BEGIN_WHILE(CONFIG, ...) \
-    _BEGIN_WHILE(get_context(), UNIQUE_ID, CONFIG, __VA_ARGS__)
+    _BEGIN_WHILE(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 struct while_config {
     const char *predicate_fmt;

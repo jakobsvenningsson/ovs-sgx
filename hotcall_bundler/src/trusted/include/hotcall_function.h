@@ -27,8 +27,8 @@ struct function_parameter {
 };
 
 struct pointer_parameter {
-    void *arg;
-    bool iter;
+    void **arg;
+    char fmt;
 };
 
 union parameter_types {

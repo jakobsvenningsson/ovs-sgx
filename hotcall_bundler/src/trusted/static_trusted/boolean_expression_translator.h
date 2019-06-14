@@ -92,7 +92,9 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
                     SWITCH_DEFAULT_REACHED
             }
         }
-        case POINTER_TYPE: return operand_item->elem->value.pointer.arg != NULL;
+        case POINTER_TYPE:
+            if(*operand_item->elem->value.pointer.arg == NULL) return 0;
+            else return **(int **) operand_item->elem->value.pointer.arg;
         case VECTOR_TYPE:
             switch(operand_item->ch) {
                 case 'b':

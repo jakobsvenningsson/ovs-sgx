@@ -46,7 +46,7 @@ endif
 
 Crypto_Library_Name := sgx_tcrypto
 
-Hotcall_bundler_sample_C_Files := trusted/hotcall_bundler_sample.c
+Hotcall_bundler_sample_C_Files := trusted/hotcall_bundler_sample.c trusted/ecalls.c
 
 Hotcall_bundler_sample_Include_Paths := -Iinclude -Itrusted -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx \
  -I$(HOTCALL_BUNDLER_LIB_PATH)/include
@@ -58,12 +58,11 @@ Hotcall_bundler_sample_C_Flags := $(Flags_Just_For_C) $(Common_C_Cpp_Flags)
 
 Hotcall_bundler_sample_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
+	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -L$(HOTCALL_BUNDLER_LIB_PATH) -lhotcall_bundler_trusted -lgtest -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
-	-Wl,--version-script=trusted/hotcall_bundler_sample.lds \
-	-L$(HOTCALL_BUNDLER_LIB_PATH) -lhotcall_bundler_trusted -lgtest
+	-Wl,--version-script=trusted/hotcall_bundler_sample.lds
 
 Hotcall_bundler_sample_C_Objects := $(Hotcall_bundler_sample_C_Files:.c=.o)
 

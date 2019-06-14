@@ -43,8 +43,6 @@
 extern "C" {
 #endif
 
-bool
-hotcall_test();
 void
 hotcall_init(struct shared_memory_ctx *sm_ctx, sgx_enclave_id_t _global_eid);
 void
@@ -53,8 +51,6 @@ void
 hotcall_bundle_expected_value(struct preallocated_function_calls *pfc, int expected, int error_code, bool has_else);
 void
 hotcall_destroy(struct shared_memory_ctx *sm_ctx);
-struct shared_memory_ctx *
-get_context();
 
 extern inline bool
 is_hotcall_in_progress(struct hotcall *hcall) {
@@ -220,16 +216,35 @@ hotcall_bundle_if_(struct shared_memory_ctx *sm_ctx, struct if_config *config, s
     enqueue_item(sm_ctx, item);
 }
 
-extern inline void
-hotcall_bundle_if_then(struct shared_memory_ctx *sm_ctx) {
-
-}
 
 extern inline void
 hotcall_bundle_if_else(struct shared_memory_ctx *sm_ctx) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_IF_ELSE;
+    enqueue_item(sm_ctx, item);
+}
+
+
+extern inline void
+hotcall_bundle_assign_var(struct shared_memory_ctx *sm_ctx, struct parameter *dst, struct parameter *src) {
+    struct ecall_queue_item *item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_ASSIGN_VAR;
+    item->call.var.src = src;
+    item->call.var.dst = dst;
+    item->call.var.offset = 0;
+    enqueue_item(sm_ctx, item);
+}
+
+extern inline void
+hotcall_bundle_assign_ptr(struct shared_memory_ctx *sm_ctx, struct parameter *dst, struct parameter *src) {
+    struct ecall_queue_item *item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_ASSIGN_PTR;
+    item->call.ptr.src = src;
+    item->call.ptr.dst = dst;
+    item->call.ptr.offset = 0;
     enqueue_item(sm_ctx, item);
 }
 

@@ -15,5 +15,8 @@
 #define hotcall_DUMMY 100
 #define hotcall_ecall_plus_y 11
 #define hotcall_ecall_zero 12
+#define hotcall_ecall_plus_y_v2 13
+#define hotcall_ecall_count 14
+#define hotcall_ecall_read_buffer 15
 
 #endif

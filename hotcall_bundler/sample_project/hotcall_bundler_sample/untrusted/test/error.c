@@ -19,13 +19,13 @@ TEST(error,1) {
 
     int x = 0;
     bool res;
-    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(&res, 'b'));
-    IF((struct if_config) { .predicate_fmt = "b" }, VAR(&res, 'b'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(res, 'b'));
+    IF((struct if_config) { .predicate_fmt = "b" }, VAR(res, 'b'));
     THEN
     ELSE
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'b'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'b'));
         ERROR(sm_ctx, TEST_ERROR_CODE_1);
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'b'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'b'));
     END
 
     BUNDLE_END();
@@ -52,10 +52,10 @@ TEST(error, 2) {
 
     int x = 0;
     bool res;
-    HCALL(CONFIG(.function_id = hotcall_ecall_always_false, .has_return = true), VAR(&res, 'b'));
-    IF((struct if_config) { .predicate_fmt = "!b" }, VAR(&res, 'b'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_always_false, .has_return = true), VAR(res, 'b'));
+    IF((struct if_config) { .predicate_fmt = "!b" }, VAR(res, 'b'));
     THEN
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(&x, 'b'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'b'));
     ELSE
         ERROR(sm_ctx, TEST_ERROR_CODE_1);
     END

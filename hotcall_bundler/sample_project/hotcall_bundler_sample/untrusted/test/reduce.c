@@ -20,7 +20,7 @@ TEST(reduce,1) {
             .function_id = hotcall_ecall_plus_one_ret,
             .op = '+',
         }),
-        VECTOR(xs, 'd', &n_iters), VAR(&res, 'd')
+        VECTOR(xs, 'd', &n_iters), VAR(res, 'd')
     );
 
     BUNDLE_END();
@@ -46,7 +46,7 @@ TEST(reduce, 2) {
             .function_id = hotcall_ecall_plus,
             .op = '+',
         }),
-        VECTOR(xs, 'd', &n_iters), VAR(&y, 'd'), VAR(&res, 'd')
+        VECTOR(xs, 'd', &n_iters), VAR(y, 'd'), VAR(res, 'd')
     );
 
     BUNDLE_END();
@@ -76,7 +76,7 @@ TEST(reduce, 3) {
             .function_id = hotcall_ecall_greater_than_two,
             .op = '&',
         }),
-        VECTOR(xs, 'd', &n_iters), VAR(&res, 'd')
+        VECTOR(xs, 'd', &n_iters), VAR(res, 'd')
     );
 
 

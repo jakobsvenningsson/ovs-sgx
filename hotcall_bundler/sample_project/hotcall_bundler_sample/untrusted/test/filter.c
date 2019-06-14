@@ -55,7 +55,7 @@ TEST(filter,2) {
     FILTER(
         ((struct filter_config) { .condition_fmt = "d>d" }),
         VECTOR(xs, 'd', &n_iters),
-        VAR(&y, 'd'),
+        VAR(y, 'd'),
         VECTOR(ys, 'd', &out_length)
     );
 
@@ -86,7 +86,7 @@ TEST(filter,3) {
     int ys[n_iters] = { 0 };
     int y = 6;
 
-    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(&y, 'd') };
+    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(y, 'd') };
 
     FILTER(
         ((struct filter_config) { .condition_fmt = "b" }),

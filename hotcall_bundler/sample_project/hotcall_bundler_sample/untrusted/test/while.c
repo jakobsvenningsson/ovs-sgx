@@ -11,7 +11,7 @@ TEST(while,1) {
 
     int x = 0;
     bool b = false;
-    struct parameter function_parameters[] = { VAR(&x, 'd') };
+    struct parameter function_parameters[] = { VAR(x, 'd') };
 
     BUNDLE_BEGIN();
 
@@ -19,11 +19,11 @@ TEST(while,1) {
         ((struct while_config) { .predicate_fmt = "!(b&b|b)" }),
         FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 1),
         FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 1),
-        VAR(&b, 'b')
+        VAR(b, 'b')
     );
 
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(&x, 'd'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
 
     END_WHILE();
 
@@ -46,10 +46,10 @@ TEST(while, 2) {
 
     BEGIN_WHILE(
         ((struct while_config) { .predicate_fmt = "d<d" }),
-        VAR(&x, 'd'), VAR(&y, 'd')
+        VAR(x, 'd'), VAR(y, 'd')
     );
 
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(&x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
 
     END_WHILE();
 
@@ -70,22 +70,22 @@ TEST(while, 3) {
 
     BEGIN_WHILE(
         ((struct while_config) { .predicate_fmt = "d<d" }),
-        VAR(&x, 'd'), VAR(&y, 'd')
+        VAR(x, 'd'), VAR(y, 'd')
     );
 
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(&x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
 
         BEGIN_WHILE(
             ((struct while_config) { .predicate_fmt = "d<d" }),
-            VAR(&z, 'd'), VAR(&y, 'd')
+            VAR(z, 'd'), VAR(y, 'd')
         );
 
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(&z, 'd'));
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(&counter, 'd'));
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(z, 'd'));
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(counter, 'd'));
 
         END_WHILE();
 
-        HCALL(CONFIG( .function_id = hotcall_ecall_zero ), VAR(&z, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_zero ), VAR(z, 'd'));
 
     END_WHILE();
 

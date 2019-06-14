@@ -15,6 +15,7 @@
 #include "hotcall_reduce.h"
 #include "hotcall_if.h"
 #include "hotcall_error.h"
+#include "hotcall_assign_variable.h"
 
 
 #define QUEUE_ITEM_TYPE_IF 0
@@ -32,6 +33,9 @@
 #define QUEUE_ITEM_TYPE_REDUCE 14
 #define QUEUE_ITEM_TYPE_LOOP_END 15
 #define QUEUE_ITEM_TYPE_IF_ELSE 16
+#define QUEUE_ITEM_TYPE_ASSIGN_VAR 17
+#define QUEUE_ITEM_TYPE_ASSIGN_PTR 18
+
 
 #define MAX_FCS 200
 #define MAX_TS 200
@@ -46,9 +50,9 @@
 
 #define RETURN  hotcall_bundle_error(_sm_ctx, 0)
 
-#define PTR(...) (struct parameter) { .type = POINTER_TYPE,   .value = { .pointer = { __VA_ARGS__ }}}
-#define VAR(...) { .type = VARIABLE_TYPE, .value = { .variable = { __VA_ARGS__ }}}
-#define VECTOR(...) { .type = VECTOR_TYPE, .value = { .vector = { __VA_ARGS__ }}}
+#define PTR(VAL, ...) (struct parameter) { .type = POINTER_TYPE,   .value = { .pointer = { .arg = (void **) &VAL, __VA_ARGS__ }}}
+#define VAR(VAL, ...) (struct parameter) { .type = VARIABLE_TYPE, .value = { .variable = { .arg = &VAL, __VA_ARGS__ }}}
+#define VECTOR(...) (struct parameter) { .type = VECTOR_TYPE, .value = { .vector = { __VA_ARGS__ }}}
 #define FUNC(...) (struct parameter) { .type = FUNCTION_TYPE, .value = { .function = { __VA_ARGS__ }}}
 
 union hcall {
@@ -62,6 +66,8 @@ union hcall {
     struct hotcall_error err;
     struct hotcall_reduce re;
     struct hotcall_function fc;
+    struct hotcall_assign_variable var;
+    struct hotcall_assign_pointer ptr;
 };
 
 struct ecall_queue_item {

@@ -9,36 +9,10 @@ enclave {
     untrusted {
       void
       ocall_print([in, string] const char *str);
-      void
-      ocall_assert([in, string] const char *str);
     };
 
     trusted {
       public void
       ecall_configure_hotcall();
-      public bool
-      ecall_always_true();
-      public bool
-      ecall_always_false();
-      public void
-      ecall_foo();
-      public void
-      ecall_bar();
-      public void
-      ecall_plus_one([user_check] int *x);
-      public bool
-      ecall_greater_than_two([user_check] int *x);
-      public void
-      ecall_plus_plus([user_check] int *x, [user_check] int *y);
-      public bool
-      ecall_greater_than_y([user_check] int *x, int y);
-      public int
-      ecall_plus_one_ret(int x);
-      public int
-      ecall_plus(int x, int y);
-      public bool
-      ecall_revert(bool x);
-      public void
-      ecall_zero([user_check] int *x);
     };
 };

@@ -22,7 +22,7 @@ TEST(chaining,1) {
 
     int y = 6, z = 2, w = 3, v = 14;
 
-    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(&y, 'd') };
+    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(y, 'd') };
 
     CHAIN_BEGIN();
 
@@ -34,12 +34,12 @@ TEST(chaining,1) {
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_plus }),
         VECTOR(),
-        VAR(&z, 'd'), VECTOR(ws, 'd', &out_length1)
+        VAR(z, 'd'), VECTOR(ws, 'd', &out_length1)
     );
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_plus }),
         VECTOR(),
-        VAR(&w, 'd'), VECTOR(us, 'd', &out_length1)
+        VAR(w, 'd'), VECTOR(us, 'd', &out_length1)
     );
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret }),
@@ -49,7 +49,7 @@ TEST(chaining,1) {
     FILTER(
         ((struct filter_config) { .condition_fmt = "d>d" }),
         VECTOR(),
-        VAR(&v, 'd'),
+        VAR(v, 'd'),
         VECTOR(ks, 'd', &out_length2)
     );
 
@@ -97,7 +97,7 @@ TEST(chaining, 2) {
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_plus }),
         VECTOR(xs, 'd', &n_iters),
-        VAR(&y, 'd'),
+        VAR(y, 'd'),
         VECTOR(ys, 'd', &n_iters)
     );
     REDUCE(
@@ -106,7 +106,7 @@ TEST(chaining, 2) {
             .op = '+',
         }),
         VECTOR(),
-        VAR(&res, 'd')
+        VAR(res, 'd')
     );
 
     CHAIN_CLOSE();

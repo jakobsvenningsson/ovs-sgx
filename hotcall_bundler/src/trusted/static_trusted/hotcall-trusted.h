@@ -14,8 +14,7 @@ extern "C" {
 struct loop_stack_item {
     unsigned int body_len;
     unsigned int index;
-    bool first_iteration;
-    bool has_calculated_length;
+    unsigned int n_iters;
 };
 
 static struct hotcall_config *hotcall_config;
@@ -47,6 +46,7 @@ parse_argument(const struct parameter *param, unsigned int offset) {
     switch(param->type) {
         case VARIABLE_TYPE: arg = param->value.variable.arg; fmt = param->value.variable.fmt; break;
         case VECTOR_TYPE:   arg = param->value.vector.arg; fmt = param->value.vector.fmt; _offset = offset; break;
+        case POINTER_TYPE:   arg = *param->value.pointer.arg; fmt = param->value.pointer.fmt; break;
         default: SWITCH_DEFAULT_REACHED
     }
     switch(fmt) {

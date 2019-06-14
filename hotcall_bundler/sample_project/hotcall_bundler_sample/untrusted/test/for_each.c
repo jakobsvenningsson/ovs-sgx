@@ -57,7 +57,30 @@ TEST(for_each,2) {
 TEST(for_each,3) {
     //Contract: for each should apply the hcall on each element in the list. All elements of xs should be 5 in the end.
     hotcall_test_setup();
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
+
+    BUNDLE_BEGIN();
+
+    unsigned int n_iters = 10;
+    int xs[n_iters] = { 0 };
+    int y = 5;
+
+    FOR_EACH(
+        ((struct for_each_config) { .function_id = hotcall_ecall_plus_y }),
+        VECTOR(xs, 'd', &n_iters),
+        VAR(y, 'd')
+    );
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+    for(int i = 0; i < n_iters; ++i) {
+        ASSERT_EQ(xs[i], 5);
+    }
+}
+
+TEST(for_each,4) {
+    // Contract: for each should apply the hcall on each element in the list. All elements of xs should be 5 in the end. This test also tests giving a vector argumemnt as second parameter.
+    hotcall_test_setup();
 
     BUNDLE_BEGIN();
 
@@ -66,14 +89,15 @@ TEST(for_each,3) {
     int y = 5;
 
     FOR_EACH(
-        ((struct for_each_config) { .function_id = hotcall_ecall_plus_y }),
-        VECTOR(xs, 'd', &n_iters),
-        VAR(&y, 'd')
+        ((struct for_each_config) { .function_id = hotcall_ecall_plus_y_v2 }),
+        VAR(y, 'd'),
+        VECTOR(xs, 'd', &n_iters)
     );
 
     BUNDLE_END();
 
     hotcall_test_teardown();
+
     for(int i = 0; i < n_iters; ++i) {
         ASSERT_EQ(xs[i], 5);
     }

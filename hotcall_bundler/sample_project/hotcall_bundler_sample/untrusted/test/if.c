@@ -16,18 +16,18 @@ TEST(if,1) {
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(&res1, 'b'));
-    HCALL(CONFIG( .function_id = hotcall_ecall_always_true, .has_return = true ), VAR(&res2, 'b'));
-    HCALL(CONFIG( .function_id = hotcall_ecall_always_true, .has_return = true ), VAR(&res3, 'b'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(res1, 'b'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_true, .has_return = true ), VAR(res2, 'b'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_true, .has_return = true ), VAR(res3, 'b'));
     IF(
         ((struct if_config) { .predicate_fmt = "!b&(b|b)&b" }),
-        PTR(ptr), VAR(&res1, 'b'), VAR(&res2, 'b'), VAR(&res3, 'b')
+        PTR(ptr), VAR(res1, 'b'), VAR(res2, 'b'), VAR(res3, 'b')
     );
     THEN
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
     ELSE
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
     END
 
     BUNDLE_END();
@@ -46,17 +46,17 @@ TEST(if,2) {
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(&res, 'b'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(res, 'b'));
     IF(
         ((struct if_config) { .predicate_fmt = "b|!b" }),
-        VAR(&res, 'b'),
+        VAR(res, 'b'),
         FUNC(hotcall_ecall_always_true, NULL)
     );
     THEN
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
     ELSE
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
     END
 
     BUNDLE_END();
@@ -73,27 +73,27 @@ TEST(if,3) {
     int x = 0;
     bool res;
     int a = 6, b = 3;
-    struct parameter function_parameters[] = { VAR(&a, 'd'), VAR(&b, 'd') };
+    struct parameter function_parameters[] = { VAR(a, 'd'), VAR(b, 'd') };
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(&res, 'b'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_false, .has_return = true ), VAR(res, 'b'));
     IF(
         ((struct if_config) { .predicate_fmt = "b|!b" }),
-        VAR( &res, 'b' ), FUNC( .function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2 )
+        VAR(res, 'b' ), FUNC( .function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2 )
     );
     THEN
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
     ELSE
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
         RETURN;
     END
 
-    HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
 
     BUNDLE_END();
 
@@ -112,13 +112,13 @@ TEST(if,4) {
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG( .function_id = hotcall_ecall_always_true, .has_return = true ), VAR(&res, 'b'));
+    HCALL(CONFIG( .function_id = hotcall_ecall_always_true, .has_return = true ), VAR(res, 'b'));
     IF(
         ((struct if_config) { .predicate_fmt = "b" }),
-        VAR(&res, 'b')
+        VAR(res, 'b')
     );
     THEN
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
     END
 
     BUNDLE_END();
@@ -142,7 +142,7 @@ TEST(if,5) {
         FUNC(.function_id = hotcall_ecall_always_true, .params = NULL)
     );
     THEN
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(&x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
     END
 
     BUNDLE_END();
@@ -164,7 +164,7 @@ TEST(if,6) {
         FUNC(.function_id = hotcall_ecall_always_false, .params =  NULL)
     );
     THEN
-        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(&x, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
     END
 
     BUNDLE_END();

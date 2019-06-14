@@ -5,23 +5,9 @@
 #include "hotcall_bundler_sample_t.h"  /* print_string */
 #include "functions.h"
 #include "hotcall_config.h"
+#include "ecalls.h"
+#include <math.h>
 
-
-void sgx_assert(bool condition, char *msg) {
-    if(!condition) {
-        ocall_assert(msg);
-    }
-}
-
-void printf(const char *fmt, ...)
-{
-    char buf[BUFSIZ] = {'\0'};
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, ap);
-    va_end(ap);
-    ocall_print(buf);
-}
 
 void
 execute_function(uint8_t function_id, void *args[], void *return_value){
@@ -62,14 +48,24 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         case hotcall_ecall_plus_y:
             ecall_plus_y((int *) args[0], *(int *) args[1]);
             break;
+        case hotcall_ecall_plus_y_v2:
+            ecall_plus_y_v2(*(int *) args[0], (int *) args[1]);
+            break;
         case hotcall_ecall_zero:
             ecall_zero((int *) args[0]);
+            break;
+        case hotcall_ecall_read_buffer:
+            *(int *) return_value = ecall_read_buffer((int *) args[0], *(int *) args[1]);
+            break;
+        case hotcall_ecall_count:
+            *(int *) return_value = ecall_count();
             break;
         default:
             printf("unknown hotcall function %d.\n", function_id);
             break;
         }
   }
+
 
 void
 ecall_configure_hotcall() {
@@ -82,65 +78,11 @@ ecall_configure_hotcall() {
     hotcall_register_config(config);
 }
 
-bool
-ecall_always_true() {
-  return true;
-}
-
-bool
-ecall_always_false() {
-  return false;
-}
-
-void
-ecall_foo() {}
-
-void
-ecall_bar() {}
-
-void
-ecall_plus_one(int *x) {
-    ++*x;
-}
-
-int
-ecall_plus_one_ret(int x) {
-    return ++x;
-}
-
-bool
-ecall_greater_than_two(int *x) {
-    return *x > 2 ? true : false;
-}
-
-
-bool
-ecall_greater_than_y(int *x, int y) {
-    return *x > y ? true : false;
-}
-
-void
-ecall_plus_plus(int *x, int *y) {
-    *x = *x + 1;
-    *y = *y + 2;
-}
-
-int
-ecall_plus(int x, int y) {
-    return x + y;
-}
-
-int
-ecall_plus_y(int *x, int y) {
-    *x = *x + y;
-}
-
-bool
-ecall_revert(bool x) {
-    return x == true ? false : true;
-}
-
-void
-ecall_zero(int *x) {
-    *x = 0;
+void printf(const char *fmt, ...) {
+    char buf[BUFSIZ] = {'\0'};
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, BUFSIZ, fmt, ap);
+    va_end(ap);
+    ocall_print(buf);
 }

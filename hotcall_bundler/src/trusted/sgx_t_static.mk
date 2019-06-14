@@ -56,7 +56,7 @@ hotcall_bundler_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib 
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
-	-Wl,--version-script=trusted/hotcall_bundler.lds
+	-Wl,--version-script=trusted/hotcall_bundler.lds \
 
 hotcall_bundler_C_Objects := $(hotcall_bundler_C_Files:.c=.o)
 

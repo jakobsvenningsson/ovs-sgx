@@ -51,22 +51,6 @@ hotcall_destroy(struct shared_memory_ctx *sm_ctx) {
     hotcall_bundle_flush(sm_ctx);
 }
 
-bool
-hotcall_test() {
-    return true;
-}
-
-void ocall_assert(char *msg) {
-    printf("Assert: %s.\n", msg);
-    assert(true);
-};
-
-struct shared_memory_ctx *
-get_context() {
-    return _sm_ctx;
-}
-
-
 /*
 void
 hotcall_bundle_assert_false(struct preallocated_function_calls *pfc, int condition, int error_code, uint8_t cleanup_function) {

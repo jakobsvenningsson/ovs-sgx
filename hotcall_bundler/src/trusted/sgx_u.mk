@@ -32,7 +32,7 @@ endif
 
 ######## App Settings ########
 
-App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include
+App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include -I.
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
 
@@ -57,7 +57,7 @@ all: $(UNTRUSTED_DIR)/hotcall_bundler_u.o
 
 $(UNTRUSTED_DIR)/hotcall_bundler_u.c: $(SGX_EDGER8R) static_trusted/hotcall_bundler.edl
 	@mkdir -p $(UNTRUSTED_DIR)
-	@cd $(UNTRUSTED_DIR) && $(SGX_EDGER8R) --untrusted ../static_trusted/hotcall_bundler.edl --search-path ../static_trusted --search-path $(SGX_SDK)/include
+	@cd $(UNTRUSTED_DIR) && $(SGX_EDGER8R) --untrusted ../static_trusted/hotcall_bundler.edl --search-path ../static_trusted --search-path . --search-path $(SGX_SDK)/include
 	@echo "GEN  =>  $@"
 
 $(UNTRUSTED_DIR)/hotcall_bundler_u.o: $(UNTRUSTED_DIR)/hotcall_bundler_u.c
