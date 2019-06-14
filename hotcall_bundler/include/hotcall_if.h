@@ -11,7 +11,7 @@
         __VA_ARGS__\
     }; \
     struct if_config CAT2(IF_CONFIG_, ID) = CONFIG; \
-    hotcall_bundle_if_(SM_CTX, &CAT2(IF_CONFIG_, ID), CAT2(IF_ARG_, ID));
+    hotcall_bundle_if(SM_CTX, &CAT2(IF_CONFIG_, ID), CAT2(IF_ARG_, ID));
 #define IF(CONFIG, ...) \
     _IF(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__);
 

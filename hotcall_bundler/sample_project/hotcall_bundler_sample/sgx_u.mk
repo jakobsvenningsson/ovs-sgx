@@ -6,7 +6,6 @@ UNTRUSTED_DIR=untrusted
 
 HOTCALL_BUNDLER_TRUSTED_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/trusted
 HOTCALL_BUNDLER_UNTRUSTED_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/untrusted
-
 HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/include
 
 ifeq ($(shell getconf LONG_BIT), 32)
@@ -50,6 +49,7 @@ endif
 App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/examples.c \
 			   $(UNTRUSTED_DIR)/test/test.c \
+			   $(UNTRUSTED_DIR)/test/hotcall.c \
 			   $(UNTRUSTED_DIR)/test/if.c \
 			   $(UNTRUSTED_DIR)/test/for.c \
 			   $(UNTRUSTED_DIR)/test/do_while.c \
@@ -67,7 +67,7 @@ App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_filter.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_if.c
 
-App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include -I$(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/include \
+App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include -I$(HOTCALL_BUNDLER_INCLUDE_PATH) \
 	-I$(HOTCALL_BUNDLER_UNTRUSTED_LIB_PATH) -I/home/jakob/ovs-sgx/benchmark/include -I$(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/untrusted
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)

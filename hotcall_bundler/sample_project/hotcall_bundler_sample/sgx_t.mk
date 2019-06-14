@@ -3,7 +3,7 @@ SGX_SDK ?= /opt/intel/sgxsdk
 SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 
-HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/src/include
+HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/include
 HOTCALL_BUNDLER_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/trusted
 
 ifeq ($(shell getconf LONG_BIT), 32)
@@ -49,7 +49,7 @@ Crypto_Library_Name := sgx_tcrypto
 Hotcall_bundler_sample_C_Files := trusted/hotcall_bundler_sample.c trusted/ecalls.c
 
 Hotcall_bundler_sample_Include_Paths := -Iinclude -Itrusted -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx \
- -I$(HOTCALL_BUNDLER_LIB_PATH)/include
+ -I$(HOTCALL_BUNDLER_INCLUDE_PATH)
 
 
 Flags_Just_For_C := -Wno-implicit-function-declaration -std=c11

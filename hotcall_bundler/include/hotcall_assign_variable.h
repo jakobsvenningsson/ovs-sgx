@@ -2,12 +2,11 @@
 #define _H_HOTCALL_ASSIGN_VAR_
 
 #include "hotcall.h"
+
 #define _ASSIGN_VAR(ID, DST, SRC) \
     struct parameter CAT2(DST_VAR_, ID) = DST;\
     struct parameter CAT2(SRC_VAR_, ID) = SRC;\
     hotcall_bundle_assign_var(_sm_ctx, &CAT2(DST_VAR_, ID), &CAT2(SRC_VAR_, ID))
-
-
 
 #define _ASSIGN_PTR(ID, DST, SRC) \
     struct parameter CAT2(DST_PTR_, ID) = DST;\

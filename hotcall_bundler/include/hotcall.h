@@ -93,40 +93,16 @@ struct hotcall {
     bool hotcall_in_progress;
     bool is_inside_chain;
     struct hotcall_batch batch;
-};
 
-struct preallocated_function_calls {
     struct ecall_queue_item fcs[MAX_FCS];
     void *args[MAX_FCS][HOTCALL_MAX_ARG];
     size_t idx;
     size_t len;
-
-    size_t idx_uint8;
-    uint8_t uint8_ts[MAX_TS];
-
-    size_t idx_sizet;
-    size_t size_ts[MAX_TS];
-
-    size_t idx_unsigned;
-    unsigned int unsigned_ts[MAX_TS];
-
-    size_t idx_void;
-    void *void_ts[MAX_TS];
-
-    size_t idx_uint32;
-    uint32_t uint32_ts[MAX_TS];
-
-    size_t idx_bool;
-    bool bool_ts[MAX_TS];
-
-    size_t idx_int;
-    int int_ts[MAX_TS];
 };
 
 struct shared_memory_ctx {
   struct hotcall hcall;
   void *custom_object_ptr[MAX_N_VARIABLES];
-  struct preallocated_function_calls pfc;
 };
 
 #endif
