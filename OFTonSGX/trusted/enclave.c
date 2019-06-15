@@ -23,19 +23,21 @@ int SGX_n_tables[100];
 struct sgx_cls_table * SGX_hmap_table[100];
 const struct batch_allocator cr_ba;
 const struct batch_allocator evg_ba;
+bool hotcall_configured = false;
 
 void
 configure_hotcall() {
     struct hotcall_config conf = {
-        .execute_function = execute_function,
-        .n_spinlock_jobs = 1,
-        .spin_lock_tasks = { &flow_map_cache_validate },
-        .spin_lock_task_timeouts = { 99999999 },
-        .spin_lock_task_count = { 0 }
+        .execute_function = execute_function
+        //.n_spinlock_jobs = 1,
+        //.spin_lock_tasks = { &flow_map_cache_validate },
+        //.spin_lock_task_timeouts = { 99999999 },
+        //.spin_lock_task_count = { 0 }
     };
     struct hotcall_config *config = malloc(sizeof(struct hotcall_config));
     memcpy(config, &conf, sizeof(struct hotcall_config));
     hotcall_register_config(config);
+    hotcall_configured = true;
 }
 
 
@@ -64,5 +66,7 @@ ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
     #endif
 
 
-    configure_hotcall();
+    if(!hotcall_configured) {
+        configure_hotcall();
+    }
 }

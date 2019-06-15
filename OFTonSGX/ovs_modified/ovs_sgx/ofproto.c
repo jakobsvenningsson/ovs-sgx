@@ -1126,7 +1126,7 @@ ofproto_flush__(struct ofproto *ofproto)
             }
         }
     }
-printf("FLUSH\n");
+#elif OPTIMIZED
     size_t default_buffer_size = 32, n_rules;
     struct cls_rule *buf[default_buffer_size];
     uint32_t hashes[default_buffer_size];

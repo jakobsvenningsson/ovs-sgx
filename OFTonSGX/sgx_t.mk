@@ -3,6 +3,9 @@ SGX_SDK ?= /opt/intel/sgxsdk
 SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 
+HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/include
+HOTCALL_BUNDLER_TRUSTED_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/trusted
+
 ifeq ($(shell getconf LONG_BIT), 32)
 	SGX_ARCH := x86
 else ifeq ($(findstring -m32, $(CXXFLAGS)), -m32)
@@ -70,15 +73,14 @@ Enclave_C_Files := trusted/enclave.c \
 
 
 Enclave_Include_Paths := -Iinclude \
-														-Itrusted \
-														-I$(SGX_SDK)/include \
-														-I$(SGX_SDK)/include/tlibc \
-														-I$(SGX_SDK)/include/libcxx \
-														-Itrusted/lib \
-														-Itrusted/include \
-														-I/home/jakob/eclipse-workspace/hotcall_lib/sgx/trustedlib_lib/static_trusted \
-														-I/home/jakob/ovs-sgx/hotcall_bundler/include \
-														-I/home/jakob/ovs-sgx/hotcall_bundler/trusted/static_trusted
+						-Itrusted \
+						-I$(SGX_SDK)/include \
+						-I$(SGX_SDK)/include/tlibc \
+						-I$(SGX_SDK)/include/libcxx \
+						-Itrusted/lib \
+						-Itrusted/include \
+						-I$(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/static_trusted \
+						-I$(HOTCALL_BUNDLER_INCLUDE_PATH)
 
 
 Flags_Just_For_C := -Wno-implicit-function-declaration -std=c11
@@ -87,12 +89,12 @@ Enclave_C_Flags := $(Flags_Just_For_C) $(Common_C_Cpp_Flags) $(LFLAGS)
 
 Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
+	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) \
+	-L$(HOTCALL_BUNDLER_TRUSTED_LIB_PATH) -lhotcall_bundler_trusted -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
-	-Wl,--version-script=trusted/enclave.lds \
-	-L/home/jakob/ovs-sgx/hotcall_bundler/trusted -lhotcall_bundler_trusted
+	-Wl,--version-script=trusted/enclave.lds
 
 Enclave_C_Objects := $(Enclave_C_Files:.c=.o)
 
@@ -129,7 +131,8 @@ endif
 ######## enclave Objects ########
 
 trusted/enclave_t.c: $(SGX_EDGER8R) ./trusted/enclave.edl
-	@cd ./trusted && $(SGX_EDGER8R) --trusted ../trusted/enclave.edl --search-path ../trusted --search-path $(SGX_SDK)/include
+	@cd ./trusted && $(SGX_EDGER8R) --trusted ../trusted/enclave.edl --search-path ../trusted --search-path $(SGX_SDK)/include \
+	--search-path $(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/static_trusted
 	@echo "GEN  =>  $@"
 
 trusted/enclave_t.o: ./trusted/enclave_t.c

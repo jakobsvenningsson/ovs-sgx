@@ -2,7 +2,7 @@
 #define _APP_H_
 #include <stdint.h>
 #include "app.h"
-
+/*
 #define ASSERT_CATCH(F, EXPECTED, ERROR, ELSE_F) \
 	F; \
 	hotcall_transaction_expected_value(EXPECTED, ERROR, true); \
@@ -19,7 +19,7 @@
 	hotcall_transaction_if_null_(CONDITION, IF_LEN, ELSE_LEN)
 
 #define THEN(...) __VA_ARGS__
-#define ELSE(...) __VA_ARGS__
+#define ELSE(...) __VA_ARGS__*/
 
 void SGX_async_test();
 void SGX_batch_flush();

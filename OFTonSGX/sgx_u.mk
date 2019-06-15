@@ -4,6 +4,10 @@ SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 UNTRUSTED_DIR=untrusted
 
+HOTCALL_BUNDLER_TRUSTED_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/trusted
+HOTCALL_BUNDLER_UNTRUSTED_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/untrusted
+HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/include
+
 ifeq ($(shell getconf LONG_BIT), 32)
 	SGX_ARCH := x86
 else ifeq ($(findstring -m32, $(CXXFLAGS)), -m32)
@@ -53,10 +57,10 @@ App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) \
 					 -I$(HOME)/ovs-sgx/ovs/lib \
 					 -I$(HOME)/ovs-sgx/benchmark/include \
 					 -I/home/jakob/ovs-sgx/hotcall_bundler/include \
-					 -I/home/jakob/ovs-sgx/hotcall_bundler/untrusted
+					 -I/home/jakob/ovs-sgx/hotcall_bundler/src/untrusted
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths) $(LFLAGS) \
-	-L/home/jakob/ovs-sgx/hotcall_bundler/untrusted -lhotcall_bundler_untrusted
+	-L/home/jakob/ovs-sgx/hotcall_bundler/src/untrusted -lhotcall_bundler_untrusted
 
 # Three configuration modes - Debug, prerelease, release
 #   Debug - Macro DEBUG enabled.
@@ -70,9 +74,7 @@ else
         App_C_Flags += -DNDEBUG -UEDEBUG -UDEBUG
 endif
 
-App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) \
-	-L/home/jakob/ovs-sgx/hotcall_bundler/untrusted -lho123132all_bundler_untrusted \
-	-lpth2read
+App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -L$(HOTCALL_BUNDLER_UNTRUSTED_LIB_PATH) -lhotcall_bundler_untrusted -l$(Urts_Library_Name) -lpthread
 
 ifneq ($(SGX_MODE), HW)
 	App_Link_Flags += -lsgx_uae_service_sim
@@ -118,7 +120,8 @@ endif
 ######## App Objects ########
 
 $(UNTRUSTED_DIR)/enclave_u.c: $(SGX_EDGER8R) trusted/enclave.edl
-	@cd $(UNTRUSTED_DIR) && $(SGX_EDGER8R) --untrusted ../trusted/enclave.edl --search-path ../trusted --search-path $(SGX_SDK)/include
+	@cd $(UNTRUSTED_DIR) && $(SGX_EDGER8R) --untrusted ../trusted/enclave.edl --search-path ../trusted --search-path $(SGX_SDK)/include \
+	--search-path $(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/static_trusted
 	@echo "GEN  =>  $@"
 
 $(UNTRUSTED_DIR)/enclave_u.o: $(UNTRUSTED_DIR)/enclave_u.c
@@ -137,7 +140,6 @@ link : $(UNTRUSTED_DIR)/enclave_u.o $(App_C_Objects)
 						$(UNTRUSTED_DIR)/sgx-utils.o \
 						$(UNTRUSTED_DIR)/cache-untrusted.o \
 						$(UNTRUSTED_DIR)/shared-memory-untrusted.o \
-						$(UNTRUSTED_DIR)/ocall.o \
 						$(UNTRUSTED_DIR)/ocall.o \
 						/opt/intel/sgxsdk/lib64/libsgx_urts.so \
 						/opt/intel/sgxsdk/lib64/libsgx_uae_service.so

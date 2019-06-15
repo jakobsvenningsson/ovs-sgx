@@ -14,7 +14,7 @@ enclave {
 	from "ofproto/ofproto.edl" import *;
 
 
-	from "/home/jakob/ovs-sgx/hotcall_bundler/trusted/static_trusted/hotcall_bundler.edl" import *;
+	from "hotcall_bundler.edl" import *;
 
 
 	untrusted {
@@ -27,9 +27,6 @@ enclave {
 
 	trusted {
 		include "call-table.h"
-
-		//public int
-		//ecall_start_poller([user_check] struct shared_memory_ctx *sm_ctx);
 
 		public void
 		ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables);

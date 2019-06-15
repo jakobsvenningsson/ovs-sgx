@@ -56,7 +56,7 @@
 #define hotcall_ecall_cls_rule_format 46
 #define hotcall_ecall_miniflow_expand 47
 #define hotcall_ecall_rule_calculate_tag 48
-//#define hotcall_ecall_sgx_table_dpif 49
+//#define hotcall_ofproto_init_tables 49
 #define hotcall_ecall_oftable_update_taggable 50
 #define hotcall_ecall_oftable_is_other_table 51
 #define hotcall_ecall_rule_calculate_tag_s 52
@@ -191,12 +191,13 @@ typedef struct {
 #define PAGE_STATUS_FREE 0
 #define PAGE_STATUS_ALLOCATED 1
 
+/*
 #define ui8 "a"
 #define ui8_c 'a'
 #define ui16 "f"
 #define ui16_c 'f'
 #define ui32 "c"
-#define ui32_c 'c'
+#define ui32_c 'c'*/
 
 
 struct page {

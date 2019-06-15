@@ -4,10 +4,12 @@ ROOT_FOLDER=$PWD
 FLAGS=$1
 source /opt/intel/sgxsdk/environment
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING HOTCALL BUNDLER TRUSTED"
-make -C hotcall_bundler/trusted
+make -C hotcall_bundler/src/trusted clean
+make -C hotcall_bundler/src/trusted
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING HOTCALL BUNDLER UNTRUSTED"
-make -C hotcall_bundler/untrusted
+make -C hotcall_bundler/src/untrusted clean
+make -C hotcall_bundler/src/untrusted
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%% BUILDING OFTonSGX"
 make -C OFTonSGX/ clean
@@ -28,14 +30,14 @@ cd ovs
                            -I${ROOT_FOLDER}/OFTonSGX/untrusted \
                            -I${ROOT_FOLDER}/benchmark/include \
                            -I${ROOT_FOLDER}/hotcall_bundler/include \
-                           -I${ROOT_FOLDER}/hotcall_bundler/untrusted \
+                           -I${ROOT_FOLDER}/hotcall_bundler/src/untrusted \
                            -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
             	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
-                         -L$ROOT_FOLDER/hotcall_bundler/untrusted \
+                         -L$ROOT_FOLDER/hotcall_bundler/src/untrusted \
                          -L$ROOT_FOLDER/OFTonSGX \
                          -L${ROOT_FOLDER}/TLSonSGX/mbedtls/library \
                          -L$ROOT_FOLDER/TLSonSGX" \
-            	LIBS=" -lOFTonSGX -lTLSonSGX  -lhotcall_bundler_untrusted -lmbedtls -lmbedx509 -lmbedcrypto -lpthread -lstdc++ "
+            	LIBS="  -lOFTonSGX -lTLSonSGX -lhotcall_bundler_untrusted -lmbedtls -lmbedx509 -lmbedcrypto -lpthread -lstdc++ "
 
 
 make clean
