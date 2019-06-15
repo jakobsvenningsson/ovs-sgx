@@ -4,11 +4,10 @@ enclave {
 
     include "hotcall.h"
 
-    untrusted {
-        void ocall_assert([in, string] char *str);
-    };
+    untrusted {};
 
     trusted {
-    	    public int ecall_start_poller([user_check] struct shared_memory_ctx *sm_ctx);
+    	    public int
+            ecall_start_poller([user_check] struct shared_memory_ctx *sm_ctx);
     };
 };

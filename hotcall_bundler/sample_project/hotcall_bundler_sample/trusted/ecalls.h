@@ -31,5 +31,7 @@ bool
 ecall_revert(bool x);
 void
 ecall_zero(int *x);
+void
+ecall_change_ptr_to_ptr(int **p2p, int *p);
 
 #endif

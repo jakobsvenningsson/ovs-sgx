@@ -1,7 +1,7 @@
 #ifndef _H_HOTCALL_CONFIG_
 #define _H_HOTCALL_CONFIG_
 
-#include "hotcall_function.h"
+#include <stdint.h>
 
 #define MAX_SPINLOCK_JOBS 5
 

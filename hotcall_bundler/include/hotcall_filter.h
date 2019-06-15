@@ -1,17 +1,8 @@
 #ifndef _H_HOTCALL_FILTER_
 #define _H_HOTCALL_FILTER_
 
+#include "hotcall_utils.h"
 #include "hotcall_function.h"
-
-#include "hotcall.h"
-
-/*
-#define _FILTER(SM_CTX, ARGS, UNIQUE_ID) \
-    struct filter_args UNIQUE_ID = ARGS; \
-    hotcall_bundle_filter(SM_CTX, 0, &UNIQUE_ID)
-
-#define FILTER(SM_CTX, ARGS) \
-    _FILTER(SM_CTX, ARGS, UNIQUE_ID)*/
 
 #define _FILTER(SM_CTX, ID, CONFIG, ...) \
     struct parameter CAT2(FILTER_ARG_,ID[]) = { \
@@ -29,13 +20,6 @@ struct filter_config {
     const char *condition_fmt;
     uint8_t n_params;
 };
-
-/*
-struct filter_args {
-    struct function_parameters_in *params_in;
-    struct function_parameters_in *params_out;
-    struct predicate predicate;
-};*/
 
 struct hotcall_filter {
     struct parameter *params;

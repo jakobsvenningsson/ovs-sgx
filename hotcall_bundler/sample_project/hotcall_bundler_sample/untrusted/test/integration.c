@@ -36,7 +36,7 @@ TEST(integration,1) {
         ASSERT_EQ(map_out[i], i + 1);
     }
 }
-
+/*
 TEST(integration,2) {
     hotcall_test_setup();
     unsigned int n_iters = 10;
@@ -65,4 +65,4 @@ TEST(integration,2) {
     for(int i = 0; i < n_iters; ++i) {
         ASSERT_EQ(xs[i], 5);
     }
-}
+}*/

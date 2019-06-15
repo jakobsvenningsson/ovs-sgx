@@ -1,6 +1,7 @@
 #ifndef _H_HOTCALL_REDUCE
 #define _H_HOTCALL_REDUCE
 
+#include "hotcall_utils.h"
 #include "hotcall_function.h"
 
 #define _REDUCE(SM_CTX, ID, CONFIG, ...) \

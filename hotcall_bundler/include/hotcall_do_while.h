@@ -1,6 +1,7 @@
 #ifndef _H_HOTCALL_DO_WHILE
 #define _H_HOTCALL_DO_WHILE
 
+#include "hotcall_utils.h"
 #include "hotcall_function.h"
 
 #define ESCAPE(...) __VA_ARGS__

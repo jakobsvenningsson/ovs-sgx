@@ -1,9 +1,9 @@
-#ifndef _H_FUNCTION_
-#define _H_FUNCTION_
+#ifndef _H_FUNCTION_BUNDLER_
+#define _H_FUNCTION_BUNDLER_
+
+#include <stdbool.h>
 
 #define HOTCALL_MAX_ARG 25
-
-#include "hotcall.h"
 
 enum parameter_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE, VECTOR_TYPE };
 
@@ -27,8 +27,9 @@ struct function_parameter {
 };
 
 struct pointer_parameter {
-    void **arg;
+    void *arg;
     char fmt;
+    bool dereference;
 };
 
 union parameter_types {

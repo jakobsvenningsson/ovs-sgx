@@ -60,6 +60,9 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         case hotcall_ecall_count:
             *(int *) return_value = ecall_count();
             break;
+        case hotcall_ecall_change_ptr_to_ptr:
+            ecall_change_ptr_to_ptr((int **) args[0], (int *) args[1]);
+            break;
         default:
             printf("unknown hotcall function %d.\n", function_id);
             break;

@@ -8,6 +8,7 @@ static sgx_enclave_id_t global_eid;
 
 void *
 start_enclave_thread(void * vargp){
+    printf("start_enclave_thread\n");
     int ecall_return;
     ecall_start_poller(global_eid, &ecall_return, _sm_ctx);
     if (ecall_return == 0) {

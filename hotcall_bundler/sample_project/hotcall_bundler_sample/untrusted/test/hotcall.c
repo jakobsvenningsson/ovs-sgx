@@ -76,3 +76,44 @@ TEST(hotcall, 4) {
     ASSERT_EQ(z, 2);
 
 }
+
+TEST(hotcall, 5) {
+    /* Contract:  */
+
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    int x = 0, y = 0, z = 0;
+    int *x_ptr = &x, *y_ptr = &y;
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one_ret, .has_return = true ), PTR(x_ptr, 'd'), VAR(y, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one_ret, .has_return = true ), PTR(y_ptr, 'd'), VAR(z, 'd'));
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 0);
+    ASSERT_EQ(y, 1);
+    ASSERT_EQ(z, 2);
+
+}
+
+TEST(hotcall, 6) {
+    /* Contract:  */
+
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    int x = 0, y = 1;
+    int *x_ptr = &x;
+    HCALL(CONFIG(.function_id = hotcall_ecall_change_ptr_to_ptr), PTR(&x_ptr, 'p'), PTR(&y, 'd'));
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(*x_ptr, 1);
+    ASSERT_EQ(y, 1);
+}

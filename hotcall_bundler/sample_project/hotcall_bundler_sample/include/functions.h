@@ -18,5 +18,6 @@
 #define hotcall_ecall_plus_y_v2 13
 #define hotcall_ecall_count 14
 #define hotcall_ecall_read_buffer 15
+#define hotcall_ecall_change_ptr_to_ptr 16
 
 #endif

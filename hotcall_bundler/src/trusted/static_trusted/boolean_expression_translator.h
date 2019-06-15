@@ -1,7 +1,9 @@
 #ifndef _H_BOOLEAN_EXPRESSION_H
 #define _H_BOOLEAN_EXPRESSION_H
 
-#include "hotcall-trusted.h"
+#include "hotcall_config.h"
+#include "hotcall_function.h"
+#include "hotcall_utils.h"
 
 enum postfix_item_type { OPERAND, OPERATOR };
 struct postfix_item {
@@ -10,185 +12,58 @@ struct postfix_item {
         struct parameter *elem;
 };
 
-static inline
-int presedence(char c) {
-    switch(c) {
-        case '!':
-            return 4;
-        case '>': case '<': case '%':
-            return 3;
-        case '&': case '|':
-            return 2;
-        default:
-            return 0;
+void
+to_postfix(const char *condition_fmt, struct parameter *predicate_args, struct postfix_item *output, unsigned int *output_length);
+
+int
+evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotcall_config, int offset);
+
+int
+evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int offset);
+
+
+static inline void *
+parse_argument(const struct parameter *param, unsigned int offset) {
+    void *arg;
+    char fmt;
+    unsigned int _offset = 0;
+    switch(param->type) {
+        case VARIABLE_TYPE: arg = param->value.variable.arg; fmt = param->value.variable.fmt; break;
+        case VECTOR_TYPE:   arg = param->value.vector.arg; fmt = param->value.vector.fmt; _offset = offset; break;
+        case POINTER_TYPE:   arg = param->value.pointer.arg; fmt = param->value.pointer.fmt; break;
+        default: SWITCH_DEFAULT_REACHED
+    }
+    switch(fmt) {
+        case 'd': return ((int *) arg) + _offset;
+        case 'b': return ((bool *) arg) + _offset;
+        case 'u': case ui8: case ui16: case ui32:
+            return ((unsigned int *) arg) + _offset;
+        default: SWITCH_DEFAULT_REACHED
     }
 }
 
-extern inline void
-to_postfix(const char *condition_fmt, struct parameter *predicate_args, struct postfix_item *output, unsigned int *output_length) {
-    char chs[128];
-    unsigned int pos = 0, output_index = 0, variable_index = 0;
-    char tmp;
-    const char *input = condition_fmt;
-    for(int i = 0; i < strlen(input); ++i) {
-        if(input[i] >= 'a' && input[i] <= 'z') {
-            output[output_index].ch = input[i];
-            output[output_index].elem = &predicate_args[variable_index++];
-            output[output_index].type = OPERAND;
-            output_index++;
-            continue;
-        }
-        switch(input[i]) {
-            case '(':
-                chs[pos++] = input[i];
-                break;
-            case ')':
-                while(pos > 0 && (tmp = chs[pos - 1]) != '(') {
-                    output[output_index].type = OPERATOR;
-                    output[output_index++].ch = tmp;
-                    pos--;
-                }
-                if(pos > 0 && tmp == '(') {
-                    pos--;
-                }
-                break;
-            default:
-                while(pos > 0 && chs[pos - 1] != '(' && presedence(input[i]) <= presedence(chs[pos - 1])) {
-                    tmp = chs[--pos];
-                    output[output_index].type = OPERATOR;
-                    output[output_index++].ch = tmp;
-                }
-                chs[pos++] = input[i];
-        }
-    }
 
-    while(pos > 0) {
-        tmp = chs[--pos];
-        output[output_index].type = OPERATOR;
-        output[output_index++].ch = tmp;
-    }
-    *output_length = output_index;
-}
-
-extern inline int
-evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotcall_config, int offset) {
-    switch(operand_item->elem->type) {
-        case FUNCTION_TYPE:
-        {
-            struct parameter *param = operand_item->elem;
-            unsigned int n_params = param->value.function.n_params;
-            void *args[n_params];
-            for(int j = 0; j < n_params; ++j) args[j] = parse_argument(&param->value.function.params[j], offset);
-            int operand = 0;
-            hotcall_config->execute_function(operand_item->elem->value.function.function_id, args, &operand);
-            switch(operand_item->ch) {
-                case 'b':
-                    return ((bool) operand);
-                case 'd':
-                    return operand;
-                case 'u':
-                    return ((unsigned int) operand);
-                default:
-                    SWITCH_DEFAULT_REACHED
-            }
-        }
-        case POINTER_TYPE:
-            if(*operand_item->elem->value.pointer.arg == NULL) return 0;
-            else return **(int **) operand_item->elem->value.pointer.arg;
-        case VECTOR_TYPE:
-            switch(operand_item->ch) {
-                case 'b':
-                    return *((bool *) operand_item->elem->value.vector.arg + offset);
-                case 'u':
-                    return *((unsigned int *) operand_item->elem->value.vector.arg + offset);
-                case 'd':
-                    return *((int *) operand_item->elem->value.vector.arg + offset);
-                default:
-                    SWITCH_DEFAULT_REACHED
-            }
-        case VARIABLE_TYPE:
-            switch(operand_item->ch) {
-                case 'b':
-                    return *(bool *) operand_item->elem->value.variable.arg;
-                case 'u':
-                    return *(unsigned int *) operand_item->elem->value.variable.arg;
-                case 'd':
-                    return *(int *) operand_item->elem->value.variable.arg;
-                default:
-                    SWITCH_DEFAULT_REACHED
-            }
-        default:
-            SWITCH_DEFAULT_REACHED
+static inline void *
+load_variable_argument(const struct variable_parameter *var) {
+    switch(var->fmt) {
+        case 'd': return ((int *) var->arg);
+        case 'b': return ((bool *) var->arg);
+        case 'u': case ui8: case ui16: case ui32:
+            return ((unsigned int *) var->arg);
+        default: SWITCH_DEFAULT_REACHED
     }
 }
 
-extern inline int
-evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int offset) {
 
-    struct postfix_item *output[output_length];
-    unsigned int stack_pos = 0;
-
-    struct postfix_item *it;
-
-    int operand1, operand2, res;
-
-    struct postfix_item *operand1_item, *operand2_item;
-
-    struct parameter p_var = {
-        .type = VARIABLE_TYPE,
-        .value = { .variable = { .arg = &res }}
-    };
-    struct postfix_item res_item = {
-        .ch = 'b',
-        .type = OPERAND,
-        .elem = &p_var
-    };
-
-
-    for(int i = 0; i < output_length; ++i) {
-
-        it = &postfix[i];
-        if(it->ch >= 'a' && it->ch <= 'z' || it->ch == '!') {
-            output[stack_pos++] = it;
-            continue;
-        }
-
-        operand2_item = output[--stack_pos];
-        operand2 = operand2_item->ch == '!'
-            ? !evaluate_variable(output[--stack_pos], hotcall_config, offset)
-            : evaluate_variable(operand2_item, hotcall_config, offset);
-
-        operand1_item = output[--stack_pos];
-        operand1 = operand1_item->ch == '!'
-            ? !evaluate_variable(output[--stack_pos], hotcall_config, offset)
-            : evaluate_variable(operand1_item, hotcall_config, offset);
-
-        switch(it->ch) {
-            case '&':
-                res = operand1 && operand2;
-                break;
-            case '|':
-                res = operand1 || operand2;
-                break;
-            case '>':
-                res = operand1 > operand2;
-                break;
-            case '<':
-                res = operand1 < operand2;
-                break;
-            case '%':
-                res = operand1 % operand2;
-                break;
-            default:
-                SWITCH_DEFAULT_REACHED
-        }
-        output[stack_pos++] = &res_item;
+static inline void *
+load_vector_argument(const struct vector_parameter *vec, unsigned int offset) {
+    switch(vec->fmt) {
+        case 'd': return ((int *) vec->arg) + offset;
+        case 'b': return ((bool *) vec->arg) + offset;
+        case 'u': case ui8: case ui16: case ui32:
+            return ((unsigned int *) vec->arg) + offset;
+        default: SWITCH_DEFAULT_REACHED
     }
-
-    operand1_item = output[--stack_pos];
-    return operand1_item->ch == '!'
-        ? !evaluate_variable(output[--stack_pos], hotcall_config, offset)
-        : evaluate_variable(operand1_item, hotcall_config, offset);
 }
 
 #endif

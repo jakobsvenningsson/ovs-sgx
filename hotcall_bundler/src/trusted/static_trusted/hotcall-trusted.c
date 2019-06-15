@@ -61,6 +61,15 @@ combine_result(char op, struct parameter *accumulator, void *ret, int n) {
             case 'u':
                 *(unsigned int *) accumulator->value.variable.arg = *(unsigned int *) ret;
                 break;
+            case ui8:
+                *(uint8_t *) accumulator->value.variable.arg = *(uint8_t *) ret;
+                break;
+            case ui16:
+                *(uint16_t *) accumulator->value.variable.arg = *(uint16_t *) ret;
+                break;
+            case ui32:
+                *(uint32_t *) accumulator->value.variable.arg = *(uint32_t *) ret;
+                break;
             default:
                 SWITCH_DEFAULT_REACHED
         }
@@ -76,6 +85,15 @@ combine_result(char op, struct parameter *accumulator, void *ret, int n) {
                 case 'u':
                     *(unsigned int *) accumulator->value.variable.arg += *(unsigned int *) ret;
                     break;
+                case ui8:
+                    *(uint8_t *) accumulator->value.variable.arg += *(uint8_t *) ret;
+                    break;
+                case ui16:
+                    *(uint16_t *) accumulator->value.variable.arg += *(uint16_t *) ret;
+                    break;
+                case ui32:
+                    *(uint32_t *) accumulator->value.variable.arg += *(uint32_t *) ret;
+                    break;
                 default:
                     SWITCH_DEFAULT_REACHED
             }
@@ -87,6 +105,15 @@ combine_result(char op, struct parameter *accumulator, void *ret, int n) {
                     break;
                 case 'u':
                     *(unsigned int *) accumulator->value.variable.arg -= *(unsigned int *) ret;
+                    break;
+                case ui8:
+                    *(uint8_t *) accumulator->value.variable.arg -= *(uint8_t *) ret;
+                    break;
+                case ui16:
+                    *(uint16_t *) accumulator->value.variable.arg -= *(uint16_t *) ret;
+                    break;
+                case ui32:
+                    *(uint32_t *) accumulator->value.variable.arg -= *(uint32_t *) ret;
                     break;
                 default:
                     SWITCH_DEFAULT_REACHED
@@ -100,6 +127,15 @@ combine_result(char op, struct parameter *accumulator, void *ret, int n) {
                 case 'u':
                     *(unsigned int *) accumulator->value.variable.arg = *(unsigned int *) accumulator->value.variable.arg  && *(unsigned int *) ret;
                     break;
+                case ui8:
+                    *(uint8_t *) accumulator->value.variable.arg && *(uint8_t *) ret;
+                    break;
+                case ui16:
+                    *(uint16_t *) accumulator->value.variable.arg && *(uint16_t *) ret;
+                    break;
+                case ui32:
+                    *(uint32_t *) accumulator->value.variable.arg && *(uint32_t *) ret;
+                    break;
                 default:
                     SWITCH_DEFAULT_REACHED
             }
@@ -111,6 +147,15 @@ combine_result(char op, struct parameter *accumulator, void *ret, int n) {
                     break;
                 case 'u':
                     *(unsigned int *) accumulator->value.variable.arg =  *(unsigned int *) accumulator->value.variable.arg || *(unsigned int *) ret;
+                    break;
+                case ui8:
+                    *(uint8_t *) accumulator->value.variable.arg || *(uint8_t *) ret;
+                    break;
+                case ui16:
+                    *(uint16_t *) accumulator->value.variable.arg || *(uint16_t *) ret;
+                    break;
+                case ui32:
+                    *(uint32_t *) accumulator->value.variable.arg || *(uint32_t *) ret;
                     break;
                 default:
                     SWITCH_DEFAULT_REACHED
@@ -138,6 +183,15 @@ hotcall_handle_reduce(struct hotcall_reduce *re) {
                     break;
                 case 'b':
                     combine_result(re->config->op, accumulator, ((bool *) re->params[0].value.variable.arg) + i, i);
+                    break;
+                case ui8:
+                    combine_result(re->config->op, accumulator, ((uint8_t *) re->params[0].value.variable.arg) + i, i);
+                    break;
+                case ui16:
+                    combine_result(re->config->op, accumulator, ((uint16_t *) re->params[0].value.variable.arg) + i, i);
+                    break;
+                case ui32:
+                    combine_result(re->config->op, accumulator, ((uint32_t *) re->params[0].value.variable.arg) + i, i);
                     break;
                 default: SWITCH_DEFAULT_REACHED
             }
@@ -361,12 +415,12 @@ hotcall_handle_assign_var(struct hotcall_assign_variable *var) {
 
 static inline void
 hotcall_handle_assign_ptr(struct hotcall_assign_pointer *ptr) {
-    *(void **) ptr->dst->value.variable.arg = parse_argument(ptr->src, ptr->offset);
+    *(void **) ptr->dst->value.pointer.arg = parse_argument(ptr->src, ptr->offset);
 }
 
 int
 ecall_start_poller(struct shared_memory_ctx *sm_ctx){
-
+    printf("ecall_start_poller\n");
     struct ecall_queue_item *queue_item;
     struct hotcall_function *fc;
 
@@ -379,6 +433,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
             sm_ctx->hcall.run = false;
 
             uint8_t exclude_list[sm_ctx->hcall.batch.queue_len];
+
             memset(exclude_list, 0, sm_ctx->hcall.batch.queue_len);
 
             struct loop_stack_item loop_stack[MAX_LOOP_RECURSION] = { 0 };
@@ -402,7 +457,10 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                             for(int i = 0; i < fc->config->n_params; ++i) {
                                 switch(fc->params[i].type) {
                                     case VARIABLE_TYPE: fc->args[i] = fc->params[i].value.variable.arg; break;
-                                    case POINTER_TYPE: fc->args[i] = *fc->params[i].value.pointer.arg; break;
+                                    case POINTER_TYPE:
+                                        if(fc->params[i].value.pointer.dereference) fc->args[i] = *(void **) fc->params[i].value.pointer.arg;
+                                        else fc->args[i] = fc->params[i].value.pointer.arg;
+                                        break;
                                     default: break;
                                 }
                             }
@@ -481,6 +539,9 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
     sm_ctx->hcall.batch.queue_len = 0;
     sgx_spin_unlock(&sm_ctx->hcall.spinlock);
     sm_ctx->hcall.is_done = true;
+
+    printf("ret ecall_start_poller\n");
+
 
     return 0;
 } /* ecall_start_poller */

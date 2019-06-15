@@ -1,8 +1,8 @@
 #ifndef _H_HOTCALL_IF
 #define _H_HOTCALL_IF
 
+#include "hotcall_utils.h"
 #include "hotcall_function.h"
-
 
 #define PASTE(X, Y) X ## Y
 

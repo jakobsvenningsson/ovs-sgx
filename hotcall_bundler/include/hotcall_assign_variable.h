@@ -1,7 +1,8 @@
 #ifndef _H_HOTCALL_ASSIGN_VAR_
 #define _H_HOTCALL_ASSIGN_VAR_
 
-#include "hotcall.h"
+#include "hotcall_utils.h"
+#include "hotcall_function.h"
 
 #define _ASSIGN_VAR(ID, DST, SRC) \
     struct parameter CAT2(DST_VAR_, ID) = DST;\

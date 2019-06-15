@@ -83,3 +83,11 @@ ecall_read_buffer(int *out, int size) {
     memcpy(out, buffer, n * sizeof(int));
     return n;
 }
+
+void
+ecall_change_ptr_to_ptr(int **p2p, int *p) {
+    printf("ecall_change_ptr_to_ptr %d\n", *p);
+    *p2p = p;
+    printf("ecall_change_ptr_to_ptr\n");
+
+}

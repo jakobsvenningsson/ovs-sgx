@@ -1,8 +1,8 @@
 #ifndef _H_HOTCALL_WHILE
 #define _H_HOTCALL_WHILE
 
+#include "hotcall_utils.h"
 #include "hotcall_function.h"
-
 
 #define END_WHILE() \
     hotcall_bundle_while_end(_sm_ctx)

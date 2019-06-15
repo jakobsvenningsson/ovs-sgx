@@ -1,9 +1,8 @@
 #ifndef _H_HOTCALL_FOR
 #define _H_HOTCALL_FOR
 
+#include "hotcall_utils.h"
 #include "hotcall_function.h"
-#include "hotcall.h"
-
 
 #define _BEGIN_FOR(SM_CTX, ID, CONFIG) \
     struct for_config CAT2(FOR_CONFIG_,ID) = CONFIG; \

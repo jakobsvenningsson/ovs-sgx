@@ -53,7 +53,7 @@ TEST(assign_var, 2) {
 }
 
 TEST(assign_ptr, 1) {
-    // Assigns the address of y to x and icrements the value x points to by 1. 
+    // Assigns the address of y to x and icrements the value x points to by 1.
 
     hotcall_test_setup();
 
@@ -62,9 +62,9 @@ TEST(assign_ptr, 1) {
 
     BUNDLE_BEGIN();
 
-    ASSIGN_PTR(VAR(x, 'd'), VAR(y, 'd'));
+    ASSIGN_PTR(PTR(&x, 'd'), VAR(y, 'd'));
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), PTR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), PTR(&x, 'd', .dereference = true));
 
     BUNDLE_END();
 

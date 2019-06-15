@@ -1,6 +1,7 @@
 #ifndef _H_HOTCALL_MAP
 #define _H_HOTCALL_MAP
 
+#include "hotcall_utils.h"
 #include "hotcall_function.h"
 
 #define _MAP(SM_CTX, ID, CONFIG, ...) \

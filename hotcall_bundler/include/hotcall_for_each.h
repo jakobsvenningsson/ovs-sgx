@@ -1,6 +1,7 @@
 #ifndef _H_HOTCALL_FOR_EACH
 #define _H_HOTCALL_FOR_EACH
 
+#include "hotcall_utils.h"
 #include "hotcall_function.h"
 
 #define _FOR_EACH(SM_CTX, ID, CONFIG, ...) \
