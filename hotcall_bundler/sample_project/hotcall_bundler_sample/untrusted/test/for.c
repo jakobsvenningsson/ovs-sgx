@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "test.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 
 #include "hotcall_for.h"

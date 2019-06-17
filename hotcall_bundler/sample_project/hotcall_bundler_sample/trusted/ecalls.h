@@ -33,5 +33,9 @@ void
 ecall_zero(int *x);
 void
 ecall_change_ptr_to_ptr(int **p2p, int *p);
+void
+ecall_offset_of(void **ptr, int offset);
+void *
+ecall_offset_of_ret(void *ptr, unsigned int offset);
 
 #endif

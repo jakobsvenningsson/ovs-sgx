@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "test.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 
 #include "hotcall_if.h"
@@ -172,4 +172,67 @@ TEST(if,6) {
     hotcall_test_teardown();
 
     ASSERT_EQ(x, 1);
+}
+
+TEST(if,7) {
+    hotcall_test_setup();
+
+    int x = 0;
+
+    BUNDLE_BEGIN();
+
+    IF(
+        ((struct if_config) { .predicate_fmt = "!b" }),
+        FUNC(.function_id = hotcall_ecall_always_false, .params =  NULL)
+    );
+    THEN
+        RETURN;
+    END
+
+    HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 0);
+}
+
+TEST(if,8) {
+    hotcall_test_setup();
+
+    int x = 0, y = 0, z = 0;
+
+    BUNDLE_BEGIN();
+
+    IF(((struct if_config) { .predicate_fmt = "!d" }), VAR(x, 'd'));
+    THEN
+    ELSE
+    END
+    HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+
+    IF(((struct if_config) { .predicate_fmt = "d" }), VAR(y, 'd'));
+    THEN
+    ELSE
+    END
+    HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(y, 'd'));
+
+    IF(((struct if_config) { .predicate_fmt = "d" }), VAR(x, 'd'));
+    THEN
+    END
+    HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(z, 'd'));
+
+    IF(((struct if_config) { .predicate_fmt = "!d" }), VAR(x, 'd'));
+    THEN
+    END
+    HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(z, 'd'));
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 1);
+    ASSERT_EQ(y, 1);
+    ASSERT_EQ(z, 2);
+
 }

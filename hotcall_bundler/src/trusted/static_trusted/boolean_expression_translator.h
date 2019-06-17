@@ -29,11 +29,20 @@ parse_argument(const struct parameter *param, unsigned int offset) {
     unsigned int _offset = 0;
     switch(param->type) {
         case VARIABLE_TYPE: arg = param->value.variable.arg; fmt = param->value.variable.fmt; break;
-        case VECTOR_TYPE:   arg = param->value.vector.arg; fmt = param->value.vector.fmt; _offset = offset; break;
-        case POINTER_TYPE:   arg = param->value.pointer.arg; fmt = param->value.pointer.fmt; break;
+        case VECTOR_TYPE:
+            arg = (void **) param->value.vector.arg; //param->value.vector.dereference ? *(void **) param->value.vector.arg : param->value.vector.arg;
+            fmt = param->value.vector.fmt;
+            _offset = offset;
+            break;
+        case POINTER_TYPE:
+            arg = (void **) param->value.pointer.arg;// param->value.pointer.dereference ? *(void **) param->value.pointer.arg : param->value.pointer.arg;
+            fmt = param->value.pointer.fmt;
+            break;
         default: SWITCH_DEFAULT_REACHED
     }
+    printf("offset %d %c\n", _offset, fmt);
     switch(fmt) {
+        case 'p': return (((void **) arg) + _offset);
         case 'd': return ((int *) arg) + _offset;
         case 'b': return ((bool *) arg) + _offset;
         case 'u': case ui8: case ui16: case ui32:
@@ -41,6 +50,35 @@ parse_argument(const struct parameter *param, unsigned int offset) {
         default: SWITCH_DEFAULT_REACHED
     }
 }
+/*
+static inline void *
+parse_argument_1(const struct parameter *param, unsigned int offset, int member_offset) {
+    void *arg;
+    char fmt;
+    unsigned int _offset = 0;
+    switch(param->type) {
+        case VARIABLE_TYPE: arg = param->value.variable.arg; fmt = param->value.variable.fmt; break;
+        case VECTOR_TYPE:
+            arg = param->value.vector.dereference ? *((void **) param->value.vector.arg + offset) : param->value.vector.arg;
+            fmt = param->value.vector.fmt;
+            _offset = offset;
+            break;
+        case POINTER_TYPE:
+            arg = param->value.pointer.dereference ? *(void **) param->value.pointer.arg : param->value.pointer.arg;
+            fmt = param->value.pointer.fmt;
+            break;
+        default: SWITCH_DEFAULT_REACHED
+    }
+    printf("offset %d %c\n", _offset, fmt);
+    switch(fmt) {
+        case 'p': return ((char *) arg);
+        case 'd': return ((int *) arg) + _offset;
+        case 'b': return ((bool *) arg) + _offset;
+        case 'u': case ui8: case ui16: case ui32:
+            return ((unsigned int *) arg) + _offset;
+        default: SWITCH_DEFAULT_REACHED
+    }
+}*/
 
 
 static inline void *

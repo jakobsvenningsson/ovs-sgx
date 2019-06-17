@@ -11,7 +11,7 @@
 
 #include "hotcall_bundler_sample_u.h"
 
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 #include "examples.h"
 #include <gtest/gtest.h>

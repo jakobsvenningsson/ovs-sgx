@@ -1,5 +1,5 @@
 #include "hotcall_bundler_t.h"  /* print_string */
-#include "hotcall-trusted.h"
+#include "hotcall-bundler-trusted.h"
 #include <stdio.h>
 #include <ctype.h>
 #include "assert.h"
@@ -14,10 +14,13 @@ hotcall_register_config(struct hotcall_config *config) {
 
 static inline bool
 hotcall_handle_if(struct hotcall_if *tif, uint8_t *exclude_list, int pos, int exclude_list_len) {
+
     struct postfix_item output[strlen(tif->config->predicate_fmt)];
     unsigned int output_length;
     to_postfix(tif->config->predicate_fmt, tif->params, output, &output_length);
+
     int res = evaluate_postfix(output, output_length, hotcall_config, 0);
+
     if(res && tif->config->else_branch_len > 0) {
         exclude_else_branch(exclude_list, pos, tif->config->then_branch_len, tif->config->else_branch_len);
     } else if(!res) {
@@ -305,8 +308,19 @@ hotcall_handle_for_each(struct hotcall_for_each *tor) {
     void *args[n_params];
     for(int offset = 0; offset < *params_in->value.vector.len; ++offset) {
         for(int j = 0; j < n_params; ++j) {
-            if(tor->params[j].type == VARIABLE_TYPE && offset > 0) continue;
-            args[j] = parse_argument(&tor->params[j], offset);
+            //if(tor->params[j].type == VARIABLE_TYPE && offset > 0) continue;
+            switch(tor->params[j].type) {
+                case VARIABLE_TYPE:
+                    if(offset > 0) continue;
+                    args[j] = parse_argument(&tor->params[j], offset);//((char *) parse_argument_1(&tor->params[j], offset, tor->params[j].value.variable.access_member)); //+ tor->params[j].value.variable.access_member;
+                    break;
+                case VECTOR_TYPE:
+                    args[j] = parse_argument(&tor->params[j], offset);//((char *) parse_argument_1(&tor->params[j], offset, tor->params[j].value.vector.access_member)); // + tor->params[j].value.vector.access_member;
+                    break;
+                default: SWITCH_DEFAULT_REACHED
+            }
+            //args[j] = parse_argument(&tor->params[j], offset);// + tor->params[j].value.vector.access_member;
+            //printf("%p\n", args[j]);
         }
         hotcall_config->execute_function(tor->config->function_id, args, NULL);
     }
@@ -416,11 +430,11 @@ hotcall_handle_assign_var(struct hotcall_assign_variable *var) {
 static inline void
 hotcall_handle_assign_ptr(struct hotcall_assign_pointer *ptr) {
     *(void **) ptr->dst->value.pointer.arg = parse_argument(ptr->src, ptr->offset);
+    printf("ptr: %p offset %d\n", *(void **) ptr->dst->value.pointer.arg, ptr->offset);
 }
 
 int
 ecall_start_poller(struct shared_memory_ctx *sm_ctx){
-    printf("ecall_start_poller\n");
     struct ecall_queue_item *queue_item;
     struct hotcall_function *fc;
 
@@ -456,12 +470,18 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                             fc = &queue_item->call.fc;
                             for(int i = 0; i < fc->config->n_params; ++i) {
                                 switch(fc->params[i].type) {
-                                    case VARIABLE_TYPE: fc->args[i] = fc->params[i].value.variable.arg; break;
+                                    case VARIABLE_TYPE: fc->args[i] = ((char *) fc->params[i].value.variable.arg); break;// + fc->params[i].value.variable.access_member; break;
                                     case POINTER_TYPE:
-                                        if(fc->params[i].value.pointer.dereference) fc->args[i] = *(void **) fc->params[i].value.pointer.arg;
-                                        else fc->args[i] = fc->params[i].value.pointer.arg;
+                                        //if(fc->params[i].value.pointer.dereference)
+                                            fc->args[i] = *((void **) fc->params[i].value.pointer.arg); //+ fc->params[i].value.pointer.access_member;
+                                        //else
+                                        //    fc->args[i] = ((char *) fc->params[i].value.pointer.arg); //+ fc->params[i].value.pointer.access_member;
                                         break;
-                                    default: break;
+                                    case STRUCT_TYPE:
+                                            fc->args[i] = ((char *) fc->params[i].value.struct_.arg) + fc->params[i].value.struct_.member_offset;
+                                        break;
+                                    case VECTOR_TYPE: break;
+                                    default: SWITCH_DEFAULT_REACHED
                                 }
                             }
                             hotcall_config->execute_function(fc->config->function_id, fc->args, fc->return_value);
@@ -539,9 +559,6 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
     sm_ctx->hcall.batch.queue_len = 0;
     sgx_spin_unlock(&sm_ctx->hcall.spinlock);
     sm_ctx->hcall.is_done = true;
-
-    printf("ret ecall_start_poller\n");
-
 
     return 0;
 } /* ecall_start_poller */

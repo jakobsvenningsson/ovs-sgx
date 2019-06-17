@@ -5,8 +5,8 @@ DEPS = spinlock.h hotcall-untrusted.h
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-hotcall.a: spinlock.o hotcall-untrusted.o
-	ar rcsv libhotcall_bundler_untrusted.a spinlock.o hotcall-untrusted.o
+hotcall.a: spinlock.o hotcall-bundler-untrusted.o
+	ar rcsv libhotcall_bundler_untrusted.a spinlock.o hotcall-bundler-untrusted.o
 
 clean:
 	rm -rf *.o

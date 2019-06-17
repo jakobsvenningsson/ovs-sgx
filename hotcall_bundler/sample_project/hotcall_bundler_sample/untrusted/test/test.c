@@ -1,7 +1,7 @@
 #include "test.h"
 #include "gtest/gtest.h"
 #include "hotcall_bundler_sample_u.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 
 struct shared_memory_ctx *test_sm_ctx;
 extern sgx_enclave_id_t global_eid;

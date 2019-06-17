@@ -1,5 +1,5 @@
 #include "benchmark.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 /*
 unsigned int

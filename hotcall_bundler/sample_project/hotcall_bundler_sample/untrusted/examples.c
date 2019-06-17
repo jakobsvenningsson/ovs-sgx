@@ -1,5 +1,5 @@
 #include "examples.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 /*
 void hotcall_bundle_example_if(struct shared_memory_ctx *sm_ctx) {

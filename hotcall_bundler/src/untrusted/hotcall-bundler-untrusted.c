@@ -1,5 +1,5 @@
 #include "hotcall_bundler_u.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 #include <pthread.h>
 #include <assert.h>
 
@@ -73,6 +73,9 @@ hotcall_bundle_if_end(struct shared_memory_ctx *sm_ctx) {
             branch_len = 1;
         } else {
             branch_len++;
+        }
+        if(it == sm_ctx->hcall.fcs) {
+            it = sm_ctx->hcall.fcs + MAX_FCS;
         }
     }
     it->call.tif.config->else_branch_len = else_len;
@@ -203,7 +206,7 @@ hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_LOOP_END;
-    calculate_loop_length(&sm_ctx->hcall.batch, QUEUE_ITEM_TYPE_FOR_BEGIN);
+    calculate_loop_length(&sm_ctx->hcall, QUEUE_ITEM_TYPE_FOR_BEGIN);
     enqueue_item(sm_ctx, item);
 }
 
@@ -212,7 +215,7 @@ hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_LOOP_END;
-    calculate_loop_length(&sm_ctx->hcall.batch, QUEUE_ITEM_TYPE_WHILE_BEGIN);
+    calculate_loop_length(&sm_ctx->hcall, QUEUE_ITEM_TYPE_WHILE_BEGIN);
     enqueue_item(sm_ctx, item);
 }
 
@@ -220,6 +223,7 @@ void
 hotcall_bundle_error(struct shared_memory_ctx *sm_ctx, int error_code) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
+    if(item == NULL) printf("item null\n");
     item->type = QUEUE_ITEM_TYPE_ERROR;
     struct hotcall_error *error;
     error = &item->call.err;

@@ -19,5 +19,9 @@
 #define hotcall_ecall_count 14
 #define hotcall_ecall_read_buffer 15
 #define hotcall_ecall_change_ptr_to_ptr 16
+#define hotcall_ecall_container_of 17
+#define hotcall_ecall_offset_of 18
+#define hotcall_ecall_container_of_ret 19
+#define hotcall_ecall_offset_of_ret 20
 
 #endif

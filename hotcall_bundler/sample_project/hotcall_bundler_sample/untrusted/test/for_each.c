@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "test.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 
 #include "hotcall_for_each.h"
@@ -101,4 +101,36 @@ TEST(for_each,4) {
     for(int i = 0; i < n_iters; ++i) {
         ASSERT_EQ(xs[i], 5);
     }
+}
+
+
+TEST(for_each, 5) {
+    /* Contract: */
+    /*hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    unsigned int n_params = 1, n_iters = 3;
+
+    struct A { int x; int y; int z; char c[32]; };
+    //struct A as[n_iters] = { 0 };
+
+
+    A a1 = { 0 }, a2 = { 0 }, a3 = { 0 };
+    struct A *as[n_iters] = { &a1, &a2, &a3 };
+
+
+    FOR_EACH(
+        ((struct for_each_config) { .function_id = hotcall_ecall_plus_one }),
+        VECTOR(as, 'p', &n_iters, .dereference = true, .access_member = offsetof(struct A, y)),
+    );
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    for(int i = 0; i < n_iters; ++i) {
+        ASSERT_EQ(as[i]->y, 1);
+        ASSERT_EQ(as[i]->x, 0);
+    }*/
 }

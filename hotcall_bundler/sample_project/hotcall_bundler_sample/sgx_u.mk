@@ -61,6 +61,7 @@ App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/test/assignment.c \
 			   $(UNTRUSTED_DIR)/test/reduce.c \
 			   $(UNTRUSTED_DIR)/test/functional_chaining.c \
+			   $(UNTRUSTED_DIR)/test/struct_member_access.c \
 			   $(UNTRUSTED_DIR)/test/integration.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_hotcall.c \

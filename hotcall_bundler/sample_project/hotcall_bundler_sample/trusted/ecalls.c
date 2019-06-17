@@ -19,6 +19,7 @@ ecall_bar() {}
 
 void
 ecall_plus_one(int *x) {
+    printf("X: %d\n", *x);
     ++*x;
 }
 
@@ -86,8 +87,16 @@ ecall_read_buffer(int *out, int size) {
 
 void
 ecall_change_ptr_to_ptr(int **p2p, int *p) {
-    printf("ecall_change_ptr_to_ptr %d\n", *p);
     *p2p = p;
-    printf("ecall_change_ptr_to_ptr\n");
+}
 
+void
+ecall_offset_of(void **ptr, int offset) {
+    printf("inside: %p %p %d\n", *ptr, ptr, offset);
+    *ptr = ((char *) *ptr) + offset;
+}
+
+void *
+ecall_offset_of_ret(void *ptr, unsigned int offset) {
+    return ((char *) ptr) + offset;
 }

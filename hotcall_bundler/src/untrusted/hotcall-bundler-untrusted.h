@@ -18,6 +18,7 @@
 #define _ASYNC(SM_CTX, X) false || is_hotcall_in_progress(&(SM_CTX)->hcall)
 #endif
 
+
 #define _HCALL(SM_CTX, UNIQUE_ID, CONFIG, ...) \
     struct parameter CAT2(HCALL_ARGS_, UNIQUE_ID)[] = { \
         __VA_ARGS__ \
@@ -78,6 +79,8 @@ hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx);
 void
 hotcall_bundle_error(struct shared_memory_ctx *sm_ctx, int error_code);
 
+#define RETURN hotcall_bundle_error(_sm_ctx, 0)
+
 static inline void
 make_hotcall(struct hotcall *hcall) {
     hcall->is_done  = false;
@@ -112,6 +115,8 @@ static inline void
 hotcall_bundle_begin(struct shared_memory_ctx *sm_ctx) {
     sm_ctx->hcall.batch.error = 0;
     sm_ctx->hcall.hotcall_in_progress = true;
+    sm_ctx->hcall.batch.queue_len = 0;
+
 }
 
 static inline void
@@ -156,7 +161,9 @@ enqueue_item(struct shared_memory_ctx *sm_ctx, struct ecall_queue_item *item) {
 }
 
 static inline void
-calculate_loop_length(struct hotcall_batch *batch, int type) {
+calculate_loop_length(struct hotcall *hcall, int type) {
+    struct hotcall_batch *batch;
+    batch = &hcall->batch;
     unsigned body_len = 0, nesting = 0;
     struct ecall_queue_item *it;
     for(it = batch->queue[batch->queue_len - 1]; it->type != type || nesting > 0 ; --it) {
@@ -165,6 +172,9 @@ calculate_loop_length(struct hotcall_batch *batch, int type) {
             case QUEUE_ITEM_TYPE_WHILE_BEGIN: case QUEUE_ITEM_TYPE_FOR_BEGIN: nesting--; break;
         }
         body_len++;
+        if(it == hcall->fcs) {
+            it = hcall->fcs + MAX_FCS;
+        }
     }
     switch(type) {
         case QUEUE_ITEM_TYPE_FOR_BEGIN:

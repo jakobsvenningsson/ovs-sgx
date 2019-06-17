@@ -63,6 +63,18 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         case hotcall_ecall_change_ptr_to_ptr:
             ecall_change_ptr_to_ptr((int **) args[0], (int *) args[1]);
             break;
+        case hotcall_ecall_container_of:
+            ecall_offset_of(args[0], -(*(int *) args[1]));
+            break;
+        case hotcall_ecall_offset_of:
+            ecall_offset_of(args[0], *(int *) args[1]);
+            break;
+        case hotcall_ecall_offset_of_ret:
+            *(void **) return_value = ecall_offset_of_ret(args[0], *(unsigned int *) args[1]);
+            break;
+        case hotcall_ecall_container_of_ret:
+            *(void **) return_value = ecall_offset_of_ret(args[0], -(*(unsigned int *) args[1]));
+            break;
         default:
             printf("unknown hotcall function %d.\n", function_id);
             break;

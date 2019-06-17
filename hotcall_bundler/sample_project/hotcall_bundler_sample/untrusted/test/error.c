@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "test.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 
 #include "hotcall_if.h"
@@ -24,7 +24,7 @@ TEST(error,1) {
     THEN
     ELSE
         HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'b'));
-        ERROR(sm_ctx, TEST_ERROR_CODE_1);
+        ERROR(TEST_ERROR_CODE_1);
         HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(x, 'b'));
     END
 
@@ -57,7 +57,7 @@ TEST(error, 2) {
     THEN
         HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'b'));
     ELSE
-        ERROR(sm_ctx, TEST_ERROR_CODE_1);
+        ERROR(TEST_ERROR_CODE_1);
     END
 
     BUNDLE_END();

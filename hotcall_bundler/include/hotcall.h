@@ -19,7 +19,7 @@
 #include "hotcall_function.h"
 
 
-#define QUEUE_ITEM_TYPE_IF 0
+#define QUEUE_ITEM_TYPE_IF 19
 #define QUEUE_ITEM_TYPE_IF_NULL 1
 #define QUEUE_ITEM_TYPE_GUARD 2
 #define QUEUE_ITEM_TYPE_DESTROY 3
@@ -41,13 +41,6 @@
 #define MAX_FCS 200
 #define MAX_TS 200
 #define MAX_N_VARIABLES 5
-
-#define RETURN  hotcall_bundle_error(_sm_ctx, 0)
-
-#define PTR(VAL, ...) (struct parameter) { .type = POINTER_TYPE,   .value = { .pointer = { .arg = (void *) (VAL), __VA_ARGS__ }}}
-#define VAR(VAL, ...) (struct parameter) { .type = VARIABLE_TYPE, .value = { .variable = { .arg = &(VAL), __VA_ARGS__ }}}
-#define VECTOR(...) (struct parameter) { .type = VECTOR_TYPE, .value = { .vector = { __VA_ARGS__ }}}
-#define FUNC(...) (struct parameter) { .type = FUNCTION_TYPE, .value = { .function = { __VA_ARGS__ }}}
 
 union hcall {
     struct hotcall_if tif;
@@ -89,9 +82,9 @@ struct hotcall {
     struct hotcall_batch batch;
 
     struct ecall_queue_item fcs[MAX_FCS];
-    void *args[MAX_FCS][HOTCALL_MAX_ARG];
+    //void *args[MAX_FCS][HOTCALL_MAX_ARG];
     size_t idx;
-    size_t len;
+    //size_t len;
 };
 
 struct shared_memory_ctx {
