@@ -23,7 +23,7 @@ TEST(while,1) {
     );
 
         HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one ), VAR(x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
 
     END_WHILE();
 

@@ -13,6 +13,9 @@ TEST(integration,1) {
     int buf_size = 15;
     unsigned int n = 0;
 
+    struct parameter vec1[] = { VAR(buffer, 'd'), VECTOR_v2(&vec1[0], &n) }, p1 = vec1[1];
+    struct parameter vec2[] = { VAR(map_out, 'd'), VECTOR_v2(&vec2[0], &n) }, p2 = vec2[1];
+
     BUNDLE_BEGIN();
 
     HCALL(
@@ -22,8 +25,7 @@ TEST(integration,1) {
     MAP(
 
         ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret }),
-        VECTOR(buffer, 'd', &n),
-        VECTOR(map_out, 'd', &n)
+        p1, p2
     );
 
     BUNDLE_END();
@@ -36,7 +38,7 @@ TEST(integration,1) {
         ASSERT_EQ(map_out[i], i + 1);
     }
 }
-/*
+
 TEST(integration,2) {
     hotcall_test_setup();
     unsigned int n_iters = 10;
@@ -44,16 +46,16 @@ TEST(integration,2) {
     int *x = NULL;
     int xs[n_iters] = { 1,1,1,1,1,1,1,1,1,1 };
 
+    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+
     BUNDLE_BEGIN();
 
     BEGIN_FOR({ .n_iters = &n_iters });
-    ASSIGN_PTR(PTR(x, 'd'), VECTOR(xs, 'd'));
-
         BEGIN_WHILE(
             ((struct while_config) { .predicate_fmt = "d<d" }),
-            PTR(x, 'd'), VAR(y, 'd')
+            p1, VAR(y, 'd')
         );
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), PTR(x, 'd'));
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one),  p1);
         END_WHILE();
 
     END_FOR();
@@ -65,4 +67,4 @@ TEST(integration,2) {
     for(int i = 0; i < n_iters; ++i) {
         ASSERT_EQ(xs[i], 5);
     }
-}*/
+}

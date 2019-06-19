@@ -16,10 +16,9 @@ TEST(for_each,1) {
     unsigned int n_params = 1, n_iters = 10;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-    FOR_EACH(
-        ((struct for_each_config) { .function_id = hotcall_ecall_plus_one }),
-        VECTOR(xs, 'd', &n_iters)
-    );
+    struct parameter vec[] = { VAR(xs, 'd'), VECTOR_v2(&vec[0], &n_iters) }, p = vec[1];
+
+    FOR_EACH(((struct for_each_config) { .function_id = hotcall_ecall_plus_one }), p);
 
     BUNDLE_END();
 
@@ -35,15 +34,14 @@ TEST(for_each,2) {
 
     BUNDLE_BEGIN();
 
-    unsigned int n_params = 1, n_iters = 10;
+    unsigned int n_iters = 10;
     int xs[n_iters] = { 0 };
     int ys[n_iters] = { 0 };
 
-    FOR_EACH(
-        ((struct for_each_config) { .function_id = hotcall_ecall_plus_plus }),
-        VECTOR(xs, 'd', &n_iters),
-        VECTOR(ys, 'd', &n_iters)
-    );
+    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
+
+    FOR_EACH(((struct for_each_config) { .function_id = hotcall_ecall_plus_plus }), p1, p2);
 
     BUNDLE_END();
 
@@ -64,11 +62,9 @@ TEST(for_each,3) {
     int xs[n_iters] = { 0 };
     int y = 5;
 
-    FOR_EACH(
-        ((struct for_each_config) { .function_id = hotcall_ecall_plus_y }),
-        VECTOR(xs, 'd', &n_iters),
-        VAR(y, 'd')
-    );
+    struct parameter vec[] = { VAR(xs, 'd'), VECTOR_v2(&vec[0], &n_iters) }, p = vec[1];
+
+    FOR_EACH(((struct for_each_config) { .function_id = hotcall_ecall_plus_y }), p, VAR(y, 'd'));
 
     BUNDLE_END();
 
@@ -88,10 +84,12 @@ TEST(for_each,4) {
     int xs[n_iters] = { 0 };
     int y = 5;
 
+    struct parameter vec[] = { VAR(xs, 'd'), VECTOR_v2(&vec[0], &n_iters) }, p = vec[1];
+
     FOR_EACH(
         ((struct for_each_config) { .function_id = hotcall_ecall_plus_y_v2 }),
         VAR(y, 'd'),
-        VECTOR(xs, 'd', &n_iters)
+        p
     );
 
     BUNDLE_END();
@@ -106,31 +104,36 @@ TEST(for_each,4) {
 
 TEST(for_each, 5) {
     /* Contract: */
-    /*hotcall_test_setup();
+    hotcall_test_setup();
 
     BUNDLE_BEGIN();
 
     unsigned int n_params = 1, n_iters = 3;
 
-    struct A { int x; int y; int z; char c[32]; };
-    //struct A as[n_iters] = { 0 };
-
+    struct A { int x; int z; char c[32]; int y; };
 
     A a1 = { 0 }, a2 = { 0 }, a3 = { 0 };
     struct A *as[n_iters] = { &a1, &a2, &a3 };
 
 
-    FOR_EACH(
-        ((struct for_each_config) { .function_id = hotcall_ecall_plus_one }),
-        VECTOR(as, 'p', &n_iters, .dereference = true, .access_member = offsetof(struct A, y)),
-    );
+
+    struct parameter vec[] = {
+        VAR(as, 'd'),
+        STRUCT(&vec[0], .member_offset = offsetof(struct A, y)),
+        PTR_v2(&vec[1], .dereference = true),
+        VECTOR_v2(&vec[2], &n_iters)
+    }, p = vec[3];
+
+    FOR_EACH(((struct for_each_config) { .function_id = hotcall_ecall_plus_one }), p);
+    FOR_EACH(((struct for_each_config) { .function_id = hotcall_ecall_plus_one }), p);
 
     BUNDLE_END();
 
     hotcall_test_teardown();
 
     for(int i = 0; i < n_iters; ++i) {
-        ASSERT_EQ(as[i]->y, 1);
+        ASSERT_EQ(as[i]->y, 2);
         ASSERT_EQ(as[i]->x, 0);
-    }*/
+        ASSERT_EQ(as[i]->z, 0);
+    }
 }

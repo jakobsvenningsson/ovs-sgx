@@ -14,6 +14,7 @@ struct loop_stack_item {
     unsigned int body_len;
     unsigned int index;
     unsigned int n_iters;
+    unsigned int offset;
 };
 
 static struct hotcall_config *hotcall_config;

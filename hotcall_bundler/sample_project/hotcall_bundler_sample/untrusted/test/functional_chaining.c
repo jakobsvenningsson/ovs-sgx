@@ -20,37 +20,44 @@ TEST(chaining,1) {
     int ts[n_iters] = { 0 };
     int ks[n_iters] = { 0 };
 
+    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &out_length1) }, p2 = vec2[1];
+    struct parameter vec3[] = { VAR(ws, 'd'), VECTOR_v2(&vec3[0], &out_length1) }, p3 = vec3[1];
+    struct parameter vec4[] = { VAR(us, 'd'), VECTOR_v2(&vec4[0], &out_length1) }, p4 = vec4[1];
+    struct parameter vec5[] = { VAR(ts, 'd'), VECTOR_v2(&vec5[0], &out_length1) }, p5 = vec5[1];
+    struct parameter vec6[] = { VAR(ks, 'd'), VECTOR_v2(&vec6[0], &out_length2) }, p6 = vec6[1];
+
     int y = 6, z = 2, w = 3, v = 14;
 
-    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(y, 'd') };
+    struct parameter function_parameters[] = { p1, VAR(y, 'd') };
 
     CHAIN_BEGIN();
 
     FILTER(
         ((struct filter_config) { .condition_fmt = "b" }),
         FUNC(.function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2),
-        VECTOR(ys, 'd', &out_length1)
+        p2
     );
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_plus }),
-        VECTOR(),
-        VAR(z, 'd'), VECTOR(ws, 'd', &out_length1)
+        VECTOR_v2(NULL),
+        VAR(z, 'd'), p3
     );
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_plus }),
-        VECTOR(),
-        VAR(w, 'd'), VECTOR(us, 'd', &out_length1)
+        VECTOR_v2(NULL),
+        VAR(w, 'd'), p4
     );
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret }),
-        VECTOR(),
-        VECTOR(ts, 'd', &out_length1)
+        VECTOR_v2(NULL),
+        p5
     );
     FILTER(
         ((struct filter_config) { .condition_fmt = "d>d" }),
-        VECTOR(),
+        VECTOR_v2(NULL),
         VAR(v, 'd'),
-        VECTOR(ks, 'd', &out_length2)
+        p6
     );
 
     CHAIN_CLOSE();
@@ -91,21 +98,23 @@ TEST(chaining, 2) {
 
     int y = 2, res = 0;
 
+    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
 
     CHAIN_BEGIN();
 
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_plus }),
-        VECTOR(xs, 'd', &n_iters),
+        p1,
         VAR(y, 'd'),
-        VECTOR(ys, 'd', &n_iters)
+        p2
     );
     REDUCE(
         ((struct reduce_config) {
             .function_id = 255,
             .op = '+',
         }),
-        VECTOR(),
+        VECTOR_v2(NULL),
         VAR(res, 'd')
     );
 

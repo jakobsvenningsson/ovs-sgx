@@ -27,9 +27,13 @@
     CAT2(HCALL_CONFIG_, UNIQUE_ID).n_params = sizeof(CAT2(HCALL_ARGS_, UNIQUE_ID))/sizeof(struct parameter);\
     (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
         get_fcall_((SM_CTX), &CAT2(HCALL_CONFIG_, UNIQUE_ID), CAT2(HCALL_ARGS_, UNIQUE_ID));\
-    if(_ASYNC(SM_CTX, false) != 1) { \
+        if(_ASYNC(SM_CTX, false) != 1) { \
         make_hotcall(&(SM_CTX)->hcall); \
     }
+
+#define HCALL(CONFIG, ...) \
+    _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
+
 
 #define BUNDLE_END() hotcall_bundle_end(_sm_ctx)
 #define BUNDLE_BEGIN() hotcall_bundle_begin(_sm_ctx)
@@ -37,8 +41,6 @@
 #define CHAIN_BEGIN() hotcall_bundle_chain_begin(_sm_ctx)
 #define CHAIN_CLOSE() hotcall_bundle_chain_close(_sm_ctx)
 
-#define HCALL(CONFIG, ...) \
-    _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 #ifdef __cplusplus
 extern "C" {

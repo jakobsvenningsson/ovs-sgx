@@ -51,18 +51,17 @@ App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/test/test.c \
 			   $(UNTRUSTED_DIR)/test/hotcall.c \
 			   $(UNTRUSTED_DIR)/test/if.c \
-			   $(UNTRUSTED_DIR)/test/for.c \
 			   $(UNTRUSTED_DIR)/test/do_while.c \
 			   $(UNTRUSTED_DIR)/test/while.c \
 			   $(UNTRUSTED_DIR)/test/for_each.c \
 			   $(UNTRUSTED_DIR)/test/error.c \
 			   $(UNTRUSTED_DIR)/test/map.c \
 			   $(UNTRUSTED_DIR)/test/filter.c \
-			   $(UNTRUSTED_DIR)/test/assignment.c \
 			   $(UNTRUSTED_DIR)/test/reduce.c \
+			   $(UNTRUSTED_DIR)/test/for.c \
 			   $(UNTRUSTED_DIR)/test/functional_chaining.c \
-			   $(UNTRUSTED_DIR)/test/struct_member_access.c \
 			   $(UNTRUSTED_DIR)/test/integration.c \
+			   $(UNTRUSTED_DIR)/test/struct.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_hotcall.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_filter.c \

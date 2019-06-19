@@ -20,9 +20,8 @@ TEST(struct_member_access, 1) {
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), STRUCT(a, .member_access = true, 'd', .member_offset = MEMBER(struct A, y)));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), STRUCT(a, .member_access = true, 'd'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), STRUCT(a, .member_access = true, 'd', .member_offset = MEMBER(struct A, x)));
+    struct parameter vec1[] = { VAR(a, 'd'), STRUCT(&vec1[0], .member_offset = MEMBER(struct A, y))}, p1 = vec1[1];
+    struct parameter vec2[] = { VAR(a, 'd'), STRUCT(&vec2[0], .member_offset = MEMBER(struct A, x))}, p2 = vec2[1];
 
     BUNDLE_END();
 

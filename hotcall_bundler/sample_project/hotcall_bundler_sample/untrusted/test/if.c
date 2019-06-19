@@ -236,3 +236,64 @@ TEST(if,8) {
     ASSERT_EQ(z, 2);
 
 }
+
+
+TEST(if,9) {
+    hotcall_test_setup();
+
+    struct R {
+        int dummy1;
+        uint32_t hard_timeout;
+        char dummy2[32];
+        uint32_t idle_timeout;
+    };
+
+    int is_eviction_enabled = 1;
+
+    struct R r1 = { 0, 123, "", 0 };
+    struct R r2 = { 1, 0, "", 0 };
+
+    unsigned int len = 2;
+    struct R *rs[len] = { &r1, &r2 };
+
+    int xs[len] = { 0 };
+
+    struct parameter vec1[] = { VAR_v2(rs, 'u'),
+                                STRUCT(&vec1[0], .member_offset = offsetof(struct R, hard_timeout)),
+                                PTR_v2(&vec1[1], .dereference = true),
+                                VECTOR_v2(&vec1[2], &len)
+                            }, p1 = vec1[3];
+
+    struct parameter vec2[] = { VAR_v2(rs, 'u'),
+                                STRUCT(&vec2[0], .member_offset = offsetof(struct R, idle_timeout)),
+                                PTR_v2(&vec2[1], .dereference = true),
+                                VECTOR_v2(&vec2[2], &len)
+                            }, p2 = vec2[3];
+
+    struct parameter vec3[] = { VAR_v2(xs, 'd'),
+                                VECTOR_v2(&vec3[0], &len)
+                            }, p3 = vec3[1];
+
+    BUNDLE_BEGIN();
+
+
+    BEGIN_FOR((struct for_config) {
+        .n_iters = &len
+    });
+
+        IF(
+            ((struct if_config) { .predicate_fmt = "d&(u|u)" }), VAR(is_eviction_enabled, 'd'), p1, p2
+        );
+        THEN
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p3);
+        END
+
+    END_FOR();
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(xs[0], 1);
+    ASSERT_EQ(xs[1], 0);
+}

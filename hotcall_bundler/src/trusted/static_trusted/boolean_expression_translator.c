@@ -68,11 +68,12 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
         {
             struct parameter *param = operand_item->elem;
             unsigned int n_params = param->value.function.n_params;
-            void *args[n_params];
-            for(int j = 0; j < n_params; ++j) args[j] = parse_argument(&param->value.function.params[j], offset);
+            void *args[n_params]; int addr_modifications[10];
+            for(int j = 0; j < n_params; ++j) args[j] = parse_argument_1(&param->value.function.params[j], addr_modifications, 0, offset);
             int operand = 0;
             hotcall_config->execute_function(operand_item->elem->value.function.function_id, args, &operand);
             switch(operand_item->ch) {
+                case 'p': return operand;
                 case 'b': return ((bool) operand);
                 case 'd': return operand;
                 case 'u': case ui8: case ui16: case ui32:
@@ -86,6 +87,7 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
             else return *(int *) operand_item->elem->value.pointer.arg;
         case VECTOR_TYPE:
             switch(operand_item->ch) {
+                case 'p': return *((void **) operand_item->elem->value.vector.arg + offset) == NULL;
                 case 'b': return *((bool *) operand_item->elem->value.vector.arg + offset);
                 case 'd': return *((int *) operand_item->elem->value.vector.arg + offset);
                 case 'u': case ui8: case ui16: case ui32:
@@ -93,8 +95,23 @@ evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotc
                 default:
                     SWITCH_DEFAULT_REACHED
             }
+        case VECTOR_TYPE_v2:
+        {
+            int addr_modifications[10];
+            void *arg = parse_argument_1(operand_item->elem, addr_modifications, 0, offset);
+            switch(operand_item->ch) {
+                case 'p': return (*(void **) arg) == NULL;
+                case 'b': return *(bool *)  arg;
+                case 'd': return *(int *) arg;
+                case 'u': case ui8: case ui16: case ui32:
+                    return *(unsigned int *)  arg;
+                default:
+                    SWITCH_DEFAULT_REACHED
+            }
+        }
         case VARIABLE_TYPE:
             switch(operand_item->ch) {
+                case 'p': return (void *) operand_item->elem->value.variable.arg == NULL;
                 case 'b': return *(bool *) operand_item->elem->value.variable.arg;
                 case 'd': return *(int *) operand_item->elem->value.variable.arg;
                 case 'u': case ui8: case ui16: case ui32:

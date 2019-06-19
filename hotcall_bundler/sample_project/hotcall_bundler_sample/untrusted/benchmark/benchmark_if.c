@@ -37,15 +37,18 @@ benchmark_if_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) 
         clear_cache();
         BEGIN
         hotcall_bundle_begin(sm_ctx);
-        //bool res;
-        //HCALL(sm_ctx, ecall_always_true, false, &res, 0, NULL);
+        bool res;
+        HCALL(
+                ((struct hotcall_functionconfig) { .function_id = hotcall_ecall_always_true, .has_return = true }),
+                (struct parameter) { .type = VARIABLE_TYPE, .value = { .variable = { .arg = &res }}}
+        );
         IF(
             ((struct if_config) {
                 .predicate_fmt = "b",
                 .return_if_false = false
             }),
-            (struct parameter) { .type = FUNCTION_TYPE,  .value = { .function = { .function_id = hotcall_ecall_always_true, .params =  NULL }}}
-            //(struct parameter) { .type = VARIABLE_TYPE,  .value = { .variable = { .arg = &res, .fmt = 'b' }}}
+            //(struct parameter) { .type = FUNCTION_TYPE,  .value = { .function = { .function_id = hotcall_ecall_always_true, .params =  NULL }}}
+            (struct parameter) { .type = VARIABLE_TYPE,  .value = { .variable = { .arg = &res, .fmt = 'b' }}}
         );
         THEN
             HCALL(

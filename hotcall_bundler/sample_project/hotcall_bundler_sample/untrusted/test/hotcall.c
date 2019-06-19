@@ -80,14 +80,18 @@ TEST(hotcall, 4) {
 TEST(hotcall, 5) {
     /* Contract:  Equal test to above but using a pointer variable instead of a value variable.*/
 
-    /*hotcall_test_setup();
+    hotcall_test_setup();
 
     BUNDLE_BEGIN();
 
     int x = 0, y = 0, z = 0;
     int *x_ptr = &x, *y_ptr = &y;
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one_ret, .has_return = true ), PTR(x_ptr, 'd'), VAR(y, 'd'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one_ret, .has_return = true ), PTR(y_ptr, 'd'), VAR(z, 'd'));
+
+    struct parameter vec1[] = { VAR(x_ptr, 'd'), PTR_v2(&vec1[0], .dereference = true) }, p1 = vec1[1];
+    struct parameter vec2[] = { VAR(y_ptr, 'd'), PTR_v2(&vec2[0], .dereference = true) }, p2 = vec2[1];
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one_ret, .has_return = true ), p1, VAR(y, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one_ret, .has_return = true ), p2, VAR(z, 'd'));
 
     BUNDLE_END();
 
@@ -95,27 +99,31 @@ TEST(hotcall, 5) {
 
     ASSERT_EQ(x, 0);
     ASSERT_EQ(y, 1);
-    ASSERT_EQ(z, 2);*/
+    ASSERT_EQ(z, 2);
 
 }
 
 TEST(hotcall, 6) {
     /* Contract:  */
 
-    /*hotcall_test_setup();
+    hotcall_test_setup();
 
     BUNDLE_BEGIN();
 
     int x = 0, y = 1;
     int *x_ptr = &x;
-    HCALL(CONFIG(.function_id = hotcall_ecall_change_ptr_to_ptr), PTR(&x_ptr, 'p'), PTR(&y, 'd'));
+
+    struct parameter vec1[] = { VAR(x_ptr, 'd'), PTR_v2(&vec1[0], .dereference = false) }, p1 = vec1[1];
+    struct parameter vec2[] = { VAR(y, 'd'), PTR_v2(&vec2[0], .dereference = false) }, p2 = vec2[1];
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_change_ptr_to_ptr), p1, p2);
 
     BUNDLE_END();
 
     hotcall_test_teardown();
 
     ASSERT_EQ(*x_ptr, 1);
-    ASSERT_EQ(y, 1);*/
+    ASSERT_EQ(y, 1);
 }
 
 TEST(hotcall, 7) {
@@ -203,7 +211,7 @@ TEST(hotcall, 8) {
 TEST(hotcall, 9) {
     /* Contract:  */
 
-    /*hotcall_test_setup();
+    hotcall_test_setup();
 
     struct A {
         int x;
@@ -212,24 +220,28 @@ TEST(hotcall, 9) {
 
     A a = { 0 };
 
+    struct parameter vec1[] = { VAR(a, 'd'), STRUCT(&vec1[0], .member_offset = offsetof(struct A, y)) }, p1 = vec1[1];
+    struct parameter vec2[] = { VAR(a, 'd'), STRUCT(&vec2[0], .member_offset = offsetof(struct A, x)) }, p2 = vec2[1];
+
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .access_member = offsetof(struct A, y)));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .access_member = offsetof(struct A, x)));
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p2);
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p2);
 
     BUNDLE_END();
 
     hotcall_test_teardown();
 
     ASSERT_EQ(a.x, 2);
-    ASSERT_EQ(a.y, 1);*/
+    ASSERT_EQ(a.y, 1);
 }
 
 TEST(hotcall, 10) {
     /* Contract:  */
 
-    /*hotcall_test_setup();
+    hotcall_test_setup();
 
     struct B {
         int x;
@@ -243,14 +255,16 @@ TEST(hotcall, 10) {
 
     A a = { 0 };
 
+    void *a_ptr = &a;
+    struct parameter vec1[] = { VAR(a_ptr, 'd'), STRUCT(&vec1[0], .member_offset = offsetof(struct B, y)), PTR_v2(&vec1[1], .dereference = true) }, p1 = vec1[2];
+
     BUNDLE_BEGIN();
 
 
-    void *a_ptr = &a;
     int b_offset = offsetof(struct A, b);
 
     HCALL(CONFIG(.function_id = hotcall_ecall_offset_of), PTR(&a_ptr), VAR(b_offset, 'u'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), PTR(&a_ptr, 'p', .dereference = true, .access_member = offsetof(struct B, y)));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
 
     BUNDLE_END();
 
@@ -262,12 +276,12 @@ TEST(hotcall, 10) {
 
     ASSERT_EQ(a.z, 0);
     ASSERT_EQ(a.b.y, 1);
-    ASSERT_EQ(a.b.x, 0);*/
+    ASSERT_EQ(a.b.x, 0);
 }
 
 TEST(hotcall, 11) {
     /* Contract:  */
-/*
+
     hotcall_test_setup();
 
     struct B {
@@ -284,12 +298,13 @@ TEST(hotcall, 11) {
 
     BUNDLE_BEGIN();
 
-
     void *ptr = &a.b;
     int b_offset = offsetof(struct A, b);
 
+    struct parameter vec1[] = { VAR(ptr, 'd'), STRUCT(&vec1[0], .member_offset = offsetof(struct A, z)), PTR_v2(&vec1[1], .dereference = true) }, p1 = vec1[2];
+
     HCALL(CONFIG(.function_id = hotcall_ecall_container_of), PTR(&ptr), VAR(b_offset, 'd'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), PTR(&ptr, 'p', .dereference = true, .access_member = offsetof(struct A, z)));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
 
     BUNDLE_END();
 
@@ -299,7 +314,7 @@ TEST(hotcall, 11) {
 
     ASSERT_EQ(a.z, 1);
     ASSERT_EQ(a.b.y, 0);
-    ASSERT_EQ(a.b.x, 0);*/
+    ASSERT_EQ(a.b.x, 0);
 }
 
 TEST(hotcall, 12) {
