@@ -4,26 +4,24 @@
 #include "hotcall_config.h"
 #include "hotcall_function.h"
 #include "hotcall_utils.h"
+#include <hotcall_if.h>
 
+/*
 enum postfix_item_type { OPERAND, OPERATOR };
 struct postfix_item {
         char ch;
         enum postfix_item_type type;
         struct parameter *elem;
-};
+};*/
 
-void
-to_postfix(const char *condition_fmt, struct parameter *predicate_args, struct postfix_item *output, unsigned int *output_length);
-
-int
-evaluate_variable(struct postfix_item *operand_item, struct hotcall_config *hotcall_config, int offset);
+//unsigned int
+//to_postfix(const char *condition_fmt, struct parameter *predicate_args, struct postfix_item *output);
 
 int
 evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int offset);
 
 
 static inline void * apply_loop_offset(void *arg, char fmt, unsigned int offset) {
-    printf("apply_loop_offset %c %u %p %p\n", fmt, offset, arg, (void **) arg + offset);
     switch(fmt) {
         case 'p': return (void **) arg + offset;
         case 'd': return (int *) arg + offset;
@@ -122,6 +120,7 @@ parse_argument(const struct parameter *param, unsigned int offset) {
 
 static inline void *
 parse_argument_1(const struct parameter *param, int addr_modifications[], int n_modifications, int loop_offset) {
+    struct parameter *res;
     switch(param->type) {
         case VARIABLE_TYPE:
             if(!n_modifications) return param->value.variable.arg;
@@ -134,47 +133,51 @@ parse_argument_1(const struct parameter *param, int addr_modifications[], int n_
         case POINTER_TYPE: return param->value.pointer.arg;
         case STRUCT_TYPE:
             addr_modifications[n_modifications] = param->value.struct_.member_offset;
-            return parse_argument_1(param->value.struct_.arg, addr_modifications, n_modifications + 1, loop_offset);
+            n_modifications++;
+            res = param->value.struct_.arg;
+            break;
+            //return parse_argument_1(param->value.struct_.arg, addr_modifications, n_modifications + 1, loop_offset);
         case POINTER_TYPE_v2:
-        {
-            bool dereference = param->value.pointer_v2.dereference;
-            if(dereference) {
+            if(param->value.pointer_v2.dereference) {
                 addr_modifications[n_modifications] = -1;
-                return parse_argument_1(param->value.pointer_v2.arg, addr_modifications, n_modifications + 1, loop_offset);
-            } else {
-                return parse_argument_1(param->value.pointer_v2.arg, addr_modifications, n_modifications, loop_offset);
+                n_modifications++;
             }
-        }
+            res = param->value.pointer_v2.arg;
+            break;
+            //return parse_argument_1(param->value.pointer_v2.arg, addr_modifications, n_modifications, loop_offset);
         case VECTOR_TYPE_v2:
             switch(param->value.vector_v2.arg->type) {
                 case POINTER_TYPE_v2:
                     addr_modifications[n_modifications] = loop_offset * sizeof(void *);
-                    return parse_argument_1(param->value.vector_v2.arg, addr_modifications, n_modifications + 1, 0);
+                    n_modifications++;
+                    loop_offset = 0;
+                    res = param->value.vector_v2.arg;
+                    break;
+                    //return parse_argument_1(param->value.vector_v2.arg, addr_modifications, n_modifications + 1, 0);
                 case STRUCT_TYPE:
                     addr_modifications[n_modifications] = loop_offset * param->value.vector_v2.arg->value.struct_.struct_size;
-                    return parse_argument_1(param->value.vector_v2.arg, addr_modifications, n_modifications + 1, 0);
+                    n_modifications++;
+                    loop_offset = 0;
+                    res = param->value.vector_v2.arg;
+                    break;
+                    //return parse_argument_1(param->value.vector_v2.arg, addr_modifications, n_modifications + 1, 0);
                 case VARIABLE_TYPE:
                     switch(param->value.vector_v2.arg->value.variable.fmt) {
-                        case 'p':
-                            addr_modifications[n_modifications] = loop_offset * sizeof(void *);
-                            parse_argument_1(param->value.vector_v2.arg, addr_modifications, n_modifications + 1, 0);
-                            break;
-                        case 'd':
-                            addr_modifications[n_modifications] = loop_offset * sizeof(int);
-                            parse_argument_1(param->value.vector_v2.arg, addr_modifications, n_modifications + 1, 0);
-                            break;
-                        case 'u':
-                            addr_modifications[n_modifications] = loop_offset * sizeof(unsigned int);
-                            parse_argument_1(param->value.vector_v2.arg, addr_modifications, n_modifications + 1, 0);
-                            break;
+                        case 'p': addr_modifications[n_modifications] = loop_offset * sizeof(void *); break;
+                        case 'd': addr_modifications[n_modifications] = loop_offset * sizeof(int); break;
+                        case 'u': addr_modifications[n_modifications] = loop_offset * sizeof(unsigned int); break;
                         default: SWITCH_DEFAULT_REACHED
                     }
+                    n_modifications++;
+                    loop_offset = 0;
+                    res = param->value.vector_v2.arg;
                     break;
                 default: SWITCH_DEFAULT_REACHED
             }
             break;
         default: SWITCH_DEFAULT_REACHED
     }
+    return parse_argument_1(res, addr_modifications, n_modifications, loop_offset);
 }
 
 /*static inline void *

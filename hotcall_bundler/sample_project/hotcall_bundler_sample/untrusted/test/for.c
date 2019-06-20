@@ -84,7 +84,7 @@ TEST(for,3) {
     //Contract: each element in the 2d array should be incremented by 1 inside the nested for loop.
     hotcall_test_setup();
 
-    unsigned int n_iters = 10, n_iters_1 = 1;
+    unsigned int n_iters = 10;
     int xs[n_iters][n_iters];
     memset(xs, 0, n_iters * n_iters * sizeof(int));
     bool ret;
@@ -111,7 +111,10 @@ TEST(for,3) {
     for(int i = 0; i < n_iters; ++i) {
         for(int j = 0; j < n_iters; ++j) {
             ASSERT_EQ(xs[i][j], 2);
+            printf("%d ", xs[i][j]);
         }
+        printf("\n");
+
     }
 }
 

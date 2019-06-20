@@ -15,11 +15,11 @@ hotcall_register_config(struct hotcall_config *config) {
 static inline bool
 hotcall_handle_if(struct hotcall_if *tif, uint8_t *exclude_list, int pos, int exclude_list_len, int offset) {
 
-    struct postfix_item output[strlen(tif->config->predicate_fmt)];
-    unsigned int output_length;
-    to_postfix(tif->config->predicate_fmt, tif->params, output, &output_length);
+    //struct postfix_item output[strlen(tif->config->predicate_fmt)];
+    //unsigned int n;
+    //n = to_postfix(tif->config->predicate_fmt, tif->params, output);
 
-    int res = evaluate_postfix(output, output_length, hotcall_config, offset);
+    int res = evaluate_postfix(tif->config->postfix, tif->config->postfix_length, hotcall_config, offset); //
 
     if(res && tif->config->else_branch_len > 0) {
         exclude_else_branch(exclude_list, pos, tif->config->then_branch_len, tif->config->else_branch_len);
@@ -36,8 +36,8 @@ hotcall_handle_if(struct hotcall_if *tif, uint8_t *exclude_list, int pos, int ex
 static inline void
 hotcall_handle_do_while(struct hotcall_do_while *dw) {
     struct postfix_item output[strlen(dw->config->condition_fmt)];
-    unsigned int output_length;
-    to_postfix(dw->config->condition_fmt, dw->condition_params, output, &output_length);
+    unsigned int n;
+    //n = to_postfix(dw->config->condition_fmt, dw->condition_params, output);
     struct hotcall_function fc;
     struct hotcall_functionconfig config = {
         .function_id = dw->config->function_id,
@@ -46,7 +46,7 @@ hotcall_handle_do_while(struct hotcall_do_while *dw) {
     fc.config = &config;
     for(int i = 0; i < fc.config->n_params; ++i) fc.args[i] = parse_argument(&dw->body_params[i], 0);
     while(true) {
-        if(!evaluate_postfix(output, output_length, hotcall_config, 0)) {
+        if(!evaluate_postfix(output, n, hotcall_config, 0)) {
             return;
         }
         hotcall_config->execute_function(fc.config->function_id, fc.args, NULL);
@@ -249,7 +249,7 @@ hotcall_handle_filter(struct hotcall_filter *fi) {
     struct parameter *input, *output;
     //input = &fi->params[0];
     for(int i = 0; i < n_params; ++i) {
-        if(fi->params[i].type == VECTOR_TYPE_v2) {
+        if(fi->params[i].type == VECTOR_TYPE_v2 || fi->params[i].type == FUNCTION_TYPE) {
             input = &fi->params[i];
             break;
         }
@@ -282,7 +282,7 @@ hotcall_handle_filter(struct hotcall_filter *fi) {
 
     struct postfix_item postfix_output[strlen(fi->config->condition_fmt)];
     unsigned int postfix_output_length;
-    to_postfix(fi->config->condition_fmt, fi->params, postfix_output, &postfix_output_length);
+    //postfix_output_length = to_postfix(fi->config->condition_fmt, fi->params, postfix_output);
     int res, n_include = 0;
     int addr_modifications[10];
     for(int n = 0; n < *input_vec->len; ++n) {
@@ -316,13 +316,7 @@ hotcall_handle_filter(struct hotcall_filter *fi) {
             n_include++;
         }
     }
-
-    printf("end of filter, n_include: %d\n", n_include);
-
     *(output_vec->len) = n_include;
-    printf("end of filter, n_include: %d\n", *(output_vec->len));
-
-
 }
 
 static inline void
@@ -360,68 +354,43 @@ hotcall_handle_for_each(struct hotcall_for_each *tor) {
         }
         hotcall_config->execute_function(tor->config->function_id, args, NULL);
     }
-    printf("after for each\n");
 }
 
-static inline int
-update_loop_body_vector_variables(struct ecall_queue_item **queue, struct loop_stack_item *loop_stack, unsigned int *loop_stack_pos, int queue_pos) {
-    struct ecall_queue_item *it;
-    struct hotcall_function *fc;
-    // Calculate parameter offset
-    int offset = 0, power = 0;
-    for(int k = *loop_stack_pos - 1; k >= 0; --k) {
+static inline unsigned int
+update_loop_body_vector_variables(struct loop_stack_item *loop_stack, unsigned int loop_stack_pos) {
+    unsigned int offset = 0, power = 0;
+    for(int k = loop_stack_pos; k >= 0; --k) {
         offset += loop_stack[k].index * pow(loop_stack[k].n_iters, power++);
     }
     return offset;
-    //unsigned int nesting = 0;
-    /*for(it = queue[queue_pos + 1]; it->type != QUEUE_ITEM_TYPE_LOOP_END || nesting > 0; ++it) {
-        if(it->type == QUEUE_ITEM_TYPE_FOR_BEGIN) nesting++;
-        if(it->type == QUEUE_ITEM_TYPE_LOOP_END) nesting--;
-        if(nesting > 0) {
-            continue;
-        }
-        switch(it->type) {
-            case QUEUE_ITEM_TYPE_FUNCTION:
-                for(int j = 0; j < it->call.fc.config->n_params; ++j) {
-                    fc = &it->call.fc;
-                    if(fc->params[j].type != VECTOR_TYPE) continue;
-                    fc->args[j] = parse_argument(&fc->params[j], offset);
-                }
-                break;
-            case QUEUE_ITEM_TYPE_ASSIGN_VAR:
-                it->call.var.offset = offset;
-                break;
-            case QUEUE_ITEM_TYPE_ASSIGN_PTR:
-                it->call.ptr.offset = offset;
-                break;
-            default:
-                continue;
-        }
-    }*/
 }
 
 
 static inline void
-hotcall_handle_for_begin(struct hotcall_for_start *for_s, struct loop_stack_item *loop_stack, unsigned int *loop_stack_pos, uint8_t *exclude_list, int queue_pos, struct ecall_queue_item **queue) {
+hotcall_handle_for_begin(struct hotcall_for_start *for_s, struct loop_stack_item *loop_stack, unsigned int *loop_stack_pos, uint8_t *exclude_list, int queue_pos) {
     if(!for_s->config->loop_in_process) {
         for_s->config->loop_in_process = true;
-        loop_stack[*loop_stack_pos].body_len = for_s->config->body_len;
-        loop_stack[*loop_stack_pos].index = 0;
-        loop_stack[*loop_stack_pos].n_iters = *for_s->config->n_iters;
-        (*loop_stack_pos)++;
+        loop_stack[(*loop_stack_pos)].n_iters = *for_s->config->n_iters;
+        /*loop_stack[(*loop_stack_pos)] = (struct loop_stack_item) {
+                for_s->config->body_len,
+                0,
+                *for_s->config->n_iters,
+                0
+            };
+        (*loop_stack_pos)++;*/
     }
 
-    bool continue_loop = loop_stack[*loop_stack_pos - 1].index < *for_s->config->n_iters;
-    if(continue_loop) {
-        if(for_s->config->loop_in_process) {
-            memset(exclude_list + queue_pos, 0, loop_stack[*loop_stack_pos - 1].body_len + 2);
-        }
-        loop_stack[*loop_stack_pos - 1].offset = update_loop_body_vector_variables(queue, loop_stack, loop_stack_pos, queue_pos);
+    bool continue_loop = loop_stack[*loop_stack_pos].index < *for_s->config->n_iters;
+    if(!continue_loop) {
+        memset(exclude_list + queue_pos, 1, loop_stack[*loop_stack_pos].body_len + 2);
+        //for_s->config->loop_in_process = false;
+        //(*loop_stack_pos)--;
         return;
     }
-    memset(exclude_list + queue_pos, 1, loop_stack[*loop_stack_pos - 1].body_len + 2);
-    for_s->config->loop_in_process = false;
-    (*loop_stack_pos)--;
+    //memset(exclude_list + queue_pos, 0, loop_stack[*loop_stack_pos - 1].body_len + 2);
+    //loop_stack[*loop_stack_pos - 1].offset = loop_stack[*loop_stack_pos - 1].index
+    //    ? loop_stack[*loop_stack_pos - 1].offset + 1
+    //    : loop_stack[*loop_stack_pos - 1].offset + 1; //update_loop_body_vector_variables(loop_stack, *loop_stack_pos);
 }
 
 
@@ -440,7 +409,7 @@ hotcall_handle_while_begin(struct hotcall_while_start *while_s, struct loop_stac
 
     struct postfix_item output[strlen(while_s->config->predicate_fmt)];
     unsigned int output_length;
-    to_postfix(while_s->config->predicate_fmt, while_s->params, output, &output_length);
+    //output_length = to_postfix(while_s->config->predicate_fmt, while_s->params, output);
     int res = evaluate_postfix(output, output_length, hotcall_config, loop_stack[*loop_stack_pos - 1].offset);
     if(res) {
         memset(exclude_list + queue_pos, 0, loop_stack[*loop_stack_pos - 1].body_len + 2);
@@ -451,10 +420,10 @@ hotcall_handle_while_begin(struct hotcall_while_start *while_s, struct loop_stac
     --(*loop_stack_pos);
 }
 
-static inline void
+static inline unsigned int
 hotcall_end_loop(struct loop_stack_item *loop_stack, unsigned int loop_stack_pos, int *pos) {
-    *pos = *pos - (loop_stack[loop_stack_pos - 1].body_len + 2);
-    loop_stack[loop_stack_pos - 1].index++;
+    *pos = *pos - (loop_stack[loop_stack_pos].body_len + 2);
+    loop_stack[loop_stack_pos].index++;
 }
 
 static inline void
@@ -496,15 +465,16 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
             unsigned int loop_stack_pos = 0;
             unsigned int current_offset = 0;
 
-            int n;
 
             unsigned int queue_length = sm_ctx->hcall.batch.queue_len;
 
             int addr_mod_list[10];
-
-            for(n = 0; n < queue_length; ++n) {
+            int n = 0;
+            while(n < queue_length) {
+            //for(n = 0; n < queue_length; ++n) {
                 queue_item = sm_ctx->hcall.batch.queue[n];
                 if(exclude_list[n]) {
+                    n++;
                     continue;
                 }
 
@@ -567,8 +537,17 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                         hotcall_handle_for_each(&queue_item->call.tor);
                         break;
                     case QUEUE_ITEM_TYPE_FOR_BEGIN:
-                        hotcall_handle_for_begin(&queue_item->call.for_s, loop_stack, &loop_stack_pos, exclude_list, n, sm_ctx->hcall.batch.queue);
-                        //current_offset = loop_stack[loop_stack_pos - 1].offset;
+                        if(*queue_item->call.for_s.config->n_iters == 0) {
+                            memset(exclude_list + n, 1, queue_item->call.for_s.config->body_len + 2);
+                        } else {
+                            loop_stack[loop_stack_pos] = (struct loop_stack_item) {
+                                .body_len = queue_item->call.for_s.config->body_len,
+                                .index = 0,
+                                .n_iters = *queue_item->call.for_s.config->n_iters,
+                            };
+                            loop_stack[loop_stack_pos].offset = update_loop_body_vector_variables(loop_stack, loop_stack_pos);
+                            loop_stack_pos++;
+                        }
                         break;
                     case QUEUE_ITEM_TYPE_FILTER:
                         hotcall_handle_filter(&queue_item->call.fi);
@@ -580,8 +559,14 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                         hotcall_handle_while_begin(&queue_item->call.while_s, loop_stack, &loop_stack_pos, exclude_list, n, sm_ctx->hcall.batch.queue);
                         break;
                     case QUEUE_ITEM_TYPE_LOOP_END:
-                        hotcall_end_loop(loop_stack, loop_stack_pos, &n);
-                        //current_offset = loop_stack[loop_stack_pos].offset;
+                        if(++loop_stack[loop_stack_pos - 1].index < loop_stack[loop_stack_pos - 1].n_iters) {
+                            n = n - (loop_stack[loop_stack_pos - 1].body_len);
+                            memset(exclude_list + n, 0, loop_stack[loop_stack_pos - 1].body_len);
+                            loop_stack[loop_stack_pos - 1].offset++;
+                            goto continue_loop;
+                        } else {
+                            loop_stack_pos--;
+                        }
                         break;
                     case QUEUE_ITEM_TYPE_MAP:
                         hotcall_handle_map(&queue_item->call.ma);
@@ -603,6 +588,8 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                     default:
                         SWITCH_DEFAULT_REACHED
                 }
+                n++;
+                continue_loop: ;
             }
             batch_done:
             sm_ctx->hcall.is_done = true;

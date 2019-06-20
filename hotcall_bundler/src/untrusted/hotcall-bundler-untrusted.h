@@ -51,7 +51,7 @@ hotcall_init(struct shared_memory_ctx *sm_ctx, sgx_enclave_id_t _global_eid);
 void
 hotcall_destroy(struct shared_memory_ctx *sm_ctx);
 void
-hotcall_bundle_if(struct shared_memory_ctx *sm_ctx, struct if_config *config, struct parameter *params);
+hotcall_bundle_if(struct shared_memory_ctx *sm_ctx, struct if_config *config, struct parameter *params, struct postfix_item *postfix);
 void
 hotcall_bundle_if_else(struct shared_memory_ctx *sm_ctx);
 void
@@ -179,14 +179,9 @@ calculate_loop_length(struct hotcall *hcall, int type) {
         }
     }
     switch(type) {
-        case QUEUE_ITEM_TYPE_FOR_BEGIN:
-            it->call.for_s.config->body_len = body_len;
-            break;
-        case QUEUE_ITEM_TYPE_WHILE_BEGIN:
-            it->call.while_s.config->body_len = body_len;
-            break;
-        default:
-            SWITCH_DEFAULT_REACHED
+        case QUEUE_ITEM_TYPE_FOR_BEGIN: it->call.for_s.config->body_len = body_len; break;
+        case QUEUE_ITEM_TYPE_WHILE_BEGIN: it->call.while_s.config->body_len = body_len; break;
+        default: SWITCH_DEFAULT_REACHED
     }
 }
 

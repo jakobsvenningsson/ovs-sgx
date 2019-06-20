@@ -78,6 +78,7 @@ all: libhotcall_bundler.a
 static_trusted/hotcall_bundler_t.h: $(SGX_EDGER8R) ./static_trusted/hotcall_bundler.edl
 	@cd ./static_trusted && $(SGX_EDGER8R) --header-only  --trusted ../static_trusted/hotcall_bundler.edl --search-path ../static_trusted --search-path $(SGX_SDK)/include
 	@echo "GEN  =>  $@"
+	@echo $(SGX_COMMON_CFLAGS)
 
 static_trusted/hotcall_bundler_t.o: ./trusted/hotcall_bundler_t.c
 	@$(CC) $(hotcall_bundler_C_Flags) -c $< -o $@
