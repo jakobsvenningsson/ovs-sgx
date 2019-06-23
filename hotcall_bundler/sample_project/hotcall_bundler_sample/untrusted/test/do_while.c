@@ -19,7 +19,7 @@ TEST(do_while,1) {
     DO_WHILE(
         ((struct do_while_config) {
             .function_id = hotcall_ecall_plus_one,
-            .condition_fmt = "!b"
+            .predicate_fmt = "!b"
         }),
         CONDITION_PARAMS(FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1)),
         FUNCTION_PARAMS(VAR(x, 'd'))
@@ -45,7 +45,7 @@ TEST(do_while,2) {
     DO_WHILE(
         ((struct do_while_config) {
             .function_id = hotcall_ecall_plus_one,
-            .condition_fmt = "d<d&!b"
+            .predicate_fmt = "d<d&!b"
         }),
         CONDITION_PARAMS(VAR(x, 'd'),
                          VAR(y, 'd'),

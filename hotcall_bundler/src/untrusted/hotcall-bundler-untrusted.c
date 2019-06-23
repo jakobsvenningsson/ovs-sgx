@@ -166,7 +166,7 @@ hotcall_bundle_assign_ptr(struct shared_memory_ctx *sm_ctx, struct parameter *ds
 }
 
 void
-hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, struct filter_config *config, struct parameter *params) {
+hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, struct filter_config *config, struct parameter *params, struct postfix_item *postfix) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_FILTER;
@@ -174,6 +174,8 @@ hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, struct filter_config *co
     fi = &item->call.fi;
     fi->config = config;
     fi->params = params;
+    fi->config->postfix = postfix;
+    fi->config->postfix_length = to_postfix(fi->config->predicate_fmt, fi->params, fi->config->postfix);
     if(is_inside_chain(sm_ctx) && sm_ctx->hcall.batch.queue_len > 0) {
         chain_operators(sm_ctx, params);
     }
@@ -211,7 +213,7 @@ hotcall_bundle_reduce(struct shared_memory_ctx *sm_ctx, struct reduce_config *co
 }
 
 void
-hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, struct do_while_config *config, struct parameter *body_params, struct parameter *condition_params) {
+hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, struct do_while_config *config, struct parameter *body_params, struct parameter *condition_params, struct postfix_item *postfix) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_DO_WHILE;
@@ -220,6 +222,8 @@ hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, struct do_while_config
     dw->config = config;
     dw->body_params = body_params;
     dw->condition_params = condition_params;
+    dw->config->postfix = postfix;
+    dw->config->postfix_length = to_postfix(dw->config->predicate_fmt, dw->condition_params, dw->config->postfix);
     enqueue_item(sm_ctx, item);
 }
 
@@ -248,7 +252,7 @@ hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, struct for_config *co
 }
 
 void
-hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_config *config, struct parameter *params) {
+hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_config *config, struct parameter *params, struct postfix_item *postfix) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_WHILE_BEGIN;
@@ -257,6 +261,8 @@ hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_config
     while_s->config = config;
     while_s->params = params;
     while_s->config->loop_in_process = false;
+    while_s->config->postfix = postfix;
+    while_s->config->postfix_length = to_postfix(while_s->config->predicate_fmt, while_s->params, while_s->config->postfix);
     enqueue_item(sm_ctx, item);
 }
 
@@ -264,7 +270,7 @@ void
 hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
-    item->type = QUEUE_ITEM_TYPE_LOOP_END;
+    item->type = QUEUE_ITEM_TYPE_FOR_END;
     calculate_loop_length(&sm_ctx->hcall, QUEUE_ITEM_TYPE_FOR_BEGIN);
     enqueue_item(sm_ctx, item);
 }
@@ -273,7 +279,7 @@ void
 hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
-    item->type = QUEUE_ITEM_TYPE_LOOP_END;
+    item->type = QUEUE_ITEM_TYPE_WHILE_END;
     calculate_loop_length(&sm_ctx->hcall, QUEUE_ITEM_TYPE_WHILE_BEGIN);
     enqueue_item(sm_ctx, item);
 }

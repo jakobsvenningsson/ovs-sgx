@@ -61,19 +61,19 @@ hotcall_bundle_assign_var(struct shared_memory_ctx *sm_ctx, struct parameter *ds
 void
 hotcall_bundle_assign_ptr(struct shared_memory_ctx *sm_ctx, struct parameter *dst, struct parameter *src);
 void
-hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, struct filter_config *config, struct parameter *params);
+hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, struct filter_config *config, struct parameter *params, struct postfix_item *postfix);
 void
 hotcall_bundle_map(struct shared_memory_ctx *sm_ctx, struct map_config *config, struct parameter *params);
 void
 hotcall_bundle_reduce(struct shared_memory_ctx *sm_ctx, struct reduce_config *config, struct parameter *params);
 void
-hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, struct do_while_config *config, struct parameter *body_params, struct parameter *condition_params);
+hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, struct do_while_config *config, struct parameter *body_params, struct parameter *condition_params, struct postfix_item *postfix);
 void
 hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, struct for_each_config *config, struct parameter *params);
 void
 hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, struct for_config *config);
 void
-hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_config *config, struct parameter *params);
+hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_config *config, struct parameter *params, struct postfix_item *postfix);
 void
 hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx);
 void
@@ -170,7 +170,7 @@ calculate_loop_length(struct hotcall *hcall, int type) {
     struct ecall_queue_item *it;
     for(it = batch->queue[batch->queue_len - 1]; it->type != type || nesting > 0 ; --it) {
         switch(it->type) {
-            case QUEUE_ITEM_TYPE_LOOP_END: nesting++; break;
+            case QUEUE_ITEM_TYPE_WHILE_END: case QUEUE_ITEM_TYPE_FOR_END: nesting++; break;
             case QUEUE_ITEM_TYPE_WHILE_BEGIN: case QUEUE_ITEM_TYPE_FOR_BEGIN: nesting--; break;
         }
         body_len++;

@@ -15,12 +15,14 @@ TEST(map,1) {
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int ys[n_iters] = { 0 };
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
-    struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
 
     MAP(
-        ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret }),
-        p1, p2
+        ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret, .n_iters = &n_iters }),
+        VECTOR(xs, 'd'),
+        VECTOR(ys, 'd')
+        //p1, p2
     );
 
     BUNDLE_END();
@@ -43,15 +45,16 @@ TEST(map,2) {
     unsigned int n_iters = 10;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int ys[n_iters] = { 0 };
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
-    struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
+
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
     int z = 1;
 
     MAP(
-        ((struct map_config) { .function_id = hotcall_ecall_plus }),
-        p1,
+        ((struct map_config) { .function_id = hotcall_ecall_plus, .n_iters = &n_iters }),
+        VECTOR(xs, 'd'),
         VAR(z, 'd'),
-        p2
+        VECTOR(ys, 'd', &n_iters)
     );
 
     BUNDLE_END();
@@ -77,12 +80,12 @@ TEST(map,3) {
     int ys[n_iters] = { 0 };
     int z = 1;
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
-    struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
 
     MAP(
-        ((struct map_config) { .function_id = hotcall_ecall_plus }),
-        VAR(z, 'd'), p1, p2
+        ((struct map_config) { .function_id = hotcall_ecall_plus, .n_iters = &n_iters }),
+        VAR(z, 'd'), VECTOR(xs, 'd'), VECTOR(ys, 'd')
     );
 
     BUNDLE_END();
@@ -94,4 +97,33 @@ TEST(map,3) {
         ASSERT_EQ(ys[i], i + z);
         ASSERT_EQ(xs[i], i);
     }
+}
+
+TEST(map,4) {
+    //Contract:
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    struct A { int x; int y; };
+    struct A a1 = { 0 }, a2 = { 0 };
+    a1.x = 2; a2.x = 3;
+
+    unsigned int n_iters = 2;
+
+    const struct A *as[n_iters] = { &a1, &a2 };
+    int ys[n_iters] = { 0 };
+
+    MAP(
+        ((struct map_config) { .function_id = hotcall_ecall_strlen, .n_iters = &n_iters }),
+        VECTOR(as, 'p', &n_iters, .dereference = true), VECTOR(ys, 'd')
+    );
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(n_iters, 2);
+    ASSERT_EQ(ys[0], 2);
+    ASSERT_EQ(ys[1], 3);
 }

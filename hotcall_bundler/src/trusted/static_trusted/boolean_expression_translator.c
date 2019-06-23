@@ -94,13 +94,21 @@ evaluate_variable(struct variable_parameter *param, char ch) {
     }
 }
 
+#define OFFSET(ARG, TYPE, OFFSET) ((TYPE) ARG + OFFSET)
+#define OFFSET_DEREF(ARG, TYPE, OFFSET) *((TYPE) ARG + OFFSET)
+
 static inline int
 evaluate_vector(struct vector_parameter *param, char ch, int offset) {
+    void *arg = param->arg;
+    if(param->dereference) {
+        arg = ((char *) OFFSET_DEREF(param->arg, void **, offset)) + param->member_offset;
+        offset = 0;
+    }
     switch(ch) {
-        case 'p': return *((void **) param->arg + offset) == NULL;
-        case 'b': return *((bool *) param->arg + offset);
-        case 'd': return *((int *) param->arg + offset);
-        case 'u': case ui8: case ui16: case ui32: return *((unsigned int *) param->arg + offset);
+        case 'p': return *((void **) arg + offset) == NULL;
+        case 'b': return *((bool *) arg+ offset);
+        case 'd': return *((int *) arg + offset);
+        case 'u': case ui8: case ui16: case ui32: return *((unsigned int *) arg+ offset);
         default:
             SWITCH_DEFAULT_REACHED
     }

@@ -10,9 +10,10 @@
     struct parameter CAT2(DO_WHILE_CONDITION_ARG_,ID)[] = CONDITION_ARGS; \
     struct parameter CAT2(DO_WHILE_BODY_ARG_,ID)[] = BODY_ARGS; \
     struct do_while_config CAT2(DO_WHILE_CONFIG_,ID) = CONFIG;\
+    struct postfix_item CAT2(POSTFIX_, ID)[strlen(CAT2(DO_WHILE_CONFIG_, ID).predicate_fmt)];\
     CAT2(DO_WHILE_CONFIG_,ID).body_n_params = sizeof(CAT2(DO_WHILE_BODY_ARG_,ID)) / sizeof(struct parameter); \
     CAT2(DO_WHILE_CONFIG_,ID).condition_n_params = sizeof(CAT2(DO_WHILE_CONDITION_ARG_,ID)) / sizeof(struct parameter); \
-    hotcall_bundle_do_while(SM_CTX, &CAT2(DO_WHILE_CONFIG_,ID), CAT2(DO_WHILE_BODY_ARG_,ID), CAT2(DO_WHILE_CONDITION_ARG_,ID))
+    hotcall_bundle_do_while(SM_CTX, &CAT2(DO_WHILE_CONFIG_,ID), CAT2(DO_WHILE_BODY_ARG_,ID), CAT2(DO_WHILE_CONDITION_ARG_,ID), CAT2(POSTFIX_, ID))
 
 #define DO_WHILE(CONFIG, CONDITION_ARGS, BODY_ARGS) \
     _DO_WHILE(_sm_ctx, UNIQUE_ID, CONFIG, ESCAPE(CONDITION_ARGS), ESCAPE(BODY_ARGS))
@@ -24,10 +25,11 @@
 
 struct do_while_config {
     const uint8_t function_id;
-    const char *condition_fmt;
+    const char *predicate_fmt;
     unsigned int body_n_params;
     unsigned int condition_n_params;
-
+    struct postfix_item *postfix;
+    unsigned int postfix_length;
 };
 
 struct hotcall_do_while {

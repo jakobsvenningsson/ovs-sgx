@@ -14,7 +14,8 @@
     }; \
     struct while_config CAT2(WHILE_CONFIG_,ID) = CONFIG;\
     CAT2(WHILE_CONFIG_,ID).n_params = sizeof(CAT2(FILTER_ARG_,ID))/sizeof(struct parameter);\
-    hotcall_bundle_while_begin(SM_CTX, &CAT2(WHILE_CONFIG_,ID), CAT2(FILTER_ARG_, ID))
+    struct postfix_item CAT2(POSTFIX_, ID)[strlen(CAT2(WHILE_CONFIG_, ID).predicate_fmt)];\
+    hotcall_bundle_while_begin(SM_CTX, &CAT2(WHILE_CONFIG_,ID), CAT2(FILTER_ARG_, ID), CAT2(POSTFIX_, ID))
 
 #define BEGIN_WHILE(CONFIG, ...) \
     _BEGIN_WHILE(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
@@ -24,6 +25,8 @@ struct while_config {
     bool loop_in_process;
     unsigned int body_len;
     unsigned int n_params;
+    struct postfix_item *postfix;
+    unsigned int postfix_length;
 };
 
 struct hotcall_while_start {

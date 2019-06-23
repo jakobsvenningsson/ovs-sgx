@@ -13,8 +13,8 @@ TEST(integration,1) {
     int buf_size = 15;
     unsigned int n = 0;
 
-    struct parameter vec1[] = { VAR(buffer, 'd'), VECTOR_v2(&vec1[0], &n) }, p1 = vec1[1];
-    struct parameter vec2[] = { VAR(map_out, 'd'), VECTOR_v2(&vec2[0], &n) }, p2 = vec2[1];
+    //struct parameter vec1[] = { VAR(buffer, 'd'), VECTOR_v2(&vec1[0], &n) }, p1 = vec1[1];
+    //struct parameter vec2[] = { VAR(map_out, 'd'), VECTOR_v2(&vec2[0], &n) }, p2 = vec2[1];
 
     BUNDLE_BEGIN();
 
@@ -24,8 +24,8 @@ TEST(integration,1) {
     );
     MAP(
 
-        ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret }),
-        p1, p2
+        ((struct map_config) { .function_id = hotcall_ecall_plus_one_ret, .n_iters = &n }),
+        VECTOR(buffer, 'd'), VECTOR(map_out, 'd')
     );
 
     BUNDLE_END();
@@ -46,16 +46,14 @@ TEST(integration,2) {
     int *x = NULL;
     int xs[n_iters] = { 1,1,1,1,1,1,1,1,1,1 };
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
-
     BUNDLE_BEGIN();
 
     BEGIN_FOR({ .n_iters = &n_iters });
         BEGIN_WHILE(
             ((struct while_config) { .predicate_fmt = "d<d" }),
-            p1, VAR(y, 'd')
+            VECTOR(xs, 'd', &n_iters), VAR(y, 'd')
         );
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one),  p1);
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one),  VECTOR(xs, 'd', &n_iters));
         END_WHILE();
 
     END_FOR();

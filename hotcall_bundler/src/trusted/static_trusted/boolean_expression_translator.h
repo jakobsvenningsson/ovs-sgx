@@ -5,6 +5,7 @@
 #include "hotcall_function.h"
 #include "hotcall_utils.h"
 #include <hotcall_if.h>
+#include <stddef.h>
 
 /*
 enum postfix_item_type { OPERAND, OPERATOR };
@@ -13,9 +14,6 @@ struct postfix_item {
         enum postfix_item_type type;
         struct parameter *elem;
 };*/
-
-//unsigned int
-//to_postfix(const char *condition_fmt, struct parameter *predicate_args, struct postfix_item *output);
 
 int
 evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int offset);
@@ -119,6 +117,80 @@ parse_argument(const struct parameter *param, unsigned int offset) {
 }
 
 static inline void *
+parse_argument_vanilla(const struct parameter *param, int addr_modifications[], int n_modifications, int loop_offset) {
+    switch(param->type) {
+        case VARIABLE_TYPE:
+            if(!n_modifications) return param->value.variable.arg;
+            void *addr = param->value.variable.arg;
+            for(int i = 0; i < n_modifications; ++i) {
+                if(addr_modifications[i] == -1) addr = *(void **) addr;
+                else addr += addr_modifications[i];
+            }
+            return addr;
+        case POINTER_TYPE: return param->value.pointer.arg;
+        case VECTOR_TYPE:
+            switch(param->value.vector.fmt) {
+                case 'p':
+                    if(param->value.vector.dereference) {
+                        return ((char *) *((void **) param->value.vector.arg + loop_offset)) +  param->value.vector.member_offset;
+                    } else {
+                        return ((char *) ((void **) param->value.vector.arg + loop_offset)) +  param->value.vector.member_offset;
+                    }
+                case 'd': return (int *) param->value.vector.arg + loop_offset;
+                case 'b': return (bool *) param->value.vector.arg + loop_offset;
+                case 'u': case ui8: case ui16: case ui32:
+                    if(param->value.vector.dereference) {
+                        return ((char *) *((void **) param->value.vector.arg + loop_offset)) +   param->value.vector.member_offset;
+                    } else {
+                        return ((char *) ((unsigned int *) param->value.vector.arg + loop_offset)) +  param->value.vector.member_offset;
+                    }
+                default: SWITCH_DEFAULT_REACHED
+            }
+        default: SWITCH_DEFAULT_REACHED
+    }
+}
+
+static inline void *
+parse_argument_v2(const struct parameter *param, unsigned int i) {
+    switch(param->type) {
+        case VARIABLE_TYPE: return (char * ) param->value.variable.arg + param->value.variable.member_offset;
+        case POINTER_TYPE: return (param->value.pointer.dereference)
+            ? ((char *) *((void **) param->value.pointer.arg)) + param->value.pointer.member_offset
+            : (char *) param->value.pointer.arg + param->value.pointer.member_offset;
+        case VECTOR_TYPE:
+            if(param->value.vector.dereference) {
+                return ((char *) *((void **) param->value.vector.arg + i)) +  param->value.vector.member_offset;
+            }
+            switch(param->value.vector.fmt) {
+                case 'p': return ((char *) ((void **) param->value.vector.arg + i)) +  param->value.vector.member_offset;
+                case 'd': return ((char *) ((int *) param->value.vector.arg + i)) +  param->value.vector.member_offset;
+                case 'b': return ((char *) ((bool *) param->value.vector.arg + i)) +  param->value.vector.member_offset;
+                case 'u': case ui8: case ui16: case ui32: return ((char *) ((unsigned int *) param->value.vector.arg + i)) +  param->value.vector.member_offset;
+                default: SWITCH_DEFAULT_REACHED
+            }
+            break;
+        default: SWITCH_DEFAULT_REACHED
+    }
+}
+
+static inline void
+parse_function_arguments(const struct parameter *param, int n_params, int offset, void *args[n_params]) {
+    for(int j = 0; j < n_params; ++j) {
+        args[j] = parse_argument_v2(&param[j], offset);
+    }
+}
+
+static inline void
+parse_arguments(const struct parameter *param, int n_params, int n_iters, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        for(int j = 0; j < n_params; ++j) {
+            if(i > 0 && param[j].type == VARIABLE_TYPE) args[i][j] = args[i - 1][j];
+            else args[i][j] = parse_argument_v2(&param[j], i);
+        }
+    }
+}
+
+static inline void *
 parse_argument_1(const struct parameter *param, int addr_modifications[], int n_modifications, int loop_offset) {
     struct parameter *res;
     switch(param->type) {
@@ -145,6 +217,27 @@ parse_argument_1(const struct parameter *param, int addr_modifications[], int n_
             res = param->value.pointer_v2.arg;
             break;
             //return parse_argument_1(param->value.pointer_v2.arg, addr_modifications, n_modifications, loop_offset);
+        case VECTOR_TYPE:
+            switch(param->value.vector.fmt) {
+                case 'p':
+                    if(param->value.vector.dereference) {
+                        return ((char *) *((void **) param->value.vector.arg + loop_offset)) +  param->value.vector.member_offset;
+                    } else {
+                        return ((char *) ((void **) param->value.vector.arg + loop_offset)) +  param->value.vector.member_offset;
+                    }
+                case 'd': return (int *) param->value.vector.arg + loop_offset;
+                case 'b': return (bool *) param->value.vector.arg + loop_offset;
+                case 'u': case ui8: case ui16: case ui32:
+                    if(param->value.vector.dereference) {
+                        return ((char *) *((void **) param->value.vector.arg + loop_offset)) +   param->value.vector.member_offset;
+                    } else {
+                        return ((char *) ((unsigned int *) param->value.vector.arg + loop_offset)) +  param->value.vector.member_offset;
+                    }
+
+
+                //return ((unsigned int *) param->value.vector.arg);
+                default: SWITCH_DEFAULT_REACHED
+            }
         case VECTOR_TYPE_v2:
             switch(param->value.vector_v2.arg->type) {
                 case POINTER_TYPE_v2:

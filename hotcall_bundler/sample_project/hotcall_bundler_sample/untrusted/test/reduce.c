@@ -22,7 +22,7 @@ TEST(reduce,1) {
             .function_id = hotcall_ecall_plus_one_ret,
             .op = '+',
         }),
-        p1, VAR(res, 'd')
+        VECTOR(xs, 'd', &n_iters), VAR(res, 'd')
     );
 
     BUNDLE_END();
@@ -41,7 +41,7 @@ TEST(reduce, 2) {
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     int res = 0, y = 5;
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     BUNDLE_BEGIN();
 
@@ -50,7 +50,7 @@ TEST(reduce, 2) {
             .function_id = hotcall_ecall_plus,
             .op = '+',
         }),
-        p1, VAR(y, 'd'), VAR(res, 'd')
+        VECTOR(xs, 'd', &n_iters), VAR(y, 'd'), VAR(res, 'd')
     );
 
     BUNDLE_END();
@@ -75,16 +75,15 @@ TEST(reduce, 3) {
     int xs[n_iters] = { 3, 4, 5, 6, 7, 8, 9 };
     bool res;
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     REDUCE(
         ((struct reduce_config) {
             .function_id = hotcall_ecall_greater_than_two,
             .op = '&',
         }),
-        p1, VAR(res, 'd')
+        VECTOR(xs, 'd', &n_iters), VAR(res, 'd')
     );
-
 
     BUNDLE_END();
 

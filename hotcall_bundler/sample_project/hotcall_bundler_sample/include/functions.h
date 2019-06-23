@@ -23,5 +23,6 @@
 #define hotcall_ecall_offset_of 18
 #define hotcall_ecall_container_of_ret 19
 #define hotcall_ecall_offset_of_ret 20
+#define hotcall_ecall_strlen 21
 
 #endif

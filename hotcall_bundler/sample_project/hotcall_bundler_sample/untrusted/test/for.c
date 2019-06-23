@@ -14,8 +14,8 @@ TEST(for,1) {
     int xs[n_iters] = { 0 };
     int ys[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
-    struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
 
     BUNDLE_BEGIN();
 
@@ -23,9 +23,9 @@ TEST(for,1) {
         .n_iters = &n_iters
     }));
 
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_plus), p1, p2);
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_plus), VECTOR(xs, 'd'), VECTOR(ys, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
 
     END_FOR();
 
@@ -48,13 +48,13 @@ TEST(for,2) {
     bool ret;
     int *ptr = NULL;
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     BUNDLE_BEGIN();
 
     BEGIN_FOR({ .n_iters = &n_iters });
 
-        HCALL(CONFIG(.function_id = hotcall_ecall_greater_than_two, .has_return = true), p1, VAR(ret, 'b'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_greater_than_two, .has_return = true), VECTOR(xs, 'd'), VAR(ret, 'b'));
 
         IF(
             ((struct if_config) { .predicate_fmt = "!b&b" }),
@@ -62,7 +62,7 @@ TEST(for,2) {
             VAR(ret, 'b')
         );
         THEN
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one ), p1);
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one ), VECTOR(xs, 'd'));
         END
 
     END_FOR();
@@ -89,7 +89,7 @@ TEST(for,3) {
     memset(xs, 0, n_iters * n_iters * sizeof(int));
     bool ret;
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     BUNDLE_BEGIN();
 
@@ -97,8 +97,8 @@ TEST(for,3) {
 
         BEGIN_FOR({ .n_iters = &n_iters });
 
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
 
         END_FOR();
 
@@ -111,10 +111,7 @@ TEST(for,3) {
     for(int i = 0; i < n_iters; ++i) {
         for(int j = 0; j < n_iters; ++j) {
             ASSERT_EQ(xs[i][j], 2);
-            printf("%d ", xs[i][j]);
         }
-        printf("\n");
-
     }
 }
 
@@ -127,7 +124,7 @@ TEST(for, 4) {
     memset(xs, 0, n_iters * n_iters * sizeof(int));
     bool ret;
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     BUNDLE_BEGIN();
 
@@ -135,11 +132,11 @@ TEST(for, 4) {
 
         BEGIN_FOR({ .n_iters = &n_iters });
 
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
 
         END_FOR();
 
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
 
     END_FOR();
 
@@ -167,7 +164,7 @@ TEST(for, 5) {
     memset(xs, 0, n_iters * n_iters * n_iters * sizeof(int));
     bool ret;
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     BUNDLE_BEGIN();
 
@@ -177,7 +174,7 @@ TEST(for, 5) {
 
             BEGIN_FOR({ .n_iters = &n_iters });
 
-                HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p1);
+                HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
 
             END_FOR();
 

@@ -258,7 +258,7 @@ TEST(if,9) {
 
     int xs[len] = { 0 };
 
-    struct parameter vec1[] = { VAR_v2(rs, 'u'),
+    /*struct parameter vec1[] = { VAR_v2(rs, 'u'),
                                 STRUCT(&vec1[0], .member_offset = offsetof(struct R, hard_timeout)),
                                 PTR_v2(&vec1[1], .dereference = true),
                                 VECTOR_v2(&vec1[2], &len)
@@ -272,7 +272,7 @@ TEST(if,9) {
 
     struct parameter vec3[] = { VAR_v2(xs, 'd'),
                                 VECTOR_v2(&vec3[0], &len)
-                            }, p3 = vec3[1];
+                            }, p3 = vec3[1];*/
 
     BUNDLE_BEGIN();
 
@@ -282,10 +282,13 @@ TEST(if,9) {
     });
 
         IF(
-            ((struct if_config) { .predicate_fmt = "d&(u|u)" }), VAR(is_eviction_enabled, 'd'), p1, p2
+            ((struct if_config) { .predicate_fmt = "d&(u|u)" }),
+            VAR(is_eviction_enabled, 'd'),
+            VECTOR(rs, 'u', &len, .dereference = true, offsetof(struct R, hard_timeout)),
+            VECTOR(rs, 'u', &len, .dereference = true, offsetof(struct R, idle_timeout))
         );
         THEN
-            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p3);
+            HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
         END
 
     END_FOR();
@@ -296,4 +299,86 @@ TEST(if,9) {
 
     ASSERT_EQ(xs[0], 1);
     ASSERT_EQ(xs[1], 0);
+}
+
+TEST(if, 10) {
+    /* Contract:  RETURN should stop execution of the bundle it appears inside of. */
+
+    hotcall_test_setup();
+
+
+    int x = 0, y = 1;
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+
+    BUNDLE_BEGIN();
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+
+    RETURN;
+
+    BUNDLE_END();
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    IF(((struct if_config) { .predicate_fmt = "d" }), VAR(y, 'd'));
+    THEN
+        RETURN;
+    END
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+
+    BUNDLE_BEGIN();
+
+    RETURN;
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+
+    BUNDLE_END();
+
+    BUNDLE_BEGIN();
+    if(y) {
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    }
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 8);
+}
+
+TEST(if,11) {
+    /* Contract:  If statements backtracks in the execution queue in order to calculate the length of its body. */
+
+    hotcall_test_setup();
+
+    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
+    sm_ctx->hcall.idx = 0;
+
+    int x = 0, y = 0;
+
+    for(int i = 0; i < MAX_FCS - 1; ++i) {
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    }
+
+
+    BUNDLE_BEGIN();
+
+    IF(((struct if_config) { .predicate_fmt = "!d"}), VAR(y, 'd'));
+    THEN
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(y, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(y, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(y, 'd'));
+    END
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 199);
+    ASSERT_EQ(y, 3);
 }
