@@ -28,9 +28,11 @@ cd ovs
 ./configure	CFLAGS="$FLAGS -I${ROOT_FOLDER}/TLSonSGX/untrusted \
                            -I${ROOT_FOLDER}/TLSonSGX/App \
                            -I${ROOT_FOLDER}/OFTonSGX/untrusted \
+                           -I${ROOT_FOLDER}/OFTonSGX/include \
                            -I${ROOT_FOLDER}/benchmark/include \
                            -I${ROOT_FOLDER}/hotcall_bundler/include \
                            -I${ROOT_FOLDER}/hotcall_bundler/src/untrusted \
+                           -I/opt/intel/sgxsdk/include \
                            -I${ROOT_FOLDER}/TLSonSGX/mbedtls/include" \
             	LDFLAGS="-L$ROOT_FOLDER/ovs/lib/ \
                          -L$ROOT_FOLDER/hotcall_bundler/src/untrusted \

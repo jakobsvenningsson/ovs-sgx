@@ -16,6 +16,11 @@ struct oftable *
 first_matching_table(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id);
 struct oftable *
 next_visible_table(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id);
+uint32_t
+rule_eviction_priority(struct rule *rule, uint32_t time_boot_msec);
+
+
+
 #ifdef ARG_OPT_2
 void
 ecall_add_flow_2(struct add_flow_args *args);

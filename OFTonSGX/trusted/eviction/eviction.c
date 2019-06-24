@@ -24,7 +24,6 @@ void
 ecall_evg_add_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule, uint32_t *group_priority, uint32_t rule_evict_prioriy){
     struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     struct eviction_group * evg;
-
     evg = sgx_evg_find(bridge_id, table_id, eviction_group_hash_rule(bridge_id, table_id,
           &sgx_cls_rule->cls_rule), group_priority ? *group_priority : eviction_group_priority(0));
     sgx_cls_rule->evict_group   = evg;
@@ -145,29 +144,25 @@ ecall_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id){
 }
 
 size_t
-ecall_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int elem, uint8_t table_id){
+ecall_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int elem, uint8_t table_id, int *n_cr_rules){
     struct cls_cursor cursor;
     struct sgx_cls_rule * rule;
-    size_t p = 0;
+    size_t p = 0, n = 0;
     bool count_only = buf == NULL ? true : false;
 
     cls_cursor_init(&cursor, &SGX_oftables[bridge_id][table_id].cls, NULL);
     CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
         if (rule) {
-            if(count_only) {
-                p++;
+            if(count_only || p++ > elem) {
                 continue;
             }
-
-            if (p > elem) {
-                // overflow: this needs to be handle.
-                return p;
-            }
-            buf[p] = rule->o_cls_rule;
-            p++;
+            buf[n++] = rule->o_cls_rule;
         }
     }
-    return p;
+    if(n_cr_rules) {
+        *n_cr_rule = p;
+    }
+    return n;
 }
 
 
@@ -413,5 +408,5 @@ uint32_t
 eviction_group_priority(size_t n_rules)
 {
     uint16_t size = MIN(UINT16_MAX, n_rules);
-    return (size << 16) | random_uint16();
+    return (size << 16) | 877616;
 }

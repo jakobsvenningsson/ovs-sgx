@@ -181,12 +181,16 @@ node_insert(uint8_t bridge_id, uint32_t hash){
     #ifdef BATCH_ALLOCATION
     struct bblock *b = batch_allocator_get_block(&cr_ba);
     new = (struct sgx_cls_rule *)  b->ptr;
-    new->block_list_node = &b->list_node;
     #else
     new = xmalloc(sizeof(struct sgx_cls_rule));
     #endif
     memset(new, 0, sizeof(struct sgx_cls_rule));
     new->hmap_node.hash = hash;
+
+    #ifdef BATCH_ALLOCATION
+    new->block_list_node = &b->list_node;
+    #endif
+
     hmap_insert(&SGX_hmap_table[bridge_id]->cls_rules, &new->hmap_node, new->hmap_node.hash, NULL, 0);
     return new;
 }
@@ -194,7 +198,6 @@ node_insert(uint8_t bridge_id, uint32_t hash){
 void
 node_delete(uint8_t bridge_id, struct cls_rule * out){
     struct sgx_cls_rule * rule;
-
     rule = sgx_rule_from_ut_cr(bridge_id, out);
     hmap_remove(&SGX_hmap_table[bridge_id]->cls_rules, &rule->hmap_node);
     #ifdef BATCH_ALLOCATION

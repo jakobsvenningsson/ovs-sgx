@@ -4,10 +4,11 @@
 #include "util.h"
 #include "list.h"
 
-#define BATCH_SIZE 512
+#define BATCH_SIZE 1024
 
 void
 batch_allocator_add_block(struct batch_allocator * ba) {
+    printf("adding block\n");
     ba->bytes[ba->n_blocks] = malloc(ba->block_sz * BATCH_SIZE + sizeof(struct bblock) * BATCH_SIZE);
     if(ba->bytes[ba->n_blocks] == NULL) {
         printf("Failed to malloc\n");

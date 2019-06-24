@@ -1,7 +1,6 @@
 #ifndef _APP_H_
 #define _APP_H_
 #include <stdint.h>
-#include "app.h"
 /*
 #define ASSERT_CATCH(F, EXPECTED, ERROR, ELSE_F) \
 	F; \

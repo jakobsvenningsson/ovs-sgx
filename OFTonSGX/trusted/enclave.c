@@ -12,7 +12,7 @@
 #include "oftable.h"
 #include "enclave-batch-allocator.h"
 #include "hotcall.h"
-#include "hotcall-trusted.h"
+#include "hotcall-bundler-trusted.h"
 #include "cache-trusted.h"
 
 
@@ -23,7 +23,19 @@ int SGX_n_tables[100];
 struct sgx_cls_table * SGX_hmap_table[100];
 const struct batch_allocator cr_ba;
 const struct batch_allocator evg_ba;
+//const struct batch_allocator heap_ba;
 bool hotcall_configured = false;
+
+void
+ecall_plus_one(int *x) {
+    printf("Value of X: %d\n", *x);
+    ++*x;
+}
+
+void
+ecall_offset_of(void **ptr, int offset) {
+    *ptr = ((char *) *ptr) + offset;
+}
 
 void
 configure_hotcall() {
@@ -62,6 +74,9 @@ ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
 
     batch_allocator_init(&evg_ba, sizeof(struct eviction_group));
     batch_allocator_add_block(&evg_ba);
+
+    /*batch_allocator_init(&heap_ba, sizeof(struct heap_node));
+    batch_allocator_add_block(&heap_ba);*/
 
     #endif
 

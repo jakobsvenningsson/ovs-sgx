@@ -5,6 +5,7 @@
 #include "enclave.h"
 #include "cache-trusted.h"
 #include "flow.h"
+#include "functions.h"
 
 void
 execute_function(uint8_t function_id, void *args[], void *return_value){
@@ -13,6 +14,15 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
     //cls_cache_entry * cache_entry, * next;
 
     switch (function_id) {
+        case hotcall_ecall_rule_eviction_priority:
+            *(unsigned int *) return_value = rule_eviction_priority(args[0], *(uint32_t *) args[1]);
+            break;
+        case hotcall_ecall_plus_one:
+            ecall_plus_one((int *) args[0]);
+            break;
+        case hotcall_ecall_container_of:
+            ecall_offset_of(args[0], -(*(int *) args[1]));
+            break;
         case hotcall_ecall_ofproto_init_tables:
             ecall_ofproto_init_tables(*(int *) args[0], *(uint8_t *) args[1]);
             break;
@@ -332,11 +342,12 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             );
             break;
         case hotcall_ecall_oftable_enable_eviction_r:
-            ecall_oftable_enable_eviction_r(
+            *(int *) return_value = ecall_oftable_enable_eviction_r(
                 *(uint8_t *) args[0],
                 (struct cls_rule **) args[1],
                 *(int *) args[2],
-                *(uint8_t *) args[3]
+                *(uint8_t *) args[3],
+                (int *) args[4]
             );
             break;
         case hotcall_ecall_cls_remove:

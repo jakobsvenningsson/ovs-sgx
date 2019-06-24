@@ -309,7 +309,7 @@ ecall_oftable_get_cls_rules(uint8_t bridge_id,
     return n;
 }
 
-static uint32_t
+uint32_t
 rule_eviction_priority(struct rule *rule, uint32_t time_boot_msec)
 {
     long long int hard_expiration;

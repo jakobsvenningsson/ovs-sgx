@@ -21,7 +21,7 @@ enclave {
 		public size_t
 		ecall_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id);
 		public size_t
-		ecall_oftable_enable_eviction_r(uint8_t bridge_id, [user_check]struct cls_rule **buf,int elem,uint8_t table_id);
+		ecall_oftable_enable_eviction_r(uint8_t bridge_id, [user_check]struct cls_rule **buf,int elem,uint8_t table_id, [user_check] int *n_cr_rules);
 
 
 		public void
@@ -48,7 +48,7 @@ enclave {
 							[user_check] uint8_t *is_hidden,
 							size_t buf_size,
 							[user_check] size_t *n_evictions);
-							
+
 		public bool
 		ecall_need_to_evict(uint8_t bridge_id, uint8_t table_id);
     };

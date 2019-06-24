@@ -20,7 +20,8 @@
 
 #include "hotcall_utils.h"
 #include "hotcall.h"
-#include "hotcall-untrusted.h"
+#include "hotcall-bundler-untrusted.h"
+#include "functions.h"
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid        = 0;
@@ -604,8 +605,8 @@ SGX_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id){
 }
 
 // 24.2 Request
-void
-SGX_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int elem, uint8_t table_id){
+size_t
+SGX_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int elem, uint8_t table_id, int *n_cr_rules){
     size_t n;
     #ifdef HOTCALL
     /*bool async = ASYNC(false);
@@ -617,11 +618,12 @@ SGX_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int ele
     HCALL(ecall_oftable_enable_eviction_r, async, &n, 4, args);*/
     HCALL(
         CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction_r, .has_return = true),
-        VAR(bridge_id, ui8), PTR(buf), VAR(elem, 'd'), VAR(table_id, ui8), VAR(n, 'u')
+        VAR(bridge_id, ui8), PTR(buf), VAR(elem, 'd'), VAR(table_id, ui8), PTR(n_cr_rules, 'd'), VAR(n, 'u')
     );
     #else
-    ECALL(ecall_oftable_enable_eviction_r, &n, bridge_id, buf, elem, table_id);
+    ECALL(ecall_oftable_enable_eviction_r, &n, bridge_id, buf, elem, table_id, n_cr_rules);
     #endif
+    return n;
 }
 
 size_t
