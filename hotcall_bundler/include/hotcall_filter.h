@@ -19,6 +19,7 @@
 
 struct filter_config {
     const char *predicate_fmt;
+    struct parameter *input_vector;
     uint8_t n_params;
     struct postfix_item *postfix;
     unsigned int postfix_length;

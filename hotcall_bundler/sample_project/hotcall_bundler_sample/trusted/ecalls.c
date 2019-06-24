@@ -20,7 +20,6 @@ ecall_bar() {}
 
 void
 ecall_plus_one(int *x) {
-    printf("Value of X: %d\n", *x);
     ++*x;
 }
 
