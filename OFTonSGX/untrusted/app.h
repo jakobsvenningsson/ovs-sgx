@@ -321,8 +321,6 @@ void SGX_collect_rules_strict_r(uint8_t bridge_id, int ofproto_n_tables,struct c
 
 
 
-size_t SGX_ccfe_c(uint8_t bridge_id, uint8_t table_id);
-void SGX_ccfe_r(uint8_t bridge_id, struct cls_rule **buf,int elem,uint8_t table_id);
 void SGX_oftable_enable_eviction(uint8_t bridge_id, uint8_t table_id,const struct mf_subfield *fields,size_t n_fields,uint32_t random_v, bool *no_change);
 void SGX_oftable_disable_eviction(uint8_t bridge_id, uint8_t table_id);
 
@@ -333,16 +331,11 @@ size_t SGX_collect_ofmonitor_util_c(uint8_t bridge_id, int ofproto_n_tables,uint
 void SGX_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables,struct cls_rule **buf,int elem,uint8_t table_id,const struct minimatch *match);
 int SGX_cls_rule_is_loose_match(uint8_t bridge_id, struct cls_rule *o_cls_rule,const struct minimatch *criteria);
 size_t SGX_fet_ccfes_c(uint8_t bridge_id);
-void SGX_fet_ccfes_r(uint8_t bridge_id, struct cls_rule **buf,int elem);
 
-size_t SGX_fet_ccfe_c(uint8_t bridge_id);
-void SGX_fet_ccfe_r(uint8_t bridge_id, struct cls_rule **buf,int elem);
 
 void SGX_cls_lookup(uint8_t bridge_id, struct cls_rule **o_cls_rule,uint8_t table_id,const struct flow *flow,
 		struct flow_wildcards *wc);
 
-size_t SGX_desfet_ccfes_c(uint8_t bridge_id);
-void SGX_desfet_ccfes_r(uint8_t bridge_id, struct cls_rule **buf,int elem);
 unsigned int SGX_cls_rule_format(uint8_t bridge_id, const struct cls_rule *o_cls_rule,struct match *megamatch);
 void SGX_miniflow_expand(uint8_t bridge_id, struct cls_rule *o_cls_rule,struct flow *flow);
 uint32_t SGX_rule_calculate_tag(uint8_t bridge_id, struct cls_rule *o_cls_rule,const struct flow *flow,uint8_t table_id);
@@ -352,9 +345,9 @@ int SGX_table_update_taggable(uint8_t bridge_id, uint8_t table_id);
 int SGX_is_sgx_other_table(uint8_t bridge_id, uint8_t table_id);
 uint32_t SGX_rule_calculate_tag_s(uint8_t bridge_id, uint8_t table_id,const struct flow *flow);
 void SGX_oftable_set_name(uint8_t bridge_id, uint8_t table_id, char *name);
+
 uint16_t SGX_minimask_get_vid_mask(uint8_t bridge_id, struct cls_rule *o_cls_rule);
 uint16_t SGX_miniflow_get_vid(uint8_t bridge_id, struct cls_rule *o_cls_rule);
-
 
 size_t SGX_ofproto_get_vlan_usage_c(uint8_t bridge_id);
 void SGX_ofproto_get_vlan_usage__r(uint8_t bridge_id, uint16_t *buf,int elem);

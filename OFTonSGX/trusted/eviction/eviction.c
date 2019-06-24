@@ -17,7 +17,7 @@ extern const struct batch_allocator evg_ba;
 
 int
 ecall_is_eviction_fields_enabled(uint8_t bridge_id, uint8_t table_id){
-    return SGX_oftables[bridge_id][table_id].eviction_fields ? true : false;
+    return  SGX_oftables[bridge_id][table_id].eviction_fields ? true : false;
 }
 
 void
@@ -140,7 +140,7 @@ ecall_oftable_enable_eviction(uint8_t bridge_id, uint8_t table_id, const struct 
 
 size_t
 ecall_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id){
-    return ecall_oftable_enable_eviction_r(bridge_id, NULL, -1, table_id);
+    return ecall_oftable_enable_eviction_r(bridge_id, NULL, -1, table_id, NULL);
 }
 
 size_t
@@ -153,15 +153,17 @@ ecall_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int e
     cls_cursor_init(&cursor, &SGX_oftables[bridge_id][table_id].cls, NULL);
     CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
         if (rule) {
-            if(count_only || p++ > elem) {
+            p++;
+            if(count_only || n > elem) {
                 continue;
             }
             buf[n++] = rule->o_cls_rule;
         }
     }
     if(n_cr_rules) {
-        *n_cr_rule = p;
+        *n_cr_rules = p;
     }
+
     return n;
 }
 

@@ -1040,6 +1040,7 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
                         const struct ofproto_table_settings *s)
 {
     ovs_assert(table_id >= 0 && table_id < ofproto->n_tables);
+    BEGIN
 #ifndef SGX
     struct oftable *table;
     table = &ofproto->tables[table_id];
@@ -1057,9 +1058,15 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
         && table->eviction_fields) {
 #elif BUNDLE
 
-
     unsigned int n_cls_rules = 0, is_eviction_enabled = 0, max_flows = 0, random_v = random_uint32();
-    bool is_read_only = false, no_change = false;
+
+    bool is_read_only = false,
+         no_change = false;
+
+    int cr_field_offset = offsetof(struct rule, cr);
+    unsigned int evg_grp_prio = eviction_group_priority(0), default_buffer_size = 32;
+    unsigned int rule_eviction_prioirities[default_buffer_size];
+    int n, n_cr_rules;
 
     struct parameter function_params[] = { VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8) };
 
@@ -1072,11 +1079,101 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
         RETURN;
     END
 
-    if (s->groups) {
-        RETURN;
-    } else {
+    BUNDLE_IF_TRUE(s->groups);
+        HCALL(
+            CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction),
+            VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), PTR(s->groups), VAR(s->n_groups, 'u'), VAR(random_v, 'u'), VAR(no_change)
+        );
+        IF(((struct if_config) { .predicate_fmt = "!b" }), VAR(no_change));
+        THEN
+            void *cr_buf[default_buffer_size];
+            HCALL(
+                CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction_r, .has_return = true),
+                VAR(ofproto->bridge_id, ui8), PTR(cr_buf), VAR(default_buffer_size, 'u'), VAR(table_id, ui8), VAR(n_cr_rules, 'u'), VAR(n, 'u')
+            );
+
+            HCALL(
+                CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled, .has_return = true),
+                VAR(ofproto->bridge_id, ui8),
+                VAR(table_id, 'u'),
+                VAR(is_eviction_enabled, 'd')
+            );
+
+            #ifdef BUNDLE_FUNCTIONAL
+
+                struct parameter input_vector = VECTOR(cr_buf, 'p', &n);
+                unsigned int n_filtered;
+                void *cr_buf_out[default_buffer_size];
+                FILTER(
+                    ((struct filter_config) { .predicate_fmt = "d&(u|u)", .input_vector = &input_vector }),
+                    VAR(is_eviction_enabled, 'd'),
+                    VECTOR(cr_buf, 'u', &n, .dereference = true, .member_offset = offsetof(struct rule, idle_timeout) - cr_field_offset),
+                    VECTOR(cr_buf, 'u', &n, .dereference = true, .member_offset = offsetof(struct rule, hard_timeout) - cr_field_offset),
+                    VECTOR(cr_buf_out, 'p', &n_filtered)
+                );
+
+                long long int boot_time = time_boot_msec(); unsigned int boot_time_u = boot_time >> 10;
+                MAP(
+                    ((struct map_config) {
+                        .function_id = hotcall_ecall_rule_eviction_priority,
+                        .n_iters = &n_filtered
+                    }),
+                    VECTOR(cr_buf_out, 'p', &n_filtered, .dereference = true, .member_offset = -cr_field_offset),
+                    VAR(boot_time_u, 'u'),
+                    VECTOR(rule_eviction_prioirities, 'u', &n_filtered)
+                );
+
+                FOR_EACH(
+                    ((struct for_each_config) { .function_id = hotcall_ecall_evg_add_rule, .n_iters = &n_filtered }),
+                    VAR(ofproto->bridge_id, ui8),
+                    VAR(table_id, 'u'),
+                    VECTOR(cr_buf_out, 'p', &n_filtered, .dereference = true),
+                    VAR(evg_grp_prio, 'u'),
+                    VECTOR(rule_eviction_prioirities, 'u', &n_filtered)
+                );
+
+            #else
+
+                long long int boot_time = time_boot_msec(); unsigned int boot_time_u = boot_time >> 10;
+                MAP(
+                    ((struct map_config) {
+                        .function_id = hotcall_ecall_rule_eviction_priority,
+                        .n_iters = &n
+                    }),
+                    VECTOR(cr_buf, 'p', &n, .dereference = true, .member_offset = -cr_field_offset),
+                    VAR(boot_time_u, 'u'),
+                    VECTOR(rule_eviction_prioirities, 'u', &n)
+                );
+
+                BEGIN_FOR((struct for_config) {
+                    .n_iters = &n
+                });
+                    IF(
+                        ((struct if_config) { .predicate_fmt = "d&(u|u)" }),
+                        VAR(is_eviction_enabled, 'd'),
+                        VECTOR(cr_buf, 'u', &n, .dereference = true, .member_offset = offsetof(struct rule, idle_timeout) - cr_field_offset),
+                        VECTOR(cr_buf, 'u', &n, .dereference = true, .member_offset = offsetof(struct rule, hard_timeout) - cr_field_offset)
+                    );
+                    THEN
+                        HCALL(
+                            CONFIG(.function_id = hotcall_ecall_evg_add_rule),
+                            VAR(ofproto->bridge_id, ui8),
+                            VAR(table_id, 'u'),
+                            VECTOR(cr_buf, 'p', &n, .dereference = true),
+                            VAR(evg_grp_prio, 'u'),
+                            VECTOR(rule_eviction_prioirities, 'u')
+                        );
+                    END
+                END_FOR();
+
+            #endif
+        END
+
+    BUNDLE_IF_ELSE();
+
         HCALL(CONFIG(.function_id = hotcall_ecall_oftable_disable_eviction), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8));
-    }
+
+    BUNDLE_IF_END();
 
     HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
     HCALL(CONFIG(.function_id = hotcall_ecall_oftable_cls_count, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(n_cls_rules, 'd'));
@@ -1087,15 +1184,6 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
 
     if(is_read_only) {
         return;
-    }
-
-    if(s->groups) {
-
-        oftable_enable_eviction(ofproto->bridge_id, table_id, s->groups, s->n_groups);
-        HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_oftable_cls_count, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(n_cls_rules, 'd'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(max_flows, 'u'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_eviction_enabled, 'd'));
     }
     if(n_cls_rules > max_flows && is_eviction_enabled) {
 #else
@@ -1113,6 +1201,7 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
    if (SGX_cls_count(ofproto->bridge_id, table_id)>SGX_table_mflows(ofproto->bridge_id, table_id)
            && SGX_eviction_fields_enable(ofproto->bridge_id, table_id)){
 #endif
+
     	/* 'table' contains more flows than allowed.  We might not be able to
          * evict them right away because of the asynchronous nature of flow
          * table changes.  Schedule eviction for later. */
@@ -1125,6 +1214,11 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
             /* We're already deleting flows, nothing more to do. */
             break;
         }
+    }
+    CLOSE
+    if(s->groups) {
+        SHOWTIME
+        SHOWTIME5
     }
 }
 
@@ -6413,7 +6507,7 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
 
     BUNDLE_BEGIN();
 
-    bool no_change = false; unsigned int random_v = random_uint32();
+    bool no_change, random_v = random_uint32();
     HCALL(
         CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction),
         VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(fields), VAR(n_fields, 'u'), VAR(random_v, 'u'), VAR(no_change)
