@@ -38,6 +38,8 @@
 #define QUEUE_ITEM_TYPE_FOR_END 19
 #define QUEUE_ITEM_TYPE_WHILE_END 20
 #define QUEUE_ITEM_TYPE_IF 21
+#define QUEUE_ITEM_TYPE_IF_END 22
+
 
 #define MAX_FCS 200
 #define MAX_TS 200
@@ -67,6 +69,7 @@ struct hotcall_batch {
     struct ecall_queue_item *queue[MAX_FCS];
     unsigned int queue_len;
     int error;
+    bool ignore_hcalls;
 };
 
 struct hotcall {

@@ -24,6 +24,7 @@ hotcall_init(struct shared_memory_ctx *ctx, sgx_enclave_id_t eid) {
     ctx->hcall.hotcall_in_progress = false;
     ctx->hcall.batch.queue_len = 0;
     ctx->hcall.is_inside_chain = false;
+    ctx->hcall.batch.ignore_hcalls = false;
 
     global_eid = eid;
     _sm_ctx = ctx;
@@ -125,9 +126,12 @@ hotcall_bundle_if_end(struct shared_memory_ctx *sm_ctx) {
     struct hotcall_batch *batch;
     struct ecall_queue_item *it;
     batch = &sm_ctx->hcall.batch;
-    unsigned int branch_len = 0, else_len = 0, then_len = 0;
-    for(it = batch->queue[batch->queue_len - 1]; it-> type != QUEUE_ITEM_TYPE_IF; --it) {
-        if(it->type == QUEUE_ITEM_TYPE_IF_ELSE) {
+    unsigned int branch_len = 0, else_len = 0, then_len = 0, nesting = 0;
+    for(it = batch->queue[batch->queue_len - 1]; it-> type != QUEUE_ITEM_TYPE_IF || nesting > 0; --it) {
+        if(it->type == QUEUE_ITEM_TYPE_IF_END) nesting++;
+        else if(it->type == QUEUE_ITEM_TYPE_IF) nesting --;
+
+        if(it->type == QUEUE_ITEM_TYPE_IF_ELSE && nesting == 0) {
             else_len = branch_len;
             branch_len = 1;
         } else {
@@ -139,6 +143,11 @@ hotcall_bundle_if_end(struct shared_memory_ctx *sm_ctx) {
     }
     it->call.tif.config->else_branch_len = else_len;
     it->call.tif.config->then_branch_len = branch_len;
+
+    struct ecall_queue_item *item;
+    item = next_queue_item(sm_ctx);
+    item->type = QUEUE_ITEM_TYPE_IF_END;
+    enqueue_item(sm_ctx, item);
 }
 
 

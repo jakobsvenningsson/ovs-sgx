@@ -382,3 +382,95 @@ TEST(if,11) {
     ASSERT_EQ(x, 199);
     ASSERT_EQ(y, 3);
 }
+
+TEST(if,12) {
+
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    unsigned int n_iters = 10;
+    int xs[n_iters] = { 0 };
+    int x = 0;
+    bool always_true;
+    HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(always_true, 'b'));
+
+    IF(
+        ((struct if_config) { .predicate_fmt = "b" }), VAR(always_true, 'b')
+    );
+    THEN
+        BEGIN_FOR((struct for_config) {
+            .n_iters = &n_iters
+        });
+            IF(
+                ((struct if_config) { .predicate_fmt = "b" }),
+                VAR(always_true, 'b')
+            );
+            THEN
+                HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+                HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
+            END
+        END_FOR();
+    END
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, n_iters);
+    for(int i = 0; i < n_iters; ++i) ASSERT_EQ(xs[i], 1);
+}
+
+TEST(if,13) {
+
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    int x = 0;
+
+    BUNDLE_IF_TRUE(NULL);
+
+    BUNDLE_IF_ELSE();
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+
+    BUNDLE_IF_END();
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 5);
+}
+
+TEST(if,14) {
+
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    int x = 0;
+
+    BUNDLE_IF_TRUE(true);
+
+    BUNDLE_IF_ELSE();
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+
+    BUNDLE_IF_END();
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(x, 0);
+}

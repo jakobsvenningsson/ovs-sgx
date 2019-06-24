@@ -25,12 +25,13 @@
     }; \
     struct hotcall_functionconfig CAT2(HCALL_CONFIG_, UNIQUE_ID) = CONFIG; \
     CAT2(HCALL_CONFIG_, UNIQUE_ID).n_params = sizeof(CAT2(HCALL_ARGS_, UNIQUE_ID))/sizeof(struct parameter);\
-    (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
-        get_fcall_((SM_CTX), &CAT2(HCALL_CONFIG_, UNIQUE_ID), CAT2(HCALL_ARGS_, UNIQUE_ID));\
+    if(!(SM_CTX)->hcall.batch.ignore_hcalls) { \
+        (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
+            get_fcall_((SM_CTX), &CAT2(HCALL_CONFIG_, UNIQUE_ID), CAT2(HCALL_ARGS_, UNIQUE_ID));\
         if(_ASYNC(SM_CTX, false) != 1) { \
-        make_hotcall(&(SM_CTX)->hcall); \
+            make_hotcall(&(SM_CTX)->hcall); \
+        }\
     }
-
 #define HCALL(CONFIG, ...) \
     _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
@@ -40,6 +41,13 @@
 
 #define CHAIN_BEGIN() hotcall_bundle_chain_begin(_sm_ctx)
 #define CHAIN_CLOSE() hotcall_bundle_chain_close(_sm_ctx)
+
+#define BUNDLE_IF_TRUE(CONDITION) \
+    _sm_ctx->hcall.batch.ignore_hcalls = CONDITION ? false : true;
+#define BUNDLE_IF_ELSE() \
+    _sm_ctx->hcall.batch.ignore_hcalls = !_sm_ctx->hcall.batch.ignore_hcalls;
+#define BUNDLE_IF_END() \
+    _sm_ctx->hcall.batch.ignore_hcalls = false;
 
 
 #ifdef __cplusplus
@@ -81,7 +89,10 @@ hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx);
 void
 hotcall_bundle_error(struct shared_memory_ctx *sm_ctx, int error_code);
 
-#define RETURN hotcall_bundle_error(_sm_ctx, 0)
+#define RETURN \
+    if(!(_sm_ctx)->hcall.batch.ignore_hcalls) { \
+        hotcall_bundle_error(_sm_ctx, 0);\
+    }
 
 static inline void
 make_hotcall(struct hotcall *hcall) {
@@ -118,13 +129,14 @@ hotcall_bundle_begin(struct shared_memory_ctx *sm_ctx) {
     sm_ctx->hcall.batch.error = 0;
     sm_ctx->hcall.hotcall_in_progress = true;
     sm_ctx->hcall.batch.queue_len = 0;
-
+    sm_ctx->hcall.batch.ignore_hcalls = false;
 }
 
 static inline void
 hotcall_bundle_end(struct shared_memory_ctx *sm_ctx) {
     hotcall_bundle_flush(sm_ctx);
     sm_ctx->hcall.hotcall_in_progress = false;
+    sm_ctx->hcall.batch.ignore_hcalls = false;
 }
 
 static inline int
@@ -151,7 +163,7 @@ static inline struct ecall_queue_item *
 next_queue_item(struct shared_memory_ctx *sm_ctx) {
     struct ecall_queue_item *item;
     item = &sm_ctx->hcall.fcs[sm_ctx->hcall.idx++];
-    if(sm_ctx->hcall.idx == MAX_TS) {
+    if(sm_ctx->hcall.idx == MAX_FCS) {
         sm_ctx->hcall.idx = 0;
     }
     return item;

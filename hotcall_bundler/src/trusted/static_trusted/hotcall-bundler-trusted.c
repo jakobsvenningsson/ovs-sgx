@@ -511,7 +511,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
                     case QUEUE_ITEM_TYPE_ERROR:
                         sm_ctx->hcall.batch.error = queue_item->call.err.error_code;
                         goto batch_done;
-                    case QUEUE_ITEM_TYPE_IF_ELSE:
+                    case QUEUE_ITEM_TYPE_IF_ELSE: case QUEUE_ITEM_TYPE_IF_END:
                         break;
                     default:
                         SWITCH_DEFAULT_REACHED
