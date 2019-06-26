@@ -23,7 +23,7 @@
     struct parameter CAT2(HCALL_ARGS_, UNIQUE_ID)[] = { \
         __VA_ARGS__ \
     }; \
-    struct hotcall_functionconfig CAT2(HCALL_CONFIG_, UNIQUE_ID) = CONFIG; \
+    struct hotcall_function_config CAT2(HCALL_CONFIG_, UNIQUE_ID) = CONFIG; \
     CAT2(HCALL_CONFIG_, UNIQUE_ID).n_params = sizeof(CAT2(HCALL_ARGS_, UNIQUE_ID))/sizeof(struct parameter);\
     if(!(SM_CTX)->hcall.batch.ignore_hcalls) { \
         (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
@@ -55,44 +55,11 @@ extern "C" {
 #endif
 
 void
+hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *config, struct parameter *params);
+void
 hotcall_init(struct shared_memory_ctx *sm_ctx, sgx_enclave_id_t _global_eid);
 void
 hotcall_destroy(struct shared_memory_ctx *sm_ctx);
-void
-hotcall_bundle_if(struct shared_memory_ctx *sm_ctx, struct if_config *config, struct parameter *params, struct postfix_item *postfix);
-void
-hotcall_bundle_if_else(struct shared_memory_ctx *sm_ctx);
-void
-hotcall_bundle_if_end(struct shared_memory_ctx *sm_ctx);
-void
-hotcall_bundle_assign_var(struct shared_memory_ctx *sm_ctx, struct parameter *dst, struct parameter *src);
-void
-hotcall_bundle_assign_ptr(struct shared_memory_ctx *sm_ctx, struct parameter *dst, struct parameter *src);
-void
-hotcall_bundle_filter(struct shared_memory_ctx *sm_ctx, struct filter_config *config, struct parameter *params, struct postfix_item *postfix);
-void
-hotcall_bundle_map(struct shared_memory_ctx *sm_ctx, struct map_config *config, struct parameter *params);
-void
-hotcall_bundle_reduce(struct shared_memory_ctx *sm_ctx, struct reduce_config *config, struct parameter *params);
-void
-hotcall_bundle_do_while(struct shared_memory_ctx *sm_ctx, struct do_while_config *config, struct parameter *body_params, struct parameter *condition_params, struct postfix_item *postfix);
-void
-hotcall_bundle_for_each(struct shared_memory_ctx *sm_ctx, struct for_each_config *config, struct parameter *params);
-void
-hotcall_bundle_for_begin(struct shared_memory_ctx *sm_ctx, struct for_config *config);
-void
-hotcall_bundle_while_begin(struct shared_memory_ctx *sm_ctx, struct while_config *config, struct parameter *params, struct postfix_item *postfix);
-void
-hotcall_bundle_for_end(struct shared_memory_ctx *sm_ctx);
-void
-hotcall_bundle_while_end(struct shared_memory_ctx *sm_ctx);
-void
-hotcall_bundle_error(struct shared_memory_ctx *sm_ctx, int error_code);
-
-#define RETURN \
-    if(!(_sm_ctx)->hcall.batch.ignore_hcalls) { \
-        hotcall_bundle_error(_sm_ctx, 0);\
-    }
 
 static inline void
 make_hotcall(struct hotcall *hcall) {
@@ -197,9 +164,33 @@ calculate_loop_length(struct hotcall *hcall, int type) {
     }
 }
 
+static inline void
+calculate_if_body_length(struct shared_memory_ctx *sm_ctx) {
+    struct hotcall_batch *batch;
+    struct ecall_queue_item *it;
+    batch = &sm_ctx->hcall.batch;
+    unsigned int branch_len = 0, else_len = 0, then_len = 0, nesting = 0;
+    for(it = batch->queue[batch->queue_len - 1]; it-> type != QUEUE_ITEM_TYPE_IF || nesting > 0; --it) {
+        if(it->type == QUEUE_ITEM_TYPE_IF_END) nesting++;
+        else if(it->type == QUEUE_ITEM_TYPE_IF) nesting --;
+
+        if(it->type == QUEUE_ITEM_TYPE_IF_ELSE && nesting == 0) {
+            else_len = branch_len;
+            branch_len = 1;
+        } else {
+            branch_len++;
+        }
+        if(it == sm_ctx->hcall.fcs) {
+            it = sm_ctx->hcall.fcs + MAX_FCS;
+        }
+    }
+    it->call.tif.config->else_branch_len = else_len;
+    it->call.tif.config->then_branch_len = branch_len;
+}
+
 
 static inline
-struct ecall_queue_item * get_fcall_(struct shared_memory_ctx *sm_ctx, struct hotcall_functionconfig *config, struct parameter *params) {
+struct ecall_queue_item * get_fcall_(struct shared_memory_ctx *sm_ctx, struct hotcall_function_config *config, struct parameter *params) {
     struct ecall_queue_item *item;
     item = next_queue_item(sm_ctx);
     item->type = QUEUE_ITEM_TYPE_FUNCTION;

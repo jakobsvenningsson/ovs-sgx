@@ -5,7 +5,7 @@
 void
 hotcall_handle_do_while(struct hotcall_do_while *dw, struct hotcall_config *hotcall_config) {
     struct hotcall_function fc;
-    struct hotcall_functionconfig config = {
+    struct hotcall_function_config config = {
         .function_id = dw->config->function_id,
         .n_params = dw->config->body_n_params
     };

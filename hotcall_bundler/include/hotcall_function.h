@@ -8,8 +8,7 @@
 
 enum parameter_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE, POINTER_TYPE_v2, VECTOR_TYPE, STRUCT_TYPE, VECTOR_TYPE_v2 };
 
-#define CONFIG(...) ((struct hotcall_functionconfig)  { __VA_ARGS__ })
-
+#define CONFIG(...) ((struct hotcall_function_config)  { __VA_ARGS__ })
 
 #define VAR(VAL, ...) (struct parameter) { .type = VARIABLE_TYPE, .value = { .variable = { .arg = &(VAL), __VA_ARGS__ }}}
 #define VAR_v2(VAL, ...) (struct parameter) { .type = VARIABLE_TYPE, .value = { .variable = { .arg = (VAL), __VA_ARGS__ }}}
@@ -21,22 +20,8 @@ enum parameter_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE, POINTER_TYPE_v
 #define VECTOR(...) (struct parameter) { .type = VECTOR_TYPE, .value = { .vector = { __VA_ARGS__ }}}
 #define VECTOR_v2(VAL,...) (struct parameter) { .type = VECTOR_TYPE_v2, .value = { .vector_v2 = { .arg = (VAL), __VA_ARGS__ }}}
 
-
-
-//#define VECTOR_v3(ID, VAL,...) \
-//    struct parameter CAT2(VECTOR_V3, ID)[] = { \
-//        __VA_ARGS__\
-//    }; \
-//    (struct parameter) { .type = VECTOR_TYPE_v2, .value = { .vector_v2 = { .arg = &(VAL), __VA_ARGS__ }}}
-//#define VECTOR_v3(UNIQUE_ID, VAL,...) \
-
-
 #define FUNC(...) (struct parameter) { .type = FUNCTION_TYPE, .value = { .function = { __VA_ARGS__ }}}
 #define STRUCT(VAL, ...) (struct parameter) { .type = STRUCT_TYPE, .value = { .struct_ = { .arg = (VAL), __VA_ARGS__ }}}
-
-
-//#define PTR(VAL, ...) (struct parameter) { .type = POINTER_TYPE,   .value = { .pointer = { .arg = (void *) (VAL), __VA_ARGS__ }}}
-//#define VECTOR(...) (struct parameter) { .type = VECTOR_TYPE, .value = { .vector = { __VA_ARGS__ }}}
 
 struct variable_parameter {
     void *arg;
@@ -44,8 +29,6 @@ struct variable_parameter {
     bool dereference;
     int member_offset;
 };
-
-
 
 struct function_parameter {
     uint8_t function_id;
@@ -64,7 +47,6 @@ struct parameter;
 
 struct struct_parameter {
     struct parameter *arg;
-    //char member_fmt;
     unsigned int member_offset;
     unsigned int struct_size;
 };
@@ -106,10 +88,7 @@ struct parameter {
 };
 
 
-
-
-
-struct hotcall_functionconfig {
+struct hotcall_function_config {
     const uint8_t function_id;
     const bool has_return;
     const bool async;
@@ -118,7 +97,7 @@ struct hotcall_functionconfig {
 
 struct hotcall_function {
     struct parameter *params;
-    struct hotcall_functionconfig *config;
+    struct hotcall_function_config *config;
     void *return_value;
     void *args[HOTCALL_MAX_ARG];
 };

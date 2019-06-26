@@ -20,7 +20,6 @@
 
 
 #define QUEUE_ITEM_TYPE_IF_NULL 1
-#define QUEUE_ITEM_TYPE_GUARD 2
 #define QUEUE_ITEM_TYPE_DESTROY 3
 #define QUEUE_ITEM_TYPE_FUNCTION 4
 #define QUEUE_ITEM_TYPE_FOR_EACH 5
@@ -31,7 +30,6 @@
 #define QUEUE_ITEM_TYPE_MAP 12
 #define QUEUE_ITEM_TYPE_ERROR 13
 #define QUEUE_ITEM_TYPE_REDUCE 14
-//#define QUEUE_ITEM_TYPE_LOOP_END 15
 #define QUEUE_ITEM_TYPE_IF_ELSE 16
 #define QUEUE_ITEM_TYPE_ASSIGN_VAR 17
 #define QUEUE_ITEM_TYPE_ASSIGN_PTR 18
@@ -39,7 +37,6 @@
 #define QUEUE_ITEM_TYPE_WHILE_END 20
 #define QUEUE_ITEM_TYPE_IF 21
 #define QUEUE_ITEM_TYPE_IF_END 22
-
 
 #define MAX_FCS 200
 #define MAX_TS 200
@@ -86,9 +83,7 @@ struct hotcall {
     struct hotcall_batch batch;
 
     struct ecall_queue_item fcs[MAX_FCS];
-    //void *args[MAX_FCS][HOTCALL_MAX_ARG];
     size_t idx;
-    //size_t len;
 };
 
 struct shared_memory_ctx {

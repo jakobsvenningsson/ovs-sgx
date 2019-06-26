@@ -13,7 +13,6 @@
 #include "for.h"
 #include "while.h"
 
-
 void
 hotcall_register_config(struct hotcall_config *config) {
     hotcall_config = config;
@@ -77,7 +76,7 @@ execute_bundle(struct hotcall_batch *batch) {
                 hotcall_handle_reduce(&queue_item->call.re, hotcall_config);
                 break;
             case QUEUE_ITEM_TYPE_ERROR:
-                batch->error = queue_item->call.err.error_code;
+                batch->error = queue_item->call.err.config->error_code;
                 goto batch_done;
             case QUEUE_ITEM_TYPE_IF_ELSE: case QUEUE_ITEM_TYPE_IF_END:
                 break;
@@ -87,7 +86,7 @@ execute_bundle(struct hotcall_batch *batch) {
         n++;
         continue_loop: ;
     }
-    
+
     batch_done:
 
     return 0;

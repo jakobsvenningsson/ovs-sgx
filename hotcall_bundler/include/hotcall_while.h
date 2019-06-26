@@ -5,7 +5,7 @@
 #include "hotcall_function.h"
 
 #define END_WHILE() \
-    hotcall_bundle_while_end(_sm_ctx)
+    hotcall_enqueue_item(_sm_ctx, QUEUE_ITEM_TYPE_WHILE_END, NULL, NULL)
 
 
 #define _BEGIN_WHILE(SM_CTX, ID, CONFIG, ...) \
@@ -15,7 +15,8 @@
     struct while_config CAT2(WHILE_CONFIG_,ID) = CONFIG;\
     CAT2(WHILE_CONFIG_,ID).n_params = sizeof(CAT2(FILTER_ARG_,ID))/sizeof(struct parameter);\
     struct postfix_item CAT2(POSTFIX_, ID)[strlen(CAT2(WHILE_CONFIG_, ID).predicate_fmt)];\
-    hotcall_bundle_while_begin(SM_CTX, &CAT2(WHILE_CONFIG_,ID), CAT2(FILTER_ARG_, ID), CAT2(POSTFIX_, ID))
+    CAT2(WHILE_CONFIG_,ID).postfix = CAT2(POSTFIX_, ID);\
+    hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_WHILE_BEGIN, &CAT2(WHILE_CONFIG_,ID), CAT2(FILTER_ARG_, ID))
 
 #define BEGIN_WHILE(CONFIG, ...) \
     _BEGIN_WHILE(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
