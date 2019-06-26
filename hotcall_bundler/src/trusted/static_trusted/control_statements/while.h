@@ -8,7 +8,7 @@
 
 static inline unsigned int
 hotcall_handle_while_begin(struct hotcall_while_start *while_s, struct hotcall_config *hotcall_config, struct loop_stack_item *loop_stack, unsigned int loop_stack_pos, int n, uint8_t *exclude_list) {
-    if(!evaluate_postfix(while_s->config->postfix, while_s->config->postfix_length, hotcall_config, (loop_stack_pos > 0 ? loop_stack[loop_stack_pos - 1].offset : 0 ))) {
+    if(!evaluate_predicate(while_s->config->postfix, while_s->config->postfix_length, hotcall_config, (loop_stack_pos > 0 ? loop_stack[loop_stack_pos - 1].offset : 0 ))) {
         memset(exclude_list + n, 1, while_s->config->body_len + 2);
         loop_stack_pos--;
         while_s->config->loop_in_process = false;

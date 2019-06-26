@@ -1,5 +1,31 @@
 #include "filter.h"
-#include "boolean_expression_translator.h"
+#include "predicate.h"
+
+void
+copy_filtered_results(struct vector_parameter *output_vec, struct vector_parameter *input_vec, unsigned int len, int results[len]) {
+    int n_include = 0;
+    for(int n = 0; n < len; ++n) {
+        if(results[n]) {
+            switch(output_vec->fmt) {
+                case 'u':
+                    ((unsigned int *) output_vec->arg)[n_include] = ((unsigned int *) input_vec->arg)[n];
+                    break;
+                case 'b':
+                    ((bool *) output_vec->arg)[n_include] = ((bool *) input_vec->arg)[n];
+                    break;
+                case 'd':
+                    ((int *) output_vec->arg)[n_include] = ((int *) input_vec->arg)[n];
+                    break;
+                case 'p':
+                    ((void **) output_vec->arg)[n_include] = ((void **) input_vec->arg)[n];
+                    break;
+                default: SWITCH_DEFAULT_REACHED
+            }
+            n_include++;
+        }
+    }
+    *(output_vec->len) =  n_include;
+}
 
 void
 hotcall_handle_filter(struct hotcall_filter *fi, struct hotcall_config *hotcall_config) {
@@ -58,6 +84,6 @@ hotcall_handle_filter(struct hotcall_filter *fi, struct hotcall_config *hotcall_
 
     unsigned int len = *input_vec->len;
     int results[len];
-    evaluate_postfix_batch(fi->config->postfix, fi->config->postfix_length, hotcall_config, len, results, 0);
+    evaluate_predicate_batch(fi->config->postfix, fi->config->postfix_length, hotcall_config, len, results, 0);
     copy_filtered_results(output_vec, input_vec, len, results);
 }

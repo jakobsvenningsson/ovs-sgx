@@ -1,5 +1,6 @@
 #include "reduce.h"
-#include "boolean_expression_translator.h"
+#include "predicate.h"
+#include "parameter.h"
 
 static inline void
 combine_result(char op, struct parameter *accumulator, void *ret, int n) {
@@ -152,7 +153,7 @@ hotcall_handle_reduce(struct hotcall_reduce *re, struct hotcall_config *hotcall_
 
     int ret = 0;
     void *args[in_len][n_params];
-    parse_arguments(re->params, n_params, in_len, args, 0);
+    parse_arguments(re->params, in_len, n_params, args, 0);
     for(int i = 0; i < in_len; ++i) {
         hotcall_config->execute_function(re->config->function_id, args[i], &ret);
         combine_result(re->config->op, accumulator, &ret, i);

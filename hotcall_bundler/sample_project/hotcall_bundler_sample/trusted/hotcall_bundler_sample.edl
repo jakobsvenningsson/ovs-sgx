@@ -4,7 +4,7 @@ enclave {
 
     include "stdbool.h"
 
-    from "hotcall_bundler.edl" import ecall_start_poller;
+    from "hotcall_bundler.edl" import hotcall_bundler_start;
 
     untrusted {
       void

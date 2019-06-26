@@ -53,7 +53,8 @@ hotcall_bundler_C_Files := static_trusted/hotcall_bundler.c \
 						   static_trusted/control_statements/for.c \
 						   static_trusted/control_statements/while.c \
 						   static_trusted/control_statements/if.c \
-						   static_trusted/boolean_expression_translator.c
+						   static_trusted/parameter.c \
+						   static_trusted/predicate.c
 
 hotcall_bundler_Include_Paths := -Istatic_trusted -Istatic_trusted/control_statements -Istatic_trusted/functional_operators -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -I../../include
 

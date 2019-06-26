@@ -1,6 +1,8 @@
 #include "do_while.h"
-#include "boolean_expression_translator.h"
+#include "predicate.h"
 #include "hotcall_function.h"
+#include "parameter.h"
+
 
 void
 hotcall_handle_do_while(struct hotcall_do_while *dw, struct hotcall_config *hotcall_config) {
@@ -12,7 +14,7 @@ hotcall_handle_do_while(struct hotcall_do_while *dw, struct hotcall_config *hotc
     fc.config = &config;
     parse_function_arguments(dw->body_params, config.n_params, 0, fc.args);
     while(true) {
-        if(!evaluate_postfix(dw->config->postfix, dw->config->postfix_length, hotcall_config, 0)) {
+        if(!evaluate_predicate(dw->config->postfix, dw->config->postfix_length, hotcall_config, 0)) {
             return;
         }
         hotcall_config->execute_function(dw->config->function_id, fc.args, NULL);

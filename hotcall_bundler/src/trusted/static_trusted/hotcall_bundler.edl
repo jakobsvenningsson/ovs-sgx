@@ -8,6 +8,6 @@ enclave {
 
     trusted {
     	    public int
-            ecall_start_poller([user_check] struct shared_memory_ctx *sm_ctx);
+            hotcall_bundler_start([user_check] struct shared_memory_ctx *sm_ctx);
     };
 };

@@ -1,6 +1,7 @@
 #include "for_each.h"
-#include "boolean_expression_translator.h"
+#include "predicate.h"
 #include "execute_function.h"
+#include "parameter.h"
 
 void
 hotcall_handle_for_each(struct hotcall_for_each *tor, struct hotcall_config *hotcall_config) {
@@ -19,6 +20,6 @@ hotcall_handle_for_each(struct hotcall_for_each *tor, struct hotcall_config *hot
     #endif
 
     void *args[n_iters][n_params];
-    parse_arguments(tor->params, n_params, n_iters, args, 0);
+    parse_arguments(tor->params, n_iters, n_params, args, 0);
     execute_function(hotcall_config, tor->config->function_id, n_iters, n_params, args);
 }

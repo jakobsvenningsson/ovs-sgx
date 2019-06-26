@@ -10,7 +10,6 @@
 #include "sample.h"
 
 #include "hotcall_bundler_sample_u.h"
-
 #include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 #include "examples.h"

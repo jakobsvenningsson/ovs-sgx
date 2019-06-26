@@ -1,6 +1,7 @@
 #include "map.h"
-#include "boolean_expression_translator.h"
+#include "predicate.h"
 #include "execute_function.h"
+#include "parameter.h"
 
 void
 hotcall_handle_map(struct hotcall_map *ma, struct hotcall_config *hotcall_config) {
@@ -18,6 +19,6 @@ hotcall_handle_map(struct hotcall_map *ma, struct hotcall_config *hotcall_config
     #endif
 
     void *args[n_iters][n_params];
-    parse_arguments(ma->params, n_params, n_iters, args, 0);
+    parse_arguments(ma->params, n_iters, n_params, args, 0);
     execute_function(hotcall_config, ma->config->function_id, n_iters, n_params, args);
 }

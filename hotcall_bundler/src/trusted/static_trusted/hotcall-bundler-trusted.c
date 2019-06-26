@@ -1,17 +1,13 @@
 #include "hotcall_bundler_t.h"  /* print_string */
 #include "hotcall-bundler-trusted.h"
-#include <stdio.h>
-#include <ctype.h>
-#include "assert.h"
-#include "boolean_expression_translator.h"
 #include "if.h"
 #include "do_while.h"
 #include "reduce.h"
 #include "map.h"
-#include "execute_function.h"
 #include "for_each.h"
 #include "for.h"
 #include "while.h"
+#include "parameter.h"
 
 void
 hotcall_register_config(struct hotcall_config *config) {
@@ -19,7 +15,7 @@ hotcall_register_config(struct hotcall_config *config) {
 }
 
 static inline int
-execute_bundle(struct hotcall_batch *batch) {
+hotcall_execute_bundle(struct hotcall_batch *batch) {
 
     struct ecall_queue_item *queue_item;
     struct hotcall_function *fc;
@@ -93,7 +89,7 @@ execute_bundle(struct hotcall_batch *batch) {
 }
 
 int
-ecall_start_poller(struct shared_memory_ctx *sm_ctx){
+hotcall_bundler_start(struct shared_memory_ctx *sm_ctx){
 
     int exit_code;
 
@@ -104,7 +100,7 @@ ecall_start_poller(struct shared_memory_ctx *sm_ctx){
         if (sm_ctx->hcall.run) {
             sm_ctx->hcall.run = false;
 
-            exit_code = execute_bundle(&sm_ctx->hcall.batch);
+            exit_code = hotcall_execute_bundle(&sm_ctx->hcall.batch);
             if(exit_code) goto exit;
 
             sm_ctx->hcall.is_done = true;
