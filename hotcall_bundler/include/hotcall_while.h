@@ -22,6 +22,7 @@
 
 struct while_config {
     const char *predicate_fmt;
+    bool iter_vectors;
     bool loop_in_process;
     unsigned int body_len;
     unsigned int n_params;

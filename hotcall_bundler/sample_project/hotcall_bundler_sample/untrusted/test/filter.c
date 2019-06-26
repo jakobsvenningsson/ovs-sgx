@@ -14,18 +14,21 @@ TEST(filter,1) {
 
     unsigned int n_iters = 10, out_length;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    int zs[n_iters] = { 0 };
+
     int ys[n_iters] = { 0 };
 
     //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
     //struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &out_length) }, p2 = vec2[1];
 
     struct parameter function_parameter[] = {
-        VECTOR(xs, 'd', &n_iters)
+        VECTOR(xs, 'd', &n_iters),
+        VECTOR(zs, 'd', &n_iters)
     };
 
     FILTER(
         ((struct filter_config) { .predicate_fmt = "b" }),
-        FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1),
+        FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 2),
         VECTOR(ys, 'd', &out_length)
     );
 
@@ -89,17 +92,18 @@ TEST(filter,3) {
 
     unsigned int n_iters = 10, out_length;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    int zs[n_iters] = { 0 };
     int ys[n_iters] = { 0 };
     int y = 6;
 
     //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
     //struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &out_length) }, p2 = vec2[1];
 
-    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(y, 'd') };
+    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(y, 'd'), VECTOR(zs, 'd') };
 
     FILTER(
         ((struct filter_config) { .predicate_fmt = "b" }),
-        FUNC(.function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2),
+        FUNC(.function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 3),
         VECTOR(ys, 'd', &out_length)
     );
 
@@ -197,7 +201,7 @@ TEST(filter,6) {
     BUNDLE_BEGIN();
 
     unsigned int n_iters = 10, out_length;
-    unsigned xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, ys[n_iters] = { 0, 0, 0, 0, 0, 0 ,0 , 1, 0, 1 }, zs[n_iters] = { 0 };
+    unsigned int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, ys[n_iters] = { 0, 0, 0, 0, 0, 0 ,0 , 1, 0, 1 }, zs[n_iters] = { 0 };
     unsigned int y = 6;
 
     //struct parameter vec1[] = { VAR(xs, 'u'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];

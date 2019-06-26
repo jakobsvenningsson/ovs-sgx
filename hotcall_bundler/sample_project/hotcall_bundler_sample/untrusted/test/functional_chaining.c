@@ -14,6 +14,7 @@ TEST(chaining,1) {
     BUNDLE_BEGIN();
     unsigned int n_params = 2, n_iters = 10, out_length1, out_length2;
     int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    int f_res[n_iters] = { 0 };
     int ys[n_iters] = { 0 };
     int ws[n_iters] = { 0 };
     int us[n_iters] = { 0 };
@@ -29,13 +30,13 @@ TEST(chaining,1) {
 
     int y = 6, z = 2, w = 3, v = 14;
 
-    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(y, 'd') };
+    struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(y, 'd'), VECTOR(f_res, 'd', &n_iters), };
 
     CHAIN_BEGIN();
 
     FILTER(
         ((struct filter_config) { .predicate_fmt = "b" }),
-        FUNC(.function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 2),
+        FUNC(.function_id = hotcall_ecall_greater_than_y, .params = function_parameters, .n_params = 3),
         VECTOR(ys, 'd', &out_length1)
     );
     MAP(

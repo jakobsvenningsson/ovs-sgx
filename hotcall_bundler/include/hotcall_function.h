@@ -40,6 +40,7 @@ enum parameter_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE, POINTER_TYPE_v
 struct variable_parameter {
     void *arg;
     char fmt;
+    bool dereference;
     int member_offset;
 };
 
@@ -78,6 +79,7 @@ struct vector_parameter {
     unsigned int *len;
     bool dereference;
     int member_offset;
+    unsigned int *vector_offset;
 };
 
 struct vector_parameter_v2 {

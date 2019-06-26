@@ -15,7 +15,7 @@ TEST(reduce,1) {
     int xs[n_iters] = { 0 };
     int res = 0;
 
-    struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     REDUCE(
         ((struct reduce_config) {
@@ -90,4 +90,30 @@ TEST(reduce, 3) {
     hotcall_test_teardown();
 
     ASSERT_EQ(res, true);
+}
+
+TEST(reduce, 4) {
+    //Contract:
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    unsigned int n_iters = 7;
+    int xs[n_iters] = { 10, 10, 10, 10, 10, 10, 10 };
+    int res;
+
+
+    REDUCE(
+        ((struct reduce_config) {
+            .function_id = 255,
+            .op = '+',
+        }),
+        VECTOR(xs, 'd', &n_iters), VAR(res, 'd')
+    );
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(res, 70);
 }

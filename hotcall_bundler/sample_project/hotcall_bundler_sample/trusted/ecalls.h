@@ -1,7 +1,9 @@
 #ifndef _H_ECALLS_
-#define _H_ECALLS
+#define _H_ECALLS_
 
 #include <stdbool.h>
+
+struct A { int x; int y; };
 
 bool
 ecall_always_true();
@@ -37,5 +39,11 @@ void
 ecall_offset_of(void **ptr, int offset);
 void *
 ecall_offset_of_ret(void *ptr, unsigned int offset);
+int
+ecall_strlen(struct A *a);
+int
+ecall_read_buffer(int *out, int size);
+int
+ecall_count();
 
 #endif

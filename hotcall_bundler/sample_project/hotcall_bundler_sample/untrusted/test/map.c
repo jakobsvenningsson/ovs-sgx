@@ -127,3 +127,38 @@ TEST(map,4) {
     ASSERT_EQ(ys[0], 2);
     ASSERT_EQ(ys[1], 3);
 }
+
+TEST(map,5) {
+    //Contract:
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    unsigned int n_iters = 10;
+    int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    int ys[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    int zs[n_iters] = { 0 };
+
+
+    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
+    //struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &n_iters) }, p2 = vec2[1];
+
+    MAP(
+        ((struct map_config) { .function_id = hotcall_ecall_plus, .n_iters = &n_iters }),
+        VECTOR(xs, 'd'),
+        VECTOR(ys, 'd'),
+        VECTOR(zs, 'd', &n_iters)
+    );
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(n_iters, 10);
+    for(int i = 0; i < n_iters; ++i) {
+        ASSERT_EQ(ys[i], i);
+        ASSERT_EQ(xs[i], i);
+        ASSERT_EQ(zs[i], i + i);
+
+    }
+}

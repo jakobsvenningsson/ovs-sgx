@@ -11,8 +11,8 @@ TEST(do_while,1) {
 
     hotcall_test_setup();
 
-    int x = 0;
-    struct parameter function_parameter[] = { VAR(x, 'd') };
+    int x = 0; bool b;
+    struct parameter function_parameter[] = { VAR(x, 'd'), VAR(b, 'b') };
 
     BUNDLE_BEGIN();
 
@@ -21,7 +21,7 @@ TEST(do_while,1) {
             .function_id = hotcall_ecall_plus_one,
             .predicate_fmt = "!b"
         }),
-        CONDITION_PARAMS(FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1)),
+        CONDITION_PARAMS(FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 2)),
         FUNCTION_PARAMS(VAR(x, 'd'))
     );
 
@@ -38,7 +38,8 @@ TEST(do_while,2) {
     hotcall_test_setup();
 
     int x = 0, y = 5;
-    struct parameter function_parameter[] = { VAR(x, 'd') };
+    bool b;
+    struct parameter function_parameter[] = { VAR(x, 'd'), VAR(b, 'b') };
 
     BUNDLE_BEGIN();
 
@@ -49,7 +50,7 @@ TEST(do_while,2) {
         }),
         CONDITION_PARAMS(VAR(x, 'd'),
                          VAR(y, 'd'),
-                         FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1)),
+                         FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 2)),
         FUNCTION_PARAMS(VAR(x, 'd'))
     );
 

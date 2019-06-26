@@ -10,15 +10,15 @@ TEST(while,1) {
     hotcall_test_setup();
 
     int x = 0;
-    bool b = false;
-    struct parameter function_parameters[] = { VAR(x, 'd') };
+    bool b = false, b1;
+    struct parameter function_parameters[] = { VAR(x, 'd'), VAR(b1, 'b') };
 
     BUNDLE_BEGIN();
 
     BEGIN_WHILE(
         ((struct while_config) { .predicate_fmt = "!(b&b|b)" }),
-        FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 1),
-        FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 1),
+        FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 2),
+        FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameters, .n_params = 2),
         VAR(b, 'b')
     );
 
@@ -94,4 +94,31 @@ TEST(while, 3) {
     hotcall_test_teardown();
 
     ASSERT_EQ(counter, 100);
+}
+
+TEST(while, 4) {
+    // Contract:
+    hotcall_test_setup();
+
+    int xs[10] = { 0 }, y = 10, z = 0;
+
+    BUNDLE_BEGIN();
+
+    BEGIN_WHILE(
+        ((struct while_config) { .predicate_fmt = "d<d", .iter_vectors = true }),
+        VAR(z, 'd'), VAR(y, 'd')
+    );
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VAR(z, 'd'));
+        HCALL(CONFIG( .function_id = hotcall_ecall_plus_one ), VECTOR(xs, 'd'));
+
+    END_WHILE();
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(z, 10);
+    for(int i = 0; i < 10; ++i) {
+        ASSERT_EQ(xs[i], 1);
+    }
 }

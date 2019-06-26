@@ -31,9 +31,9 @@ TEST(struct, 1) {
     //HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p2);
     //HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p2);
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .member_offset = MEMBER(struct A, y)));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .dereference = false, .member_offset = MEMBER(struct A, y)));
     HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .member_offset = MEMBER(struct A, x)));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .dereference = false, .member_offset = MEMBER(struct A, x)));
 
     BUNDLE_END();
 
@@ -80,7 +80,7 @@ TEST(struct, 2) {
     //HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p2);
     //HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), p2);
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .member_offset = MEMBER(struct A, x)));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .dereference = false, .member_offset = MEMBER(struct A, x)));
     HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), PTR(a_ptr, 'd', .dereference = false, .member_offset = MEMBER(struct A, y)));
     HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), PTR(a_ptr, 'd', .dereference = false, .member_offset = MEMBER(struct A, y)));
 

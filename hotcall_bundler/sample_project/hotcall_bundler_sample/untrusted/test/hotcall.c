@@ -145,9 +145,9 @@ TEST(hotcall, 7) {
     BUNDLE_BEGIN();
 
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .member_offset = offsetof(struct A, y)));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .member_offset = offsetof(struct A, x)));
-    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .member_offset = offsetof(struct A, x)));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .dereference = false, .member_offset = offsetof(struct A, y)));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .dereference = false, .member_offset = offsetof(struct A, x)));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(a, 'd', .dereference = false, .member_offset = offsetof(struct A, x)));
 
     BUNDLE_END();
 

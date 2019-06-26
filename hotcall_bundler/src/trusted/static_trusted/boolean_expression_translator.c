@@ -1,37 +1,32 @@
 #include "boolean_expression_translator.h"
 #include <string.h>
 
-static inline int
-evaluate_function(struct function_parameter *param, char ch, struct hotcall_config *hotcall_config, int offset) {
-    unsigned int n_params = param->n_params;
-    void *args[n_params];
-    parse_function_arguments(param->params, n_params, offset, args);
-    int operand = 0;
-    hotcall_config->execute_function(param->function_id, args, &operand);
-    switch(ch) {
-        case 'p': return operand;
-        case 'b': return ((bool) operand);
-        case 'd': return operand;
-        case 'u': case ui8: case ui16: case ui32:
-            return ((unsigned int) operand);
-        default:
-            SWITCH_DEFAULT_REACHED
-    }
-}
+
+enum input_type { OPERATOR, VARIABLE, VECTOR, POINTER, OPERAND, FUNCTION, NEGATION };
+struct input_item {
+    int ch;
+    enum input_type type;
+};
 
 static inline int
 evaluate_pointer(struct pointer_parameter *param) {
-    if(param->arg == NULL) return 0;
-    else return 1;
+    void *arg = (param->dereference)
+        ? ((char *) *((void **) param->arg)) + param->member_offset
+        : ((char *) param->arg) + param->member_offset;
+    return arg != NULL;
 }
 
 static inline int
 evaluate_variable(struct variable_parameter *param, char ch) {
+    void *arg = (param->dereference)
+        ? ((char *) *((void **) param->arg)) + param->member_offset
+        : ((char *) param->arg) + param->member_offset;
+
     switch(ch) {
-        case 'p': return (void *) param->arg == NULL;
-        case 'b': return *(bool *) param->arg;
-        case 'd': return *(int *) param->arg;
-        case 'u': case ui8: case ui16: case ui32: return *(unsigned int *) param->arg;
+        case 'p': return *(void **) arg != NULL;
+        case 'b': return *(bool *) arg;
+        case 'd': return *(int *) arg;
+        case 'u': case ui8: case ui16: case ui32: return *(unsigned int *) arg;
         default:
             SWITCH_DEFAULT_REACHED
     }
@@ -43,137 +38,168 @@ evaluate_variable(struct variable_parameter *param, char ch) {
 static inline int
 evaluate_vector(struct vector_parameter *param, char ch, int offset) {
     void *arg = param->arg;
+    if(param->vector_offset) {
+        offset = *param->vector_offset;
+    }
     if(param->dereference) {
         arg = ((char *) OFFSET_DEREF(param->arg, void **, offset)) + param->member_offset;
         offset = 0;
     }
     switch(ch) {
-        case 'p': return *((void **) arg + offset) == NULL;
+        case 'p': return *((void **) arg + offset) != NULL;
         case 'b': return *((bool *) arg+ offset);
         case 'd': return *((int *) arg + offset);
-        case 'u': case ui8: case ui16: case ui32: return *((unsigned int *) arg+ offset);
+        case 'u': case ui8: case ui16: case ui32: return *((unsigned int *) arg + offset);
         default:
             SWITCH_DEFAULT_REACHED
     }
 }
 
-int
-evaluate_parameter(struct postfix_item *operand_item, struct hotcall_config *hotcall_config, int offset) {
-    switch(operand_item->elem->type) {
-        case FUNCTION_TYPE: return evaluate_function(&operand_item->elem->value.function, operand_item->ch, hotcall_config, offset);
-        case POINTER_TYPE: return evaluate_pointer(&operand_item->elem->value.pointer);
-        case VECTOR_TYPE: return evaluate_vector(&operand_item->elem->value.vector, operand_item->ch, offset);
-        case VARIABLE_TYPE: return evaluate_variable(&operand_item->elem->value.variable, operand_item->ch);
-        default:
-            SWITCH_DEFAULT_REACHED
+static inline void
+evaluate_function_v3(struct function_parameter *fun_param, struct hotcall_config *hotcall_config, int n_iters, int inputs[n_iters], int offset) {
+    unsigned int n_params = fun_param->n_params;
+    void *args[n_iters][n_params];
+    parse_arguments(fun_param->params, n_params, n_iters, args, offset);
+    if(hotcall_config->batch_execute_function) {
+        hotcall_config->batch_execute_function(fun_param->function_id, n_iters, n_params, args);
+    } else {
+        for(int j = 0; j < n_iters; ++j) {
+               hotcall_config->execute_function(fun_param->function_id, args[j], args[j][n_params - 1]);
+        }
+    }
+    for(int k = 0; k < n_iters; ++k) {
+        inputs[k] = *(bool *) args[k][n_params - 1];
     }
 }
 
-static int inline
-_evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int offset) {
-
-    struct postfix_item *output[output_length], *it;
+static inline void
+_evaluate_postfix(unsigned int output_length, int n_iters, int inputs[output_length][n_iters], enum input_type input_types[output_length], int result[n_iters]) {
     unsigned int stack_pos = 0;
+    int *operand1, *operand2;
+    enum input_type op1_type, op2_type;
 
-    int operand1, operand2, res;
+    int *stack[output_length];
+    enum input_type type_stack[output_length];
 
-    char stack[output_length];
-    int input[output_length];
-
-    enum input_type { OPERATOR, OPERAND };
-    enum input_type type[output_length];
-
-    for(int i = 0; i < output_length; ++i) {
-        if(!(postfix[i].ch >= 'a' && postfix[i].ch <= 'z')) {
-            input[i] = postfix[i].ch;
-            type[i] = OPERATOR;
-        }
-        else {
-            input[i] = evaluate_parameter(&postfix[i], hotcall_config, offset);
-            type[i] = OPERAND;
-        }
-    }
+    int input;
+    int idx1, idx2;
 
     for(int i = 0; i < output_length; ++i) {
-        if(type[i] == OPERAND || input[i] == '!') {
-            stack[stack_pos++] = input[i];
-            continue;
+        switch(input_types[i]) {
+            case FUNCTION: case VECTOR: case VARIABLE: case POINTER: case NEGATION:
+                type_stack[stack_pos] = input_types[i];
+                stack[stack_pos++] = inputs[i];
+                continue;
+            case OPERATOR:
+                input = inputs[i][0];
+                break;
+            default: SWITCH_DEFAULT_REACHED
         }
-
         operand2 = stack[--stack_pos];
-        if(operand2 == '!') {
-            operand2 = !stack[--stack_pos];
+        op2_type = type_stack[stack_pos];
+        if(*operand2 == '!') {
+            operand2 = stack[--stack_pos];
+            op2_type = type_stack[stack_pos];
+            for(int j = 0; j < n_iters; ++j) operand2[j] = !operand2[j];
         }
-
 
         operand1 = stack[--stack_pos];
-        if(operand1 == '!') {
-            operand1 = !stack[--stack_pos];
+        op1_type = type_stack[stack_pos];
+        if(*operand1 == '!') {
+            operand1 = stack[--stack_pos];
+            op1_type = type_stack[stack_pos];
+            for(int j = 0; j < n_iters; ++j) operand1[j] = !operand1[j];
         }
-
-
-        switch(input[i]) {
-            case '&':
-                stack[stack_pos++] = operand1 && operand2;
-                break;
-            case '|':
-                stack[stack_pos++] = operand1 || operand2;
-                break;
-            case '>':
-                stack[stack_pos++] = operand1 > operand2;
-                break;
-            case '<':
-                stack[stack_pos++] = operand1 < operand2;
-                break;
-            case '%':
-                stack[stack_pos++] = operand1 % operand2;
-                break;
-            default:
-                SWITCH_DEFAULT_REACHED
+        for(int j = 0; j < n_iters; ++j) {
+            idx1 = op1_type == VECTOR || op1_type == FUNCTION ? j : 0;
+            idx2 = op2_type == VECTOR || op2_type == FUNCTION ? j : 0;
+            switch(input) {
+                case '&': result[j] = operand1[idx1] && operand2[idx2]; break;
+                case '|': result[j] = operand1[idx1] || operand2[idx2]; break;
+                case '>': result[j] = operand1[idx1] > operand2[idx2]; break;
+                case '<': result[j] = operand1[idx1] < operand2[idx2]; break;
+                case '%': result[j] = operand1[idx1] % operand2[idx2]; break;
+                default: SWITCH_DEFAULT_REACHED
+            }
         }
+        type_stack[stack_pos] = VECTOR;
+        stack[stack_pos++] = result;
     }
 
     operand1 = stack[--stack_pos];
-    if(operand1 == '!') operand1 = !stack[--stack_pos];
-    return operand1;
-}
-
-
-int
-evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int offset) {
-    return _evaluate_postfix(postfix, output_length, hotcall_config, offset);
-}
-
-
-int
-evaluate_postfix_batch(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int n, int result[n]) {
-    for(int i = 0; i < n; ++i) {
-        result[i] = _evaluate_postfix(postfix, output_length, hotcall_config, i);
+    if(*operand1 == '!') {
+        operand1 = stack[--stack_pos];
+        for(int i = 0; i < n_iters; ++i) result[i] = !operand1[i];
     }
 }
 
+int
+evaluate_postfix_batch(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int n, int result[n], int offset) {
+
+    int inputs[output_length][n];
+    enum input_type input_types[output_length];
+
+    for(int i = 0; i < output_length; ++i) {
+        if(!isalpha(postfix[i].ch)) {
+            inputs[i][0] = postfix[i].ch;
+            input_types[i] = postfix[i].ch == '!' ? NEGATION : OPERATOR;
+            continue;
+        }
+        switch(postfix[i].elem->type) {
+            case VARIABLE_TYPE:
+                inputs[i][0] = evaluate_variable(&postfix[i].elem->value.variable, postfix[i].ch);
+                input_types[i] = VARIABLE;
+                break;
+            case POINTER_TYPE:
+                inputs[i][0] = evaluate_pointer(&postfix[i].elem->value.pointer);
+                input_types[i] = POINTER;
+                break;
+            case VECTOR_TYPE:
+                for(int j = 0; j < n; ++j) {
+                    inputs[i][j] = evaluate_vector(&postfix[i].elem->value.vector, postfix[i].ch, j + offset);
+                }
+                input_types[i] = VECTOR;
+                break;
+            case FUNCTION_TYPE:
+                evaluate_function_v3(&postfix[i].elem->value.function, hotcall_config, n, inputs[i], offset);
+                input_types[i] = FUNCTION;
+                break;
+        }
+    }
+    if(output_length == 1) {
+        memcpy(result, inputs[0], sizeof(int) * n);
+    } else {
+        _evaluate_postfix(output_length, n, inputs, input_types, result);
+    }
+}
+
+int
+evaluate_postfix(struct postfix_item *postfix, unsigned int output_length, struct hotcall_config *hotcall_config, int offset) {
+    int res[1];
+    evaluate_postfix_batch(postfix, output_length, hotcall_config, 1, res, offset);
+    return res[0];
+}
+
 void
-copy_filtered_results(struct vector_parameter *output_vec, struct parameter *input, int *results, unsigned int len) {
+copy_filtered_results(struct vector_parameter *output_vec, struct vector_parameter *input_vec, unsigned int len, int results[len]) {
     int n_include = 0;
     for(int n = 0; n < len; ++n) {
         if(results[n]) {
             switch(output_vec->fmt) {
                 case 'u':
-                    ((unsigned int *) output_vec->arg)[n_include] = *(unsigned int *) parse_argument_v2(input, n);
+                    ((unsigned int *) output_vec->arg)[n_include] = ((unsigned int *) input_vec->arg)[n];
                     break;
                 case 'b':
-                    ((bool *) output_vec->arg)[n_include] = *(bool *) parse_argument_v2(input, n);
+                    ((bool *) output_vec->arg)[n_include] = ((bool *) input_vec->arg)[n];
                     break;
                 case 'd':
-                    ((int *) output_vec->arg)[n_include] = *(int *) parse_argument_v2(input, n);
+                    ((int *) output_vec->arg)[n_include] = ((int *) input_vec->arg)[n];
                     break;
                 case 'p':
-                    ((void **) output_vec->arg)[n_include] = *(void **) parse_argument_v2(input, n);
+                    ((void **) output_vec->arg)[n_include] = ((void **) input_vec->arg)[n];
                     break;
-                default:
-                    SWITCH_DEFAULT_REACHED
-                    break;
-                }
+                default: SWITCH_DEFAULT_REACHED
+            }
             n_include++;
         }
     }

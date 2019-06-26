@@ -30,6 +30,7 @@ ecall_plus_one_ret(int x) {
 
 bool
 ecall_greater_than_two(int *x) {
+    printf("ecall_greater_than_two %d\n", *x);
     return *x > 2 ? true : false;
 }
 
@@ -100,8 +101,6 @@ ecall_offset_of_ret(void *ptr, unsigned int offset) {
     return ((char *) ptr) + offset;
 }
 
-
-struct A { int x; int y; };
 int
 ecall_strlen(struct A *a) {
     return a->x;

@@ -78,4 +78,12 @@ benchmark_filter_naive(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
 unsigned int
 benchmark_filter_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
 
+
+unsigned int
+benchmark_map(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
+unsigned int
+benchmark_filter(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
+unsigned int
+benchmark_for_each(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
+
 #endif
