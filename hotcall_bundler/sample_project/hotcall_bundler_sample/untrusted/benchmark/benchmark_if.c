@@ -9,7 +9,7 @@ benchmark_map(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     unsigned int rounds[n_rounds];
     for(int i = 0; i < (n_rounds + warmup); ++i) {
         clear_cache();
-        unsigned int n_iters = 1000;
+        unsigned int n_iters = 10000;
         int xs[n_iters] = { 0 };
         int ys[n_iters] = { 0 };
 
@@ -37,12 +37,44 @@ benchmark_map(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 }
 
 unsigned int
+benchmark_for(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
+    unsigned int warmup = n_rounds / 10;
+    unsigned int rounds[n_rounds];
+    for(int i = 0; i < (n_rounds + warmup); ++i) {
+        clear_cache();
+        unsigned int n_iters = 10000;
+        int xs[n_iters] = { 0 };
+
+        BEGIN
+
+        hotcall_bundle_begin(sm_ctx);
+
+        BEGIN_FOR(((struct for_config) {
+            .n_iters = &n_iters
+        }));
+
+        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(xs, 'd'));
+
+        END_FOR();
+
+        hotcall_bundle_end(sm_ctx);
+
+        CLOSE
+        if(i >= warmup) {
+            rounds[i - warmup] = GET_TIME
+        }
+    }
+    qsort(rounds, n_rounds, sizeof(unsigned int), cmpfunc);
+    return rounds[n_rounds / 2];
+}
+
+unsigned int
 benchmark_filter(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     unsigned int warmup = n_rounds / 10;
     unsigned int rounds[n_rounds];
 
 
-    unsigned int n_iters = 1000;
+    unsigned int n_iters = 10000;
     int xs[n_iters] = { 0 };
     for(int i = 0; i < n_iters; ++i) {
         xs[i] = (i % 2) ? 3 : 1;
@@ -92,7 +124,7 @@ benchmark_for_each(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     unsigned int rounds[n_rounds];
 
 
-    unsigned int n_iters = 1000;
+    unsigned int n_iters = 10000;
     int xs[n_iters] = { 0 };
 
     for(int i = 0; i < (n_rounds + warmup); ++i) {

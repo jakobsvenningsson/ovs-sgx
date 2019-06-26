@@ -43,8 +43,19 @@ endif
 
 Crypto_Library_Name := sgx_tcrypto
 
-hotcall_bundler_C_Files := static_trusted/hotcall_bundler.c static_trusted/hotcall-bundler-trusted.c static_trusted/boolean_expression_translator.c
-hotcall_bundler_Include_Paths := -Istatic_untrusted -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -I../../include
+hotcall_bundler_C_Files := static_trusted/hotcall_bundler.c \
+						   static_trusted/hotcall-bundler-trusted.c \
+						   static_trusted/functional_operators/do_while.c \
+						   static_trusted/functional_operators/map.c \
+						   static_trusted/functional_operators/filter.c \
+						   static_trusted/functional_operators/reduce.c \
+						   static_trusted/functional_operators/for_each.c \
+						   static_trusted/control_statements/for.c \
+						   static_trusted/control_statements/while.c \
+						   static_trusted/control_statements/if.c \
+						   static_trusted/boolean_expression_translator.c
+
+hotcall_bundler_Include_Paths := -Istatic_trusted -Istatic_trusted/control_statements -Istatic_trusted/functional_operators -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -I../../include
 
 Flags_Just_For_C := -Wno-implicit-function-declaration -std=c11
 Common_C_Cpp_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(hotcall_bundler_Include_Paths) -fno-builtin-printf -I.

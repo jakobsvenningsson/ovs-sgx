@@ -2,6 +2,7 @@
 #define _H_FUNCTION_BUNDLER_
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define HOTCALL_MAX_ARG 25
 
