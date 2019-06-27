@@ -3,9 +3,6 @@
 
 #include "hotcall_function.h"
 #include "hotcall_utils.h"
-/*
-void
-parse_arguments(const struct parameter *param, unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params], int offset);*/
 
 static inline void *
 parse_variable_argument(const struct variable_parameter *var_param) {
@@ -19,32 +16,42 @@ parse_pointer_argument(const struct pointer_parameter *ptr_param) {
         : (char *) ptr_param->arg + ptr_param->member_offset;
 }
 
-static inline void *
-parse_vector_argument(const struct vector_parameter *vec_param, unsigned int i) {
+static inline void
+parse_vector_argument(const struct vector_parameter *vec_param, unsigned int offset, unsigned int param_index, unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+
+    // User has specified a custom offset.
     if(vec_param->vector_offset) {
-        i = *vec_param->vector_offset;
+        offset = *vec_param->vector_offset;
     }
+
     if(vec_param->dereference) {
-        return ((char *) *((void **) vec_param->arg + i)) +  vec_param->member_offset;
-    } else {
-        switch(vec_param->fmt) {
-            case 'p': return ((char *) ((void **) vec_param->arg + i)) + vec_param->member_offset;
-            case 'd': return ((char *) ((int *) vec_param->arg + i)) + vec_param->member_offset;
-            case 'b': return ((char *) ((bool *) vec_param->arg + i)) + vec_param->member_offset;
-            case 'u': case ui8: case ui16: case ui32:
-                return  ((char *) ((unsigned int *) vec_param->arg + i)) + + vec_param->member_offset;
-            default: SWITCH_DEFAULT_REACHED
+        for(int i = 0; i < n_iters; ++i) {
+            args[i][param_index] = ((char *) *((void **) vec_param->arg + offset + i)) + vec_param->member_offset;
         }
+        return;
     }
+
+    unsigned int elem_size = 0;
+    switch(vec_param->fmt) {
+        case 'p': elem_size = sizeof(void *); break;
+        case 'd': elem_size = sizeof(int); break;
+        case 'b': elem_size = sizeof(bool); break;
+        case 'u': case ui8: case ui16: case ui32: elem_size = sizeof(unsigned int); break;
+        default: SWITCH_DEFAULT_REACHED
+    }
+    for(int i = 0; i < n_iters; ++i) {
+        args[i][param_index] = ((char *) vec_param->arg + (offset + i) * elem_size) + vec_param->member_offset;
+    }
+
 }
 
 static inline void
-parse_function_arguments(const struct parameter *param, int n_params, int offset, void *args[n_params]) {
+parse_function_arguments(const struct parameter *param, int n_params, int offset, void *args[1][n_params]) {
     for(int j = 0; j < n_params; ++j) {
         switch(param[j].type) {
-            case VARIABLE_TYPE: args[j] = parse_variable_argument(&param[j].value.variable); break;
-            case POINTER_TYPE: args[j] = parse_pointer_argument(&param[j].value.pointer); break;
-            case VECTOR_TYPE: args[j] = parse_vector_argument(&param[j].value.vector, offset); break;
+            case VARIABLE_TYPE: args[0][j] = parse_variable_argument(&param[j].value.variable); break;
+            case POINTER_TYPE: args[0][j] = parse_pointer_argument(&param[j].value.pointer); break;
+            case VECTOR_TYPE: parse_vector_argument(&param[j].value.vector, offset, j, 1, n_params, args); break;
         }
     }
 }
@@ -62,14 +69,10 @@ parse_arguments(const struct parameter *param, unsigned int n_iters, unsigned in
                 for(int i = 1; i < n_iters; ++i) args[i][j] = args[i - 1][j];
                 break;
             case VECTOR_TYPE:
-                for(int i = 0; i < n_iters; ++i) {
-                    args[i][j] = parse_vector_argument(&param[j].value.vector, offset + i);
-                }
+                parse_vector_argument(&param[j].value.vector, offset, j, n_iters, n_params, args);
                 break;
         }
     }
 }
-
-
 
 #endif

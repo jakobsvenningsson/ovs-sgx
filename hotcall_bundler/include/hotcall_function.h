@@ -99,7 +99,7 @@ struct hotcall_function {
     struct parameter *params;
     struct hotcall_function_config *config;
     void *return_value;
-    void *args[HOTCALL_MAX_ARG];
+    void *args[1][HOTCALL_MAX_ARG];
 };
 
 #endif

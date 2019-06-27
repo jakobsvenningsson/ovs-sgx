@@ -76,8 +76,11 @@ benchmark_filter(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
     unsigned int n_iters = 10000;
     int xs[n_iters] = { 0 };
+    int *xs_ptr[n_iters];
+
     for(int i = 0; i < n_iters; ++i) {
         xs[i] = (i % 2) ? 3 : 1;
+        xs_ptr[i] = &xs[i];
         //xs[i] = i > n_iters / 2 ? 3 : 1;
     }
     int y = 2;
@@ -92,9 +95,10 @@ benchmark_filter(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
         hotcall_bundle_begin(sm_ctx);
 
+
         FILTER(
             ((struct filter_config) { .predicate_fmt = "d>d" }),
-            VECTOR(xs, 'd', &n_iters), VAR(y, 'd'), VECTOR(ys, 'd', &out_length)
+            VECTOR(xs_ptr, 'd', &n_iters, .dereference = true), VAR(y, 'd'), VECTOR(ys, 'd', &out_length)
         );
 
 
@@ -108,7 +112,9 @@ benchmark_filter(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
         hotcall_bundle_end(sm_ctx);
 
+
         CLOSE
+
         if(i >= warmup) {
             rounds[i - warmup] = GET_TIME
         }
@@ -127,6 +133,11 @@ benchmark_for_each(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     unsigned int n_iters = 10000;
     int xs[n_iters] = { 0 };
 
+    int *xs_ptr[n_iters];
+    for(int i = 0; i < n_iters; ++i) {
+        xs_ptr[i] = &xs[i];
+    }
+
     for(int i = 0; i < (n_rounds + warmup); ++i) {
         clear_cache();
 
@@ -134,7 +145,7 @@ benchmark_for_each(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
         hotcall_bundle_begin(sm_ctx);
 
-        FOR_EACH(((struct for_each_config) { .function_id = hotcall_ecall_plus_one, .n_iters = &n_iters}), VECTOR(xs, 'd'));
+        FOR_EACH(((struct for_each_config) { .function_id = hotcall_ecall_plus_one, .n_iters = &n_iters}), VECTOR(xs_ptr, 'd', &n_iters, .dereference = true));
 
         hotcall_bundle_end(sm_ctx);
 

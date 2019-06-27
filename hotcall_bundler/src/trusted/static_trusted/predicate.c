@@ -1,6 +1,7 @@
 #include "predicate.h"
 #include <string.h>
 #include "parameter.h"
+#include "execute_function.h"
 
 enum input_type { OPERATOR, VARIABLE, VECTOR, POINTER, OPERAND, FUNCTION, NEGATION };
 struct input_item {
@@ -9,7 +10,7 @@ struct input_item {
 };
 
 static inline int
-evaluate_pointer(struct pointer_parameter *param) {
+evaluate_pointer(const struct pointer_parameter *param) {
     void *arg = (param->dereference)
         ? ((char *) *((void **) param->arg)) + param->member_offset
         : ((char *) param->arg) + param->member_offset;
@@ -17,7 +18,7 @@ evaluate_pointer(struct pointer_parameter *param) {
 }
 
 static inline int
-evaluate_variable(struct variable_parameter *param, char ch) {
+evaluate_variable(const struct variable_parameter *param, char ch) {
     void *arg = (param->dereference)
         ? ((char *) *((void **) param->arg)) + param->member_offset
         : ((char *) param->arg) + param->member_offset;
@@ -32,21 +33,72 @@ evaluate_variable(struct variable_parameter *param, char ch) {
     }
 }
 
-static inline int
-evaluate_vector(struct vector_parameter *param, char ch, int offset) {
-    void *arg = param->arg;
-    if(param->vector_offset) {
-        offset = *param->vector_offset;
+static inline void
+evaluate_int_vector(int *int_vec, unsigned int n_iters, int inputs[n_iters], int offset) {
+    for(int i = 0; i < n_iters; ++i) {
+        inputs[i] = int_vec[offset + i];
     }
-    if(param->dereference) {
-        arg = ((char *) OFFSET_DEREF(param->arg, void **, offset)) + param->member_offset;
-        offset = 0;
+}
+
+static inline void
+evaluate_bool_vector(bool *bool_vec, unsigned int n_iters, int inputs[n_iters], int offset) {
+    for(int i = 0; i < n_iters; ++i) {
+        inputs[i] = bool_vec[offset + i];
     }
-    switch(ch) {
-        case 'p': return *((void **) arg + offset) != NULL;
-        case 'b': return *((bool *) arg+ offset);
-        case 'd': return *((int *) arg + offset);
-        case 'u': case ui8: case ui16: case ui32: return *((unsigned int *) arg + offset);
+}
+
+static inline void
+evaluate_ptr_vector(void **ptr_vec, unsigned int n_iters, int inputs[n_iters], int offset) {
+    for(int i = 0; i < n_iters; ++i) {
+        inputs[i] = ptr_vec[offset + i] != NULL;
+    }
+}
+
+static inline void
+dereference_ptr2int_vector(void **vec, unsigned int n_iters, int inputs[n_iters], unsigned int offset, int member_offset) {
+    for(int i = 0; i < n_iters; ++i) {
+        inputs[i] = *(int *) (((char *) OFFSET_DEREF(vec, void **, offset + i)) + member_offset);
+    }
+}
+
+static inline void
+dereference_ptr2bool_vector(void **vec, unsigned int n_iters, int inputs[n_iters], unsigned int offset, int member_offset) {
+    for(int i = 0; i < n_iters; ++i) {
+        inputs[i] = *(bool *) (((char *) OFFSET_DEREF(vec, void **, offset + i)) + member_offset);
+    }
+}
+
+
+
+static inline void
+dereference_ptr2ptr_vector(void **vec, unsigned int n_iters, int inputs[n_iters], unsigned int offset, int member_offset) {
+    for(int i = 0; i < n_iters; ++i) {
+        inputs[i] = *(void **) (((char *) OFFSET_DEREF(vec, void **, offset + i)) + member_offset) != NULL;
+    }
+}
+
+
+static inline void
+evaluate_vector(const struct vector_parameter *vec_param, unsigned int offset, unsigned int n_iters, int inputs[n_iters]) {
+    unsigned int member_offset = vec_param->member_offset;
+    bool dereference = vec_param->dereference;
+    void *arg = vec_param->arg;
+    switch(vec_param->fmt) {
+        case 'd': case 'u':
+            dereference
+                ? dereference_ptr2int_vector(arg, n_iters, inputs, offset, member_offset)
+                : evaluate_int_vector(arg, n_iters, inputs, offset);
+            break;
+        case 'b':
+            dereference
+                ? dereference_ptr2bool_vector(vec_param->arg, n_iters, inputs, offset, member_offset)
+                : evaluate_bool_vector(arg, n_iters, inputs, offset);
+            break;
+        case 'p':
+            dereference
+                ? dereference_ptr2ptr_vector(vec_param->arg, n_iters, inputs, offset, member_offset)
+                : evaluate_ptr_vector(arg, n_iters, inputs, offset);
+            break;
         default:
             SWITCH_DEFAULT_REACHED
     }
@@ -57,16 +109,49 @@ evaluate_function(struct function_parameter *fun_param, struct hotcall_config *h
     unsigned int n_params = fun_param->n_params;
     void *args[n_iters][n_params];
     parse_arguments(fun_param->params, n_iters, n_params, args, offset);
-    if(hotcall_config->batch_execute_function) {
-        hotcall_config->batch_execute_function(fun_param->function_id, n_iters, n_params, args);
-    } else {
-        for(int j = 0; j < n_iters; ++j) {
-               hotcall_config->execute_function(fun_param->function_id, args[j], args[j][n_params - 1]);
-        }
-    }
+    execute_function(hotcall_config, fun_param->function_id, n_iters, n_params, args);
     for(int k = 0; k < n_iters; ++k) {
         inputs[k] = *(bool *) args[k][n_params - 1];
     }
+}
+
+static inline bool
+op_greater_than(unsigned int n_iters, int x[n_iters], int y[n_iters], int result[n_iters], bool iter_x, bool iter_y) {
+    if(iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] > y[i];
+    else if(iter_x && !iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] > y[0];
+    else if(!iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[0] > y[i];
+    else for(int i = 0; i < n_iters; ++i) result[i] = x[0] > y[0];}
+
+static inline bool
+op_smaller_than(unsigned int n_iters, int x[n_iters], int y[n_iters], int result[n_iters], bool iter_x, bool iter_y) {
+    if(iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] < y[i];
+    else if(iter_x && !iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] < y[0];
+    else if(!iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[0] < y[i];
+    else for(int i = 0; i < n_iters; ++i) result[i] = x[0] < y[0];
+}
+
+static inline bool
+op_modulus(unsigned int n_iters, int x[n_iters], int y[n_iters], int result[n_iters], bool iter_x, bool iter_y) {
+    if(iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] % y[i];
+    else if(iter_x && !iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] % y[0];
+    else if(!iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[0] % y[i];
+    else for(int i = 0; i < n_iters; ++i) result[i] = x[0] % y[0];
+}
+
+static inline bool
+op_logical_or(unsigned int n_iters, int x[n_iters], int y[n_iters], int result[n_iters], bool iter_x, bool iter_y) {
+    if(iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] || y[i];
+    else if(iter_x && !iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] || y[0];
+    else if(!iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[0] || y[i];
+    else for(int i = 0; i < n_iters; ++i) result[i] = x[0] || y[0];
+}
+
+static inline bool
+op_logical_and(unsigned int n_iters, int x[n_iters], int y[n_iters], int result[n_iters], bool iter_x, bool iter_y) {
+    if(iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] && y[i];
+    else if(iter_x && !iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[i] && y[0];
+    else if(!iter_x && iter_y) for(int i = 0; i < n_iters; ++i) result[i] = x[0] && y[i];
+    else for(int i = 0; i < n_iters; ++i) result[i] = x[0] && y[0];
 }
 
 static inline void
@@ -107,18 +192,18 @@ _evaluate_predicate(unsigned int postfix_length, int n_iters, int inputs[postfix
             op1_type = type_stack[stack_pos];
             for(int j = 0; j < n_iters; ++j) operand1[j] = !operand1[j];
         }
-        for(int j = 0; j < n_iters; ++j) {
-            idx1 = op1_type == VECTOR || op1_type == FUNCTION ? j : 0;
-            idx2 = op2_type == VECTOR || op2_type == FUNCTION ? j : 0;
-            switch(input) {
-                case '&': result[j] = operand1[idx1] && operand2[idx2]; break;
-                case '|': result[j] = operand1[idx1] || operand2[idx2]; break;
-                case '>': result[j] = operand1[idx1] > operand2[idx2]; break;
-                case '<': result[j] = operand1[idx1] < operand2[idx2]; break;
-                case '%': result[j] = operand1[idx1] % operand2[idx2]; break;
-                default: SWITCH_DEFAULT_REACHED
-            }
+
+        bool (*op_func)(unsigned int, int[], int[], int[], bool, bool);
+        switch(input) {
+            case '>': op_func = op_greater_than; break;
+            case '<': op_func = op_smaller_than; break;
+            case '&': op_func = op_logical_and; break;
+            case '|': op_func = op_logical_or; break;
+            case '%': op_func = op_modulus; break;
+            default: SWITCH_DEFAULT_REACHED
         }
+        op_func(n_iters, operand1, operand2, result, op1_type == VECTOR || op1_type == FUNCTION, op2_type == VECTOR || op2_type == FUNCTION);
+
         type_stack[stack_pos] = VECTOR;
         stack[stack_pos++] = result;
     }
@@ -152,9 +237,7 @@ evaluate_predicate_batch(struct postfix_item *predicate_postfix, unsigned int po
                 input_types[i] = POINTER;
                 break;
             case VECTOR_TYPE:
-                for(int j = 0; j < n; ++j) {
-                    inputs[i][j] = evaluate_vector(&predicate_postfix[i].elem->value.vector, predicate_postfix[i].ch, j + offset);
-                }
+                evaluate_vector(&predicate_postfix[i].elem->value.vector, offset, n, inputs[i]);
                 input_types[i] = VECTOR;
                 break;
             case FUNCTION_TYPE:
@@ -163,6 +246,9 @@ evaluate_predicate_batch(struct postfix_item *predicate_postfix, unsigned int po
                 break;
         }
     }
+
+    /* If condition has length 1, then the value of the single parameter is the final result
+        of the condition hence we can simply copy the input values to our results list. */
     if(postfix_length == 1) {
         memcpy(result, inputs[0], sizeof(int) * n);
     } else {

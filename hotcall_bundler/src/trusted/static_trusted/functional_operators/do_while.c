@@ -17,6 +17,6 @@ hotcall_handle_do_while(struct hotcall_do_while *dw, struct hotcall_config *hotc
         if(!evaluate_predicate(dw->config->postfix, dw->config->postfix_length, hotcall_config, 0)) {
             return;
         }
-        hotcall_config->execute_function(dw->config->function_id, fc.args, NULL);
+        hotcall_config->execute_function(dw->config->function_id, (void **) fc.args, NULL);
     }
 }

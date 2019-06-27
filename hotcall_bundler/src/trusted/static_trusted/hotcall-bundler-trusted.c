@@ -39,7 +39,7 @@ hotcall_execute_bundle(struct hotcall_batch *batch) {
             case QUEUE_ITEM_TYPE_FUNCTION:
                 fc = &queue_item->call.fc;
                 parse_function_arguments(fc->params, fc->config->n_params, (loop_stack_pos > 0 ? loop_stack[loop_stack_pos - 1].offset : 0), fc->args);
-                hotcall_config->execute_function(fc->config->function_id, fc->args, fc->return_value);
+                hotcall_config->execute_function(fc->config->function_id, (void **) fc->args, fc->return_value);
                 break;
             case QUEUE_ITEM_TYPE_IF: case QUEUE_ITEM_TYPE_IF_NULL:
                 hotcall_handle_if(&queue_item->call.tif, hotcall_config, exclude_list, n, queue_length, loop_stack_pos > 0 ? loop_stack[loop_stack_pos - 1].offset : 0);
