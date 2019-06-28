@@ -6,6 +6,7 @@
 
 struct shared_memory_ctx *_sm_ctx;
 static sgx_enclave_id_t global_eid;
+struct hotcall_config * _hotcall_config;
 
 void *
 start_enclave_thread(void * vargp){

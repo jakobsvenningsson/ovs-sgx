@@ -235,3 +235,27 @@ TEST(hotcall, 9) {
     ASSERT_EQ(a.b.y, 0);
     ASSERT_EQ(a.b.x, 0);
 }
+
+
+TEST(hotcall, 10) {
+    /* Contract:  */
+
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    int x = 0, y = 0, z = 0;
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_y), VAR(y, 'd'), VAR(x, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_plus_y), VAR(z, 'd'), VAR(y, 'd'));
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+
+    ASSERT_EQ(x, 1);
+    ASSERT_EQ(y, 1);
+    ASSERT_EQ(z, 1);
+}

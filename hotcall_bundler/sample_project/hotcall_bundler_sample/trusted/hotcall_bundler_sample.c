@@ -32,7 +32,9 @@ void *call_table[CALL_TABLE_CAPACITY] = {
     [hotcall_ecall_offset_of_ret] = wrapper_ecall_offset_of_ret,
     [hotcall_ecall_strlen] = wrapper_ecall_strlen,
     [hotcall_ecall_greater_than_y] = wrapper_ecall_greater_than_y,
-    [hotcall_ecall_plus_plus] = wrapper_ecall_plus_plus
+    [hotcall_ecall_plus_plus] = wrapper_ecall_plus_plus,
+    [hotcall_ecall_for_each_10_test] = wrapper_ecall_for_each_10_test,
+
 };
 
 void

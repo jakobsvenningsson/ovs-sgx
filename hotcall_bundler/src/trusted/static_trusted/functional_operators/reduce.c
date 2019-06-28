@@ -119,7 +119,10 @@ combine_result(char op, struct parameter *accumulator, void *ret, int n) {
 }
 
 void
-hotcall_handle_reduce(struct hotcall_reduce *re, struct hotcall_config *hotcall_config) {
+hotcall_handle_reduce(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status) {
+
+    struct hotcall_reduce *re = &qi->call.re;
+
     unsigned int n_params = re->config->n_params - 1;
     struct parameter *accumulator = &re->params[n_params];
     unsigned int in_len = *re->params[0].value.vector.len;

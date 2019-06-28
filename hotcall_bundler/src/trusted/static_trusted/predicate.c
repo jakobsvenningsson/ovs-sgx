@@ -27,7 +27,10 @@ evaluate_variable(const struct variable_parameter *param, char ch) {
         case 'p': return *(void **) arg != NULL;
         case 'b': return *(bool *) arg;
         case 'd': return *(int *) arg;
-        case 'u': case ui8: case ui16: case ui32: return *(unsigned int *) arg;
+        case 'u': return *(unsigned int *) arg;
+        case ui8: return *(uint8_t *) arg;
+        case ui16: return *(uint16_t *) arg;
+        case ui32: return *(uint32_t *) arg;
         default:
             SWITCH_DEFAULT_REACHED
     }
@@ -105,7 +108,7 @@ evaluate_vector(const struct vector_parameter *vec_param, unsigned int offset, u
 }
 
 static inline void
-evaluate_function(struct function_parameter *fun_param, struct hotcall_config *hotcall_config, int n_iters, int inputs[n_iters], int offset) {
+evaluate_function(struct function_parameter *fun_param, const struct hotcall_config *hotcall_config, int n_iters, int inputs[n_iters], int offset) {
     unsigned int n_params = fun_param->n_params;
     void *args[n_iters][n_params];
     parse_arguments(fun_param->params, n_iters, n_params, args, offset);
@@ -216,7 +219,7 @@ _evaluate_predicate(unsigned int postfix_length, int n_iters, int inputs[postfix
 }
 
 int
-evaluate_predicate_batch(struct postfix_item *predicate_postfix, unsigned int postfix_length, struct hotcall_config *hotcall_config, int n, int result[n], int offset) {
+evaluate_predicate_batch(struct postfix_item *predicate_postfix, unsigned int postfix_length, const struct hotcall_config *hotcall_config, int n, int result[n], int offset) {
 
     int inputs[postfix_length][n];
     enum input_type input_types[postfix_length];
@@ -257,7 +260,7 @@ evaluate_predicate_batch(struct postfix_item *predicate_postfix, unsigned int po
 }
 
 int
-evaluate_predicate(struct postfix_item *predicate_postfix, unsigned int postfix_length, struct hotcall_config *hotcall_config, int offset) {
+evaluate_predicate(struct postfix_item *predicate_postfix, unsigned int postfix_length, const struct hotcall_config *hotcall_config, int offset) {
     int res;
     evaluate_predicate_batch(predicate_postfix, postfix_length, hotcall_config, 1, &res, offset);
     return res;

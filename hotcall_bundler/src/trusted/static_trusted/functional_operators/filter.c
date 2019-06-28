@@ -28,7 +28,8 @@ copy_filtered_results(struct vector_parameter *output_vec, const struct vector_p
 }
 
 void
-hotcall_handle_filter(struct hotcall_filter *fi, struct hotcall_config *hotcall_config) {
+hotcall_handle_filter(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status) {
+    struct hotcall_filter *fi = &qi->call.fi;
     const unsigned int n_params = fi->config->n_params - 1;
     struct vector_parameter *input_vec = NULL, *output_vec = NULL;
     struct parameter *input, *output;

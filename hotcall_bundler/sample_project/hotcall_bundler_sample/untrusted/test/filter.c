@@ -227,3 +227,39 @@ TEST(filter,6) {
     ASSERT_EQ(zs[1], 9);
 
 }
+
+TEST(filter,7) {
+    //Contract:
+
+    hotcall_test_setup();
+
+    BUNDLE_BEGIN();
+
+    unsigned int n_iters = 10, out_length;
+    unsigned int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, *xs_ptr[n_iters], *zs[n_iters], y = 6;
+
+    for(int i = 0; i < n_iters; ++i) {
+        xs_ptr[i] = &xs[i];
+    }
+
+    FILTER(
+        ((struct filter_config) { .predicate_fmt = "u<u" }),
+        VAR(y, 'u'), VECTOR(xs_ptr, 'u', &n_iters, .dereference = true), VECTOR(zs, 'p', &out_length)
+    );
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    // check that orignal list is unmodified.
+    for(int i = 0; i < n_iters; ++i) {
+        ASSERT_EQ(xs[i], i);
+    }
+
+    ASSERT_EQ(out_length, 3);
+    ASSERT_EQ(*zs[0], 7);
+    ASSERT_EQ(*zs[1], 8);
+    ASSERT_EQ(*zs[2], 9);
+
+
+}

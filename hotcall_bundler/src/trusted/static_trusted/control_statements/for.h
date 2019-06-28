@@ -5,13 +5,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <hotcall_for.h>
+#include <hotcall-bundler-trusted.h>
 
-struct loop_stack_item {
-    unsigned int body_len;
-    unsigned int index;
-    unsigned int n_iters;
-    unsigned int offset;
-};
 
 static inline unsigned int
 update_loop_body_vector_variables(struct loop_stack_item *loop_stack, unsigned int loop_stack_pos) {
@@ -23,11 +18,16 @@ update_loop_body_vector_variables(struct loop_stack_item *loop_stack, unsigned i
 }
 
 
-static inline unsigned int
-hotcall_handle_for_begin(struct hotcall_for_start *for_s, struct loop_stack_item *loop_stack, unsigned int loop_stack_pos, uint8_t *exclude_list, int n) {
+static inline void
+hotcall_handle_for_begin(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status) {
+    struct hotcall_for_start *for_s = &qi->call.for_s;
+    unsigned int loop_stack_pos = queue_ctx->loop_stack_pos;
+    struct loop_stack_item *loop_stack = queue_ctx->loop_stack;
+
     unsigned int n_iters = *for_s->config->n_iters;
     if(n_iters == 0) {
-        memset(exclude_list + n, 1, for_s->config->body_len + 2);
+        *queue_ctx->queue_pos += for_s->config->body_len + 1;
+        //memset(queue_ctx->exclude_list + *queue_ctx->queue_pos, 1, for_s->config->body_len + 2);
     } else {
         loop_stack[loop_stack_pos] = (struct loop_stack_item) {
             .body_len = for_s->config->body_len,
@@ -35,22 +35,22 @@ hotcall_handle_for_begin(struct hotcall_for_start *for_s, struct loop_stack_item
             .n_iters = n_iters,
         };
         loop_stack[loop_stack_pos].offset = update_loop_body_vector_variables(loop_stack, loop_stack_pos);
-        loop_stack_pos++;
+        queue_ctx->loop_stack_pos++;
     }
-    return loop_stack_pos;
 }
 
-static inline unsigned int
-hotcall_handle_for_end(struct loop_stack_item *loop_stack, unsigned int loop_stack_pos, int *n, uint8_t *exclude_list) {
+static inline void
+hotcall_handle_for_end(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status) {
+    struct loop_stack_item *loop_stack = queue_ctx->loop_stack;
+    unsigned int loop_stack_pos = queue_ctx->loop_stack_pos;
     if(++loop_stack[loop_stack_pos - 1].index < loop_stack[loop_stack_pos - 1].n_iters) {
-        *n -= (loop_stack[loop_stack_pos - 1].body_len + 1);
-        memset(exclude_list + *n + 1, 0, loop_stack[loop_stack_pos - 1].body_len);
+        *queue_ctx->queue_pos -= (loop_stack[loop_stack_pos - 1].body_len + 1);
+        //memset(queue_ctx->exclude_list + *queue_ctx->queue_pos + 1, 0, loop_stack[loop_stack_pos - 1].body_len);
         loop_stack[loop_stack_pos - 1].offset++;
         //goto continue_loop;
     } else {
-        loop_stack_pos--;
+        queue_ctx->loop_stack_pos--;
     }
-    return loop_stack_pos;
 }
 
 #endif

@@ -18,7 +18,7 @@ benchmark_map(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
         hotcall_bundle_begin(sm_ctx);
 
         MAP(((struct map_config) {
-                .function_id = hotcall_ecall_plus_one,
+                .function_id = hotcall_ecall_plus_one_ret,
                 .n_iters = &n_iters
             }),
             VECTOR(xs, 'd'),
@@ -78,6 +78,8 @@ benchmark_filter(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     int xs[n_iters] = { 0 };
     int *xs_ptr[n_iters];
 
+    int zs[n_iters];
+
     for(int i = 0; i < n_iters; ++i) {
         xs[i] = (i % 2) ? 3 : 1;
         xs_ptr[i] = &xs[i];
@@ -96,19 +98,22 @@ benchmark_filter(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
         hotcall_bundle_begin(sm_ctx);
 
 
-        FILTER(
+        /*FILTER(
             ((struct filter_config) { .predicate_fmt = "d>d" }),
             VECTOR(xs_ptr, 'd', &n_iters, .dereference = true), VAR(y, 'd'), VECTOR(ys, 'd', &out_length)
-        );
-
-
-        /*struct parameter function_parameter[] = { VECTOR(xs, 'd', &n_iters) };
-        FILTER(((struct filter_config) {
-                .predicate_fmt = "b"
-            }),
-            FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 1),
-            VECTOR(ys, 'd', &out_length)
         );*/
+
+
+        struct parameter function_parameter[] = {
+            VECTOR(xs, 'd', &n_iters),
+            VECTOR(zs, 'd', &n_iters)
+        };
+
+        FILTER(
+            ((struct filter_config) { .predicate_fmt = "b" }),
+            FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 2),
+            VECTOR(ys, 'd', &out_length)
+        );
 
         hotcall_bundle_end(sm_ctx);
 

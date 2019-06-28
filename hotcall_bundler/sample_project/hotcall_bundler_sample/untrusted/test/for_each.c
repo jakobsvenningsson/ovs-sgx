@@ -4,6 +4,7 @@
 #include "functions.h"
 
 #include "hotcall_for_each.h"
+#include <stdint.h>
 
 
 
@@ -114,8 +115,6 @@ TEST(for_each, 5) {
 
     A a1 = { 0 }, a2 = { 0 }, a3 = { 0 };
     struct A *as[n_iters] = { &a1, &a2, &a3 };
-
-
 
     /*struct parameter vec[] = {
         VAR(as, 'd'),
@@ -253,5 +252,64 @@ TEST(for_each, 8) {
 
     for(int i = 0; i < len; ++i) {
         ASSERT_EQ(*numbers[i], i + 1);
+    }
+}
+
+TEST(for_each, 9) {
+
+    hotcall_test_setup();
+    unsigned int n_iters = 10;
+    int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+    BUNDLE_BEGIN();
+
+    FOR_EACH(
+        ((struct for_each_config) { .function_id = hotcall_ecall_plus_one, .n_iters = &n_iters }), VECTOR(xs, 'u', &n_iters)
+    );
+
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+
+    for(int i = 0; i < n_iters; ++i) {
+        ASSERT_EQ(xs[i], i + 1);
+    }
+}
+
+TEST(for_each, 10) {
+
+    hotcall_test_setup();
+    unsigned int n_iters = 3;
+    uint8_t bridge_id = 0;
+    uint8_t table_id = 1;
+    unsigned int evg_grp_prio = 100;
+
+    int x1 = 1, x2 = 2, x3 = 3;
+    int *cr_buf_out[n_iters] = { &x1, &x2, &x3 };
+
+    unsigned int rule_eviction_prioirities[n_iters] = { 7, 8, 9 };
+
+    BUNDLE_BEGIN();
+
+    FOR_EACH(
+        ((struct for_each_config) { .function_id = hotcall_ecall_for_each_10_test, .n_iters = &n_iters }),
+        VAR(bridge_id, ui8),
+        VAR(table_id, ui8),
+        VECTOR(cr_buf_out, 'p', &n_iters, .dereference = true),
+        VAR(evg_grp_prio, 'u'),
+        VECTOR(rule_eviction_prioirities, 'u', &n_iters)
+    );
+    BUNDLE_END();
+
+    hotcall_test_teardown();
+
+    ASSERT_EQ(bridge_id, 0);
+    ASSERT_EQ(table_id, 1);
+    ASSERT_EQ(evg_grp_prio, 100);
+
+    for(int i = 0; i < n_iters; ++i) {
+        ASSERT_EQ(rule_eviction_prioirities[i], 7 + i);
+        ASSERT_EQ(*cr_buf_out[i], 2 + i);
     }
 }

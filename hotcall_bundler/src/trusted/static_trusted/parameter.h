@@ -6,7 +6,7 @@
 
 static inline void *
 parse_variable_argument(const struct variable_parameter *var_param) {
-    return (char * ) var_param->arg + var_param->member_offset;
+    return (char *) var_param->arg + var_param->member_offset;
 }
 
 static inline void *
@@ -36,11 +36,14 @@ parse_vector_argument(const struct vector_parameter *vec_param, unsigned int off
         case 'p': elem_size = sizeof(void *); break;
         case 'd': elem_size = sizeof(int); break;
         case 'b': elem_size = sizeof(bool); break;
-        case 'u': case ui8: case ui16: case ui32: elem_size = sizeof(unsigned int); break;
+        case 'u': elem_size = sizeof(unsigned int); break;
+        case ui8: elem_size = sizeof(uint8_t); break;
+        case ui16: elem_size = sizeof(uint16_t); break;
+        case ui32: elem_size = sizeof(uint32_t); break;
         default: SWITCH_DEFAULT_REACHED
     }
     for(int i = 0; i < n_iters; ++i) {
-        args[i][param_index] = ((char *) vec_param->arg + (offset + i) * elem_size) + vec_param->member_offset;
+        args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * elem_size) + vec_param->member_offset;
     }
 
 }

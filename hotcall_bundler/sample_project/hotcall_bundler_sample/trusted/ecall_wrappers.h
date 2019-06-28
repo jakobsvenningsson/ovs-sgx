@@ -115,4 +115,12 @@ wrapper_ecall_strlen(void *args[], void *return_value) {
     *(int *) return_value = ecall_strlen(args[0]);
 }
 
+
+static void
+wrapper_ecall_for_each_10_test(void *args[], void *return_value) {
+    ecall_for_each_10_test(*(uint8_t *) args[0], *(uint8_t *) args[1], (int *) args[2], *(unsigned int *) args[3], *(unsigned int *) args[4]);
+}
+
+
+
 #endif

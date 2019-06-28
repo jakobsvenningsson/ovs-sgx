@@ -1,5 +1,6 @@
 #include "ecalls.h"
 #include <string.h>
+#include <stdint.h>
 
 bool
 ecall_always_true() {
@@ -30,7 +31,6 @@ ecall_plus_one_ret(int x) {
 
 bool
 ecall_greater_than_two(int *x) {
-    printf("ecall_greater_than_two %d\n", *x);
     return *x > 2 ? true : false;
 }
 
@@ -104,4 +104,14 @@ ecall_offset_of_ret(void *ptr, unsigned int offset) {
 int
 ecall_strlen(struct A *a) {
     return a->x;
+}
+
+void
+ecall_for_each_10_test(uint8_t bridge_id, uint8_t table_id, int *buf, unsigned grp_prio, unsigned int user_prio) {
+    if(bridge_id++!= 0) printf("error bridge\n");
+    if(table_id++ != 1) printf("error table\n");
+    if(grp_prio++ != 100) printf("error grp prio\n");
+    if(user_prio != 9 && user_prio != 8 && user_prio != 7) printf("error user_prio\n");
+    user_prio++;
+    *buf = *buf + 1;
 }

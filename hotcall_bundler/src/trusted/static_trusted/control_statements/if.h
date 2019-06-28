@@ -6,25 +6,23 @@
 #include <stdbool.h>
 #include <hotcall_if.h>
 #include <hotcall_config.h>
+#include <hotcall_for.h>
+#include <hotcall-bundler-trusted.h>
 
 
 static inline void
-exclude_else_branch(uint8_t *exclude_list, int pos, unsigned int if_len, unsigned int else_len) {
-    memset(exclude_list + pos + if_len + 1, 1, else_len);
+hotcall_handle_if_else(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status) {
+    unsigned int else_len = queue_ctx->else_len[queue_ctx->if_nesting - 1];
+    if(else_len) *queue_ctx->queue_pos += else_len;
 }
 
 static inline void
-exclude_if_branch(uint8_t *exclude_list, int pos, unsigned int if_len) {
-    memset(exclude_list + pos + 1, 1, if_len);
+hotcall_handle_if_end(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status) {
+    queue_ctx->else_len[--queue_ctx->if_nesting] = 0;
 }
 
-static inline void
-exclude_rest(uint8_t *exclude_list, int pos, int then_branch_len, int else_branch_len, int len) {
-    int exclude_start = pos + then_branch_len + else_branch_len + 1;
-    memset(exclude_list + exclude_start, 1, len - exclude_start);
-}
 
-bool
-hotcall_handle_if(struct hotcall_if *tif, struct hotcall_config *hotcall_config, uint8_t *exclude_list, int pos, int exclude_list_len, int offset);
+void
+hotcall_handle_if(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status);
 
 #endif

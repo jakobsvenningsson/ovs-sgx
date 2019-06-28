@@ -32,6 +32,7 @@
             make_hotcall(&(SM_CTX)->hcall); \
         }\
     }
+
 #define HCALL(CONFIG, ...) \
     _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
@@ -66,12 +67,14 @@ make_hotcall(struct hotcall *hcall) {
     hcall->is_done  = false;
     hcall->run      = true;
     while (1) {
+
         sgx_spin_lock(&hcall->spinlock);
         if (hcall->is_done) {
             sgx_spin_unlock(&hcall->spinlock);
             break;
         }
         sgx_spin_unlock(&hcall->spinlock);
+
         for (int i = 0; i < 3; ++i) {
             __asm
             __volatile(
@@ -104,6 +107,7 @@ hotcall_bundle_end(struct shared_memory_ctx *sm_ctx) {
     hotcall_bundle_flush(sm_ctx);
     sm_ctx->hcall.hotcall_in_progress = false;
     sm_ctx->hcall.batch.ignore_hcalls = false;
+    sm_ctx->hcall.batch.queue_len = 0;
 }
 
 static inline int
