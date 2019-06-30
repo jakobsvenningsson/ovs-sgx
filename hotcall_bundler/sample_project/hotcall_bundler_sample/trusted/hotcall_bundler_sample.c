@@ -38,38 +38,22 @@ void *call_table[CALL_TABLE_CAPACITY] = {
 };
 
 void
-execute_function(uint8_t function_id, void *args[], void *return_value){
-    void (*f)(void*[], void*);
-    f = call_table[function_id];
-
-    #ifdef SGX_DEBUG
-    if(!f) {
-        printf("unknown hotcall function %d.\n", function_id);
-    }
-    #endif
-
-    f(args, return_value);
- }
-
-void
-batch_execute_function(uint8_t function_id, unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
-    void (*f)(void *[], void*);
+execute_function(uint8_t function_id, unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    void (*f)(unsigned int n_iters, unsigned int n_params, void *[n_iters][n_params]);
     f = call_table[function_id];
     #ifdef SGX_DEBUG
     if(!f) {
         printf("unknown hotcall function %d.\n", function_id);
     }
     #endif
-    for(int i = 0; i < n_iters; ++i) {
-        f(args[i], args[i][n_params - 1]);
-    }
+    f(n_iters, n_params, args);
 }
 
 void
 ecall_configure_hotcall() {
     struct hotcall_config conf = {
+        .execute_function_legacy = NULL,
         .execute_function = execute_function,
-        .batch_execute_function = batch_execute_function,
         .n_spinlock_jobs = 0,
     };
     struct hotcall_config *config = malloc(sizeof(struct hotcall_config));

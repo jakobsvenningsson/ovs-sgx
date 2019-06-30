@@ -202,9 +202,9 @@ struct ecall_queue_item * get_fcall_(struct shared_memory_ctx *sm_ctx, struct ho
     fcall = &item->call.fc;
     fcall->config = config;
     fcall->params = params;
-    if(config->has_return) {
+    /*if(config->has_return) {
         fcall->return_value = fcall->params[--fcall->config->n_params].value.variable.arg;
-    }
+    }*/
     return item;
 }
 

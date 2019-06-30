@@ -60,6 +60,7 @@ union hcall {
 struct ecall_queue_item {
     uint8_t type;
     union hcall call;
+    struct ecall_queue_item *next;
 };
 
 struct hotcall_batch {

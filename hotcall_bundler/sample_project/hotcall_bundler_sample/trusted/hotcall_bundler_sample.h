@@ -11,8 +11,9 @@ extern "C" {
 #endif
 
 void printf(const char *fmt, ...);
-void
-execute_function(uint8_t function_id, void *args[], void *return_value);
+
+//void
+//execute_function(uint8_t function_id, void *args[], void *return_value);
 
 #if defined(__cplusplus)
 }

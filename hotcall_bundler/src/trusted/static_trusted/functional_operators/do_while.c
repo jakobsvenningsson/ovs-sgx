@@ -18,6 +18,6 @@ hotcall_handle_do_while(struct ecall_queue_item *qi, const struct hotcall_config
         if(!evaluate_predicate(dw->config->postfix, dw->config->postfix_length, hotcall_config, 0)) {
             return;
         }
-        hotcall_config->execute_function(dw->config->function_id, (void **) fc.args, NULL);
+        hotcall_config->execute_function(dw->config->function_id, 1, fc.config->n_params, fc.args);
     }
 }

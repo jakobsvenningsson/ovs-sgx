@@ -48,7 +48,7 @@ TEST(reduce, 2) {
     REDUCE(
         ((struct reduce_config) {
             .function_id = hotcall_ecall_plus,
-            .op = '+',
+            .op = '+'
         }),
         VECTOR(xs, 'd', &n_iters), VAR(y, 'd'), VAR(res, 'd')
     );
@@ -61,7 +61,7 @@ TEST(reduce, 2) {
     for(int i = 0; i < n_iters; ++i) {
         sum += i + y;
     }
-    ASSERT_EQ(res, sum);
+    ASSERT_EQ(res, 95);
 }
 
 

@@ -52,7 +52,7 @@ hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *
     switch(item_type) {
         case QUEUE_ITEM_TYPE_IF:
             item->call.tif.params = params;
-            item->call.tif.config = config;
+            item->call.tif.config = (struct if_config *) config;
             item->call.tif.config->postfix_length = to_postfix(item->call.tif.config->predicate_fmt, item->call.tif.params, item->call.tif.config->postfix);
             break;
         case QUEUE_ITEM_TYPE_IF_ELSE:
@@ -99,7 +99,7 @@ hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *
             calculate_loop_length(&sm_ctx->hcall, QUEUE_ITEM_TYPE_FOR_BEGIN);
             break;
         case QUEUE_ITEM_TYPE_WHILE_BEGIN:
-            item->call.while_s.config = config;
+            item->call.while_s.config = (struct while_config *) config;
             item->call.while_s.params = params;
             item->call.while_s.config->loop_in_process = false;
             item->call.while_s.config->postfix_length = to_postfix(item->call.while_s.config->predicate_fmt, item->call.while_s.params, item->call.while_s.config->postfix);
@@ -108,7 +108,7 @@ hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *
             calculate_loop_length(&sm_ctx->hcall, QUEUE_ITEM_TYPE_WHILE_BEGIN);
             break;
         case QUEUE_ITEM_TYPE_ERROR:
-            item->call.err.config = config;
+            item->call.err.config = (struct error_config *) config;
             break;
         default: SWITCH_DEFAULT_REACHED
     }
