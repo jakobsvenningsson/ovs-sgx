@@ -53,7 +53,7 @@ hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *
         case QUEUE_ITEM_TYPE_IF:
             item->call.tif.params = params;
             item->call.tif.config = (struct if_config *) config;
-            item->call.tif.config->postfix_length = to_postfix(item->call.tif.config->predicate_fmt, item->call.tif.params, item->call.tif.config->postfix);
+            //item->call.tif.config->postfix_length = to_postfix(item->call.tif.config->predicate_fmt, item->call.tif.params, item->call.tif.config->postfix);
             break;
         case QUEUE_ITEM_TYPE_IF_ELSE:
             break;

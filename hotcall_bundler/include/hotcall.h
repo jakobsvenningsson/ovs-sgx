@@ -64,7 +64,7 @@ struct ecall_queue_item {
 };
 
 struct hotcall_batch {
-    struct ecall_queue_item *queue[MAX_FCS];
+    struct ecall_queue_item queue[MAX_FCS];
     unsigned int queue_len;
     int error;
     bool ignore_hcalls;
@@ -81,7 +81,7 @@ struct hotcall {
     int timeout_counter;
     bool hotcall_in_progress;
     bool is_inside_chain;
-    struct hotcall_batch batch;
+    struct hotcall_batch *batch;
 
     struct ecall_queue_item fcs[MAX_FCS];
     size_t idx;

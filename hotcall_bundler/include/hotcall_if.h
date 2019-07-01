@@ -6,16 +6,36 @@
 
 #define PASTE(X, Y) X ## Y
 
+/*
 #define _IF(SM_CTX, ID, CONFIG, ...) \
     struct parameter CAT2(IF_ARG_, ID)[] = { \
         __VA_ARGS__\
     }; \
     struct if_config CAT2(IF_CONFIG_, ID) = CONFIG; \
-    struct postfix_item CAT2(POSTFIX_, ID)[strlen(CAT2(IF_CONFIG_, ID).predicate_fmt)];\
-    CAT2(IF_CONFIG_, ID).postfix = CAT2(POSTFIX_, ID); \
-    if(!(SM_CTX)->hcall.batch.ignore_hcalls) { \
-        hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_IF, &CAT2(IF_CONFIG_, ID), CAT2(IF_ARG_, ID));\
-    }
+    struct ecall_queue_item *ID;\
+    ID = next_queue_item(SM_CTX);\
+    ID->type = QUEUE_ITEM_TYPE_IF;\
+    ID->call.tif.params = CAT2(IF_ARG_, ID);\
+    ID->call.tif.config = &CAT2(IF_CONFIG_, ID);\
+    enqueue_item(SM_CTX, ID);\
+    make_hotcall(&(SM_CTX)->hcall)*/
+
+
+
+#define _IF(SM_CTX, ID, CONFIG, ...) \
+    struct parameter CAT2(IF_ARG_, ID)[] = { \
+        __VA_ARGS__\
+    }; \
+    struct if_config CAT2(IF_CONFIG_, ID) = CONFIG; \
+    struct ecall_queue_item ID;\
+    ID.type = QUEUE_ITEM_TYPE_IF;\
+    ID.call.tif.params = CAT2(IF_ARG_, ID);\
+    ID.call.tif.config = &CAT2(IF_CONFIG_, ID)
+    //SM_CTX->hcall.batch.queue[SM_CTX->hcall.batch.queue_len++] = &ID
+    //make_hotcall(&(SM_CTX)->hcall)
+
+
+
 
 #define IF(CONFIG, ...) \
     _IF(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__);

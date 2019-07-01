@@ -196,23 +196,27 @@ benchmark_if_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) 
     unsigned int rounds[n_rounds];
     for(int i = 0; i < (n_rounds + warmup); ++i) {
         clear_cache();
-        BEGIN
-        hotcall_bundle_begin(sm_ctx);
-        bool res;
-        HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(res, 'b'));
-        IF(
-            ((struct if_config) {
-                .predicate_fmt = "b"
-            }),
-            VAR(res, 'b')
-        );
-        THEN
-            HCALL(CONFIG(.function_id = hotcall_ecall_foo));
-        END
 
-        hotcall_bundle_end(sm_ctx);
+        //hotcall_bundle_begin(sm_ctx);
+        BEGIN
+        bool res = false;
+        IF(((struct if_config) { .predicate_fmt = "b" }), VAR(res, 'b'));
+        //HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(res, 'b'));
+
+        //hotcall_bundle_begin(sm_ctx);
+
+
+    //    HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(res, 'b'));
+
+    //    hotcall_bundle_end(sm_ctx);
+
 
         CLOSE
+
+        unsigned int t;
+        t = GET_TIME
+        printf("T: %u\n", t);
+
         if(i >= warmup) {
             rounds[i - warmup] = GET_TIME
         }

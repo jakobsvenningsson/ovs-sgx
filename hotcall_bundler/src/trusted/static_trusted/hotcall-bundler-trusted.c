@@ -39,7 +39,7 @@ hotcall_handle_destroy(struct ecall_queue_item *qi, const struct hotcall_config 
 
 static void *lookup_table[256] = {
     [QUEUE_ITEM_TYPE_DESTROY] = hotcall_handle_destroy,
-    [QUEUE_ITEM_TYPE_FUNCTION] = hotcall_handle_function,
+    [QUEUE_ITEM_TYPE_FUNCTION] = NULL,
     [QUEUE_ITEM_TYPE_FOR_BEGIN] = hotcall_handle_for_begin,
     [QUEUE_ITEM_TYPE_FOR_EACH] = hotcall_handle_for_each,
     [QUEUE_ITEM_TYPE_FILTER] = hotcall_handle_filter,
@@ -51,8 +51,8 @@ static void *lookup_table[256] = {
     [QUEUE_ITEM_TYPE_REDUCE] = hotcall_handle_reduce,
     [QUEUE_ITEM_TYPE_ERROR] = hotcall_handle_error,
     [QUEUE_ITEM_TYPE_IF] = hotcall_handle_if,
-    [QUEUE_ITEM_TYPE_IF_ELSE] = hotcall_handle_if_else,
-    [QUEUE_ITEM_TYPE_IF_END] = hotcall_handle_if_end
+    [QUEUE_ITEM_TYPE_IF_ELSE] = NULL,
+    [QUEUE_ITEM_TYPE_IF_END] = NULL
 };
 
 

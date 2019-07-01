@@ -3,11 +3,11 @@
 
 #include <stdlib.h>
 
-#define L1_CACHE_SIZE (1024 * 32)
+#define L1_CACHE_SIZE (1024 * 1024)
 
 typedef unsigned long long ticks;
 
-static __inline__ ticks start (void) {
+static inline ticks start (void) {
   unsigned cycles_low, cycles_high;
   asm volatile ("CPUID\n\t"
 		"RDTSC\n\t"
@@ -17,7 +17,7 @@ static __inline__ ticks start (void) {
   return ((ticks)cycles_high << 32) | cycles_low;
 }
 
-static __inline__ ticks stop (void) {
+static inline ticks stop (void) {
   unsigned cycles_low, cycles_high;
   asm volatile("RDTSCP\n\t"
 	       "mov %%edx, %0\n\t"

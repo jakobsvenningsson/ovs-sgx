@@ -26,12 +26,35 @@
     struct hotcall_function_config CAT2(HCALL_CONFIG_, UNIQUE_ID) = CONFIG; \
     CAT2(HCALL_CONFIG_, UNIQUE_ID).n_params = sizeof(CAT2(HCALL_ARGS_, UNIQUE_ID))/sizeof(struct parameter);\
     if(!(SM_CTX)->hcall.batch.ignore_hcalls) { \
-        (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++] = \
-            get_fcall_((SM_CTX), &CAT2(HCALL_CONFIG_, UNIQUE_ID), CAT2(HCALL_ARGS_, UNIQUE_ID));\
-        if(_ASYNC(SM_CTX, false) != 1) { \
-            make_hotcall(&(SM_CTX)->hcall); \
-        }\
+        struct ecall_queue_item *item; \
+        item = next_queue_item(SM_CTX); \
+        (SM_CTX)->hcall.batch.queue[(SM_CTX)->hcall.batch.queue_len++]  = item;\
+        item->type = QUEUE_ITEM_TYPE_FUNCTION;\
+        struct hotcall_function *fcall;\
+        fcall = &item->call.fc;\
+        fcall->config = &CAT2(HCALL_CONFIG_, UNIQUE_ID);\
+        fcall->params = CAT2(HCALL_ARGS_, UNIQUE_ID);\
+        if(_ASYNC(SM_CTX), false) { \
+            struct hotcall_batch batch;
+            batch.queue_len++;
+            make_hotcall(&(SM_CTX)->hcall);\
+        }
     }
+
+/*
+#define _HCALL(SM_CTX, UNIQUE_ID, CONFIG, ...) \
+    struct parameter CAT2(HCALL_ARGS_, UNIQUE_ID)[] = { \
+        __VA_ARGS__ \
+    }; \
+    struct hotcall_function_config CAT2(HCALL_CONFIG_, UNIQUE_ID) = CONFIG; \
+    CAT2(HCALL_CONFIG_, UNIQUE_ID).n_params = sizeof(CAT2(HCALL_ARGS_, UNIQUE_ID))/sizeof(struct parameter);\
+    struct ecall_queue_item UNIQUE_ID; \
+    UNIQUE_ID.type = QUEUE_ITEM_TYPE_FUNCTION;\
+    UNIQUE_ID.call.fc.config = &CAT2(HCALL_CONFIG_, UNIQUE_ID);\
+    UNIQUE_ID.call.fc.params = CAT2(HCALL_ARGS_, UNIQUE_ID); \
+    make_hotcall(&(SM_CTX)->hcall)
+
+*/
 
 #define HCALL(CONFIG, ...) \
     _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
