@@ -20,6 +20,9 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         case hotcall_ecall_plus_one:
             ecall_plus_one((int *) args[0]);
             break;
+        case hotcall_ecall_minus_one:
+            ecall_minus_one((int *) args[0]);
+            break;
         case hotcall_ecall_container_of:
             ecall_offset_of(args[0], -(*(int *) args[1]));
             break;
@@ -215,7 +218,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             );
             break;
         case hotcall_ecall_collect_rules_loose_r:
-            ecall_collect_rules_loose_r(
+            *(int *) return_value = ecall_collect_rules_loose_r(
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule **) args[2],
@@ -336,13 +339,13 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             );
             break;
         case hotcall_ecall_oftable_enable_eviction_c:
-            *(int *) return_value = ecall_oftable_enable_eviction_c(
+            *(unsigned int *) return_value = ecall_oftable_enable_eviction_c(
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
             break;
         case hotcall_ecall_oftable_enable_eviction_r:
-            *(int *) return_value = ecall_oftable_enable_eviction_r(
+            *(unsigned int *) return_value = ecall_oftable_enable_eviction_r(
                 *(uint8_t *) args[0],
                 (struct cls_rule **) args[1],
                 *(int *) args[2],
@@ -397,7 +400,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             );
             break;
         case hotcall_ecall_collect_rules_strict_r:
-            ecall_collect_rules_strict_r(
+            *((int *) return_value) = ecall_collect_rules_strict_r(
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule **) args[2],

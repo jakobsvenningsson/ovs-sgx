@@ -104,6 +104,8 @@
 #define hotcall_ecall_container_of_ret 94
 
 #define hotcall_ecall_plus_one 95
+#define hotcall_ecall_minus_one 96
+
 
 #define hotcall_ecall_test 240
 #define hotcall_ecall_async_test 241

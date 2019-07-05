@@ -14,6 +14,7 @@
 #include "hotcall.h"
 #include "hotcall-bundler-trusted.h"
 #include "cache-trusted.h"
+#include "functions.h"
 
 
 // Global data structures
@@ -28,8 +29,12 @@ bool hotcall_configured = false;
 
 void
 ecall_plus_one(int *x) {
-    printf("Value of X: %d\n", *x);
     ++*x;
+}
+
+void
+ecall_minus_one(int *x) {
+    --*x;
 }
 
 void
@@ -37,10 +42,135 @@ ecall_offset_of(void **ptr, int offset) {
     *ptr = ((char *) *ptr) + offset;
 }
 
+static void
+wrapper_ecall_evg_add_rule(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        ecall_evg_add_rule(
+            *(uint8_t *) args[i][0],
+            *(uint8_t *) args[i][1],
+            (struct cls_rule *) args[i][2],
+            (uint32_t *) args[i][3],
+            *(uint32_t *) args[i][4]
+        );
+    }
+}
+
+static void
+wrapper_ecall_rule_eviction_priority(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(unsigned int *) args[i][n_params - 1]  = rule_eviction_priority(args[i][0], *(uint32_t *) args[i][1]);
+    }
+}
+
+static void
+wrapper_ecall_cls_rule_hash(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(unsigned int *) args[i][n_params - 1]  = ecall_cls_rule_hash(*(uint8_t *) args[i][0], args[i][1], *(uint32_t *) args[i][2]);
+    }
+}
+
+static void
+wrapper_ecall_cls_remove(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        ecall_cls_remove(*(uint8_t *) args[i][0], *(uint8_t *) args[i][1], args[i][2]);
+    }
+}
+
+static void
+wrapper_ecall_evg_remove_rule(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        ecall_evg_remove_rule(*(uint8_t *) args[i][0], *(uint8_t *) args[i][1], args[i][2]);
+    }
+}
+
+static void
+wrapper_ecall_cr_priority(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(unsigned int *) args[i][n_params - 1] = ecall_cr_priority(*(uint8_t *) args[i][0], args[i][1]);
+    }
+}
+
+static void
+wrapper_ecall_oftable_is_other_table(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(int *) args[i][n_params - 1] = ecall_oftable_is_other_table(*(uint8_t *) args[i][0], *(uint8_t *) args[i][1]);
+    }
+}
+
+static void
+wrapper_ecall_oftable_update_taggable(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(int *) args[i][n_params - 1] = ecall_oftable_update_taggable(*(uint8_t *) args[i][0], *(uint8_t *) args[i][1]);
+    }
+}
+
+static void
+wrapper_ecall_oftable_get_flags(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(int *) args[i][n_params - 1] = ecall_oftable_get_flags(*(uint8_t *) args[i][0], *(uint8_t *) args[i][1]);
+    }
+}
+
+static void
+wrapper_ecall_is_eviction_fields_enabled(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(int *) args[i][n_params - 1] = ecall_is_eviction_fields_enabled(*(uint8_t *) args[i][0], *(uint8_t *) args[i][1]);
+    }
+}
+
+static void
+wrapper_ecall_oftable_cls_count(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(int *) args[i][n_params - 1] = ecall_oftable_cls_count(*(uint8_t *) args[i][0], *(uint8_t *) args[i][1]);
+    }
+}
+
+static void
+wrapper_ecall_oftable_mflows(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(int *) args[i][n_params - 1] = ecall_oftable_mflows(*(uint8_t *) args[i][0], *(uint8_t *) args[i][1]);
+    }
+}
+
+
+#define CALL_TABLE_CAPACITY 256
+
+void *call_table[CALL_TABLE_CAPACITY] = {
+    [hotcall_ecall_evg_add_rule] = wrapper_ecall_evg_add_rule,
+    [hotcall_ecall_rule_eviction_priority] = wrapper_ecall_rule_eviction_priority,
+    [hotcall_ecall_cls_rule_hash] = wrapper_ecall_cls_rule_hash,
+    [hotcall_ecall_cls_remove] = wrapper_ecall_cls_remove,
+    [hotcall_ecall_evg_remove_rule] = wrapper_ecall_evg_remove_rule,
+    [hotcall_ecall_cr_priority] = wrapper_ecall_cr_priority,
+    [hotcall_ecall_oftable_is_other_table] = wrapper_ecall_oftable_is_other_table,
+    [hotcall_ecall_oftable_update_taggable] = wrapper_ecall_oftable_update_taggable,
+    [hotcall_ecall_oftable_get_flags] = wrapper_ecall_oftable_get_flags,
+    [hotcall_ecall_is_eviction_fields_enabled] = wrapper_ecall_is_eviction_fields_enabled,
+    [hotcall_ecall_oftable_cls_count] = wrapper_ecall_oftable_cls_count,
+    [hotcall_ecall_oftable_mflows] = wrapper_ecall_oftable_mflows
+
+};
+
+
+void
+batch_execute_function(uint8_t function_id, unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    void (*f)(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]);
+    f = call_table[function_id];
+    #ifdef SGX_DEBUG
+    if(!f) {
+        printf("unknown hotcall function %d.\n", function_id);
+    }
+    #endif
+    f(n_iters, n_params, args);
+}
+
+
 void
 configure_hotcall() {
     struct hotcall_config conf = {
-        .execute_function = execute_function
+        .execute_function_legacy = execute_function,
+        .execute_function = batch_execute_function,
+        .n_spinlock_jobs = 0
         //.n_spinlock_jobs = 1,
         //.spin_lock_tasks = { &flow_map_cache_validate },
         //.spin_lock_task_timeouts = { 99999999 },

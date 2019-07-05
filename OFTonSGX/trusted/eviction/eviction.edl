@@ -18,9 +18,9 @@ enclave {
 		void ecall_oftable_enable_eviction(uint8_t bridge_id, uint8_t table_id,[in]const struct mf_subfield *fields,size_t n_fields,uint32_t random_v, [user_check] bool *no_change);
 		public
 		void ecall_oftable_disable_eviction(uint8_t bridge_id, uint8_t table_id);
-		public size_t
+		public unsigned int
 		ecall_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id);
-		public size_t
+		public unsigned int
 		ecall_oftable_enable_eviction_r(uint8_t bridge_id, [user_check]struct cls_rule **buf,int elem,uint8_t table_id, [user_check] int *n_cr_rules);
 
 

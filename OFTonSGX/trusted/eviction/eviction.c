@@ -138,16 +138,16 @@ ecall_oftable_enable_eviction(uint8_t bridge_id, uint8_t table_id, const struct 
     heap_init_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
 }
 
-size_t
+unsigned int
 ecall_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id){
     return ecall_oftable_enable_eviction_r(bridge_id, NULL, -1, table_id, NULL);
 }
 
-size_t
+unsigned int
 ecall_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int elem, uint8_t table_id, int *n_cr_rules){
     struct cls_cursor cursor;
     struct sgx_cls_rule * rule;
-    size_t p = 0, n = 0;
+    unsigned int p = 0, n = 0;
     bool count_only = buf == NULL ? true : false;
 
     cls_cursor_init(&cursor, &SGX_oftables[bridge_id][table_id].cls, NULL);
@@ -164,9 +164,8 @@ ecall_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int e
         *n_cr_rules = p;
     }
 
-    return n;
+    return count_only ? p : n;
 }
-
 
 static bool was_evictable;
 

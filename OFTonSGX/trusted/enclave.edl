@@ -14,7 +14,7 @@ enclave {
 	from "ofproto/ofproto.edl" import *;
 
 
-	from "hotcall_bundler.edl" import *;
+	from "hotcall_bundler.edl" import hotcall_bundler_start;
 
 
 	untrusted {

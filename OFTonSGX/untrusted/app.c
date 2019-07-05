@@ -504,7 +504,7 @@ SGX_collect_rules_loose_c(uint8_t bridge_id, int ofproto_n_tables, uint8_t table
     return n;
 }
 
-void
+size_t
 SGX_collect_rules_loose_r(uint8_t bridge_id,
                 int ofproto_n_tables,
                 struct cls_rule ** buf,
@@ -530,6 +530,7 @@ SGX_collect_rules_loose_r(uint8_t bridge_id,
     #else
     ECALL(ecall_collect_rules_loose_r, &n, bridge_id, ofproto_n_tables, buf, elem, table_id, match);
     #endif
+    return n;
 }
 
 size_t
@@ -554,7 +555,7 @@ SGX_collect_rules_strict_c(uint8_t bridge_id, int ofproto_n_tables, uint8_t tabl
     return n;
 }
 
-void
+size_t
 SGX_collect_rules_strict_r(
     uint8_t bridge_id,
     int ofproto_n_tables,
@@ -583,11 +584,12 @@ SGX_collect_rules_strict_r(
     #else
     ECALL(ecall_collect_rules_strict_r, &n, bridge_id, ofproto_n_tables, buf, elem, table_id, match, priority);
     #endif
+    return n;
 }
 
-size_t
+unsigned int
 SGX_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id){
-    size_t n;
+    unsigned int n;
     #ifdef HOTCALL
     /*bool async = ASYNC(false);
     void **args = pfc.args[pfc.idx];
@@ -605,9 +607,9 @@ SGX_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id){
 }
 
 // 24.2 Request
-size_t
+unsigned int
 SGX_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int elem, uint8_t table_id, int *n_cr_rules){
-    size_t n;
+    unsigned int n;
     #ifdef HOTCALL
     /*bool async = ASYNC(false);
     void **args = pfc.args[pfc.idx];

@@ -312,9 +312,9 @@ void SGX_cls_find_match_exactly(uint8_t bridge_id, uint8_t table_id,
 		unsigned int priority,struct cls_rule **o_cls_rule);
 
 size_t SGX_collect_rules_loose_c(uint8_t bridge_id, int ofproto_n_tables,uint8_t table_id,const struct match *match);
-void SGX_collect_rules_loose_r(uint8_t bridge_id, int ofproto_n_tables,struct cls_rule **buf,int elem,uint8_t table_id,const struct match *match);
+size_t SGX_collect_rules_loose_r(uint8_t bridge_id, int ofproto_n_tables,struct cls_rule **buf,int elem,uint8_t table_id,const struct match *match);
 size_t SGX_collect_rules_strict_c(uint8_t bridge_id, int ofproto_n_tables,uint8_t table_id,const struct match *match,unsigned int priority);
-void SGX_collect_rules_strict_r(uint8_t bridge_id, int ofproto_n_tables,struct cls_rule **buf,int elem,uint8_t table_id,const struct match *match,unsigned int priority);
+size_t SGX_collect_rules_strict_r(uint8_t bridge_id, int ofproto_n_tables,struct cls_rule **buf,int elem,uint8_t table_id,const struct match *match,unsigned int priority);
 
 
 
