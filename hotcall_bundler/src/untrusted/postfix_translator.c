@@ -1,6 +1,6 @@
 #include "postfix_translator.h"
 #include <string.h>
-
+/*
 static inline
 int presedence(char c) {
     switch(c) {
@@ -53,4 +53,4 @@ to_postfix(const char *condition_fmt, struct parameter *predicate_args, struct p
         output[output_index++].ch = tmp;
     }
     return output_index;
-}
+}*/

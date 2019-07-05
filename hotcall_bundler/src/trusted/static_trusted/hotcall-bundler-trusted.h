@@ -15,7 +15,8 @@ extern "C" {
 static struct hotcall_config *hotcall_config;
 
 struct loop_stack_item {
-    unsigned int body_len;
+    struct ecall_queue_item *loop_start;
+    struct ecall_queue_item *loop_end;
     unsigned int index;
     unsigned int n_iters;
     unsigned int offset;

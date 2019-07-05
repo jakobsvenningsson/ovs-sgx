@@ -17,6 +17,7 @@
 #include "hotcall_error.h"
 #include "hotcall_assign_variable.h"
 #include "hotcall_function.h"
+#include "hotcall_assert.h"
 
 
 #define QUEUE_ITEM_TYPE_IF_NULL 1
@@ -37,6 +38,8 @@
 #define QUEUE_ITEM_TYPE_WHILE_END 20
 #define QUEUE_ITEM_TYPE_IF 21
 #define QUEUE_ITEM_TYPE_IF_END 22
+#define QUEUE_ITEM_TYPE_ASSERT 23
+#define QUEUE_ITEM_TYPE_ASSERT_FALSE 24
 
 #define MAX_FCS 200
 #define MAX_TS 200
@@ -55,16 +58,20 @@ union hcall {
     struct hotcall_function fc;
     struct hotcall_assign_variable var;
     struct hotcall_assign_pointer ptr;
+    struct hotcall_if_else tife;
+    struct hotcall_assert as;
 };
 
 struct ecall_queue_item {
     uint8_t type;
     union hcall call;
     struct ecall_queue_item *next;
+    struct ecall_queue_item *prev;
 };
 
 struct hotcall_batch {
-    struct ecall_queue_item *queue[MAX_FCS];
+    struct ecall_queue_item *queue; //[MAX_FCS];
+    struct ecall_queue_item *top;
     unsigned int queue_len;
     int error;
     bool ignore_hcalls;
@@ -81,10 +88,11 @@ struct hotcall {
     int timeout_counter;
     bool hotcall_in_progress;
     bool is_inside_chain;
-    struct hotcall_batch batch;
-
-    struct ecall_queue_item fcs[MAX_FCS];
-    size_t idx;
+    struct hotcall_batch *batch;
+    struct ecall_queue_item *ecall;
+    int error;
+    //struct ecall_queue_item fcs[MAX_FCS];
+    //size_t idx;
 };
 
 struct shared_memory_ctx {

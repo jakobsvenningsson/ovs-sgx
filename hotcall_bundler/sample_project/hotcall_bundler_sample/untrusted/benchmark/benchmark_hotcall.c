@@ -2,6 +2,7 @@
 #include "hotcall-bundler-untrusted.h"
 #include "functions.h"
 #include <stdarg.h>
+#include "postfix_translator.h"
 
 unsigned int
 benchmark_hotcall(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
@@ -9,9 +10,11 @@ benchmark_hotcall(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     unsigned int rounds[n_rounds];
     for(int i = 0; i < (n_rounds + warmup); ++i) {
         clear_cache();
+        int x;
         BEGIN
-        HCALL(CONFIG(.function_id = hotcall_ecall_foo));
+        HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(x, 'd'));
         CLOSE
+        
         if(i >= warmup) {
             rounds[i - warmup] = GET_TIME
         }

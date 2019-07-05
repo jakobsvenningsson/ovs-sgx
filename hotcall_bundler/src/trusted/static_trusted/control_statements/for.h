@@ -26,11 +26,10 @@ hotcall_handle_for_begin(struct ecall_queue_item *qi, const struct hotcall_confi
 
     unsigned int n_iters = *for_s->config->n_iters;
     if(n_iters == 0) {
-        *queue_ctx->queue_pos += for_s->config->body_len + 1;
-        //memset(queue_ctx->exclude_list + *queue_ctx->queue_pos, 1, for_s->config->body_len + 2);
+        qi->next = for_s->config->loop_end;
     } else {
         loop_stack[loop_stack_pos] = (struct loop_stack_item) {
-            .body_len = for_s->config->body_len,
+            .loop_start = qi->next,
             .index = 0,
             .n_iters = n_iters,
         };
@@ -43,12 +42,16 @@ static inline void
 hotcall_handle_for_end(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status) {
     struct loop_stack_item *loop_stack = queue_ctx->loop_stack;
     unsigned int loop_stack_pos = queue_ctx->loop_stack_pos;
+
+    if(!loop_stack[loop_stack_pos - 1].index) {
+        loop_stack[loop_stack_pos - 1].loop_end = qi->next;
+    }
+
     if(++loop_stack[loop_stack_pos - 1].index < loop_stack[loop_stack_pos - 1].n_iters) {
-        *queue_ctx->queue_pos -= (loop_stack[loop_stack_pos - 1].body_len + 1);
-        //memset(queue_ctx->exclude_list + *queue_ctx->queue_pos + 1, 0, loop_stack[loop_stack_pos - 1].body_len);
+        qi->next = loop_stack[loop_stack_pos - 1].loop_start;
         loop_stack[loop_stack_pos - 1].offset++;
-        //goto continue_loop;
     } else {
+        qi->next = loop_stack[loop_stack_pos - 1].loop_end;
         queue_ctx->loop_stack_pos--;
     }
 }

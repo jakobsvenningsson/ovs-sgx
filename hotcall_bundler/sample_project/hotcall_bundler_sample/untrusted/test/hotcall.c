@@ -9,6 +9,7 @@ TEST(hotcall, 1) {
     hotcall_test_setup();
 
     int x = 0;
+
     HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
 
     hotcall_test_teardown();
@@ -188,7 +189,6 @@ TEST(hotcall, 8) {
     BUNDLE_END();
 
     hotcall_test_teardown();
-
 
     ASSERT_EQ(((struct B *) a_ptr)->x, 0);
     ASSERT_EQ(((struct B *) a_ptr)->y, 1);

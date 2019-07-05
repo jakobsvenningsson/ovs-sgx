@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-#define L1_CACHE_SIZE (1024 * 32)
+#define L1_CACHE_SIZE (1024 * (1024))
 
 typedef unsigned long long ticks;
 

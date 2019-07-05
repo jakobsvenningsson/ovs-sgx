@@ -1,6 +1,7 @@
 #include "benchmark.h"
 #include "hotcall-bundler-untrusted.h"
 #include "functions.h"
+#include "postfix_translator.h"
 
 
 unsigned int
@@ -15,7 +16,7 @@ benchmark_map(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
         BEGIN
 
-        hotcall_bundle_begin(sm_ctx);
+        BUNDLE_BEGIN();
 
         MAP(((struct map_config) {
                 .function_id = hotcall_ecall_plus_one_ret,
@@ -47,7 +48,7 @@ benchmark_for(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
         BEGIN
 
-        hotcall_bundle_begin(sm_ctx);
+        BUNDLE_BEGIN();
 
         BEGIN_FOR(((struct for_config) {
             .n_iters = &n_iters
@@ -57,7 +58,7 @@ benchmark_for(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
         END_FOR();
 
-        hotcall_bundle_end(sm_ctx);
+        BUNDLE_END();
 
         CLOSE
         if(i >= warmup) {
@@ -95,7 +96,7 @@ benchmark_filter(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
         BEGIN
 
-        hotcall_bundle_begin(sm_ctx);
+        BUNDLE_BEGIN();
 
 
         /*FILTER(
@@ -148,7 +149,7 @@ benchmark_for_each(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
 
         BEGIN
 
-        hotcall_bundle_begin(sm_ctx);
+        BUNDLE_BEGIN();
 
         FOR_EACH(((struct for_each_config) { .function_id = hotcall_ecall_plus_one, .n_iters = &n_iters}), VECTOR(xs_ptr, 'd', &n_iters, .dereference = true));
 
@@ -181,6 +182,8 @@ benchmark_if_naive(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
             HCALL(((struct hotcall_function_config) { .function_id = hotcall_ecall_foo, .has_return = false }));
         }
         CLOSE
+
+
         if(i >= warmup) {
             rounds[i - warmup] = GET_TIME
         }
@@ -189,6 +192,7 @@ benchmark_if_naive(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
     return rounds[n_rounds / 2];
 }
 
+#include <unistd.h>
 
 unsigned int
 benchmark_if_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
@@ -196,23 +200,72 @@ benchmark_if_optimized(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) 
     unsigned int rounds[n_rounds];
     for(int i = 0; i < (n_rounds + warmup); ++i) {
         clear_cache();
+        unsigned n_iters = 100, out_length;
+        int xs[n_iters] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        int ys[n_iters] = { 0 };
+
+        int x = 0, y = 0;
+        struct parameter param[] = { VAR(x, 'y') };
+
+        struct parameter function_parameter[] = {
+            VECTOR(xs, 'd', &n_iters),
+            VECTOR(ys, 'd', &n_iters)
+        };
+
         BEGIN
-        hotcall_bundle_begin(sm_ctx);
-        bool res;
-        HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(res, 'b'));
-        IF(
-            ((struct if_config) {
+
+        /*
+
+        for(int i = 0; i < n_iters; ++i) {
+            HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(y, 'd'));
+            if(y) {
+                HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(y, 'd'));
+            }
+        }
+
+        */
+
+
+        BUNDLE_BEGIN();
+
+
+            FILTER(((struct filter_config) {
                 .predicate_fmt = "b"
             }),
-            VAR(res, 'b')
-        );
-        THEN
-            HCALL(CONFIG(.function_id = hotcall_ecall_foo));
-        END
+            FUNC(.function_id = hotcall_ecall_greater_than_two, .params = function_parameter, .n_params = 2),
+            VECTOR(ys, 'd', &out_length));
 
-        hotcall_bundle_end(sm_ctx);
+            FOR_EACH(
+                ((struct for_each_config) { .function_id = hotcall_ecall_plus_one, .n_iters = &n_iters }),
+                VECTOR(ys, 'd')
+            );
+
+        BUNDLE_END();
+
+
+
+        /*BUNDLE_BEGIN();
+
+            BEGIN_FOR(((struct for_config) {
+                .n_iters = &n_iters
+            }));
+
+            //    ASSERT(3, FUNC(hotcall_ecall_always_true, .params = param, .n_params = 1));
+                HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VECTOR(ys, 'd'));
+
+            END_FOR();
+
+        BUNDLE_END();*/
+
+
 
         CLOSE
+        SHOWTIME5
+
+        unsigned int t = GET_TIME
+        printf("t: %u\n", t);
+
+
         if(i >= warmup) {
             rounds[i - warmup] = GET_TIME
         }

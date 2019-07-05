@@ -5,6 +5,8 @@
 
 #include "hotcall_if.h"
 #include "hotcall.h"
+#include "postfix_translator.h"
+
 
 TEST(if,1) {
     // Contract: a true condition should execute the "then" branch
@@ -270,24 +272,7 @@ TEST(if,9) {
 
     int xs[len] = { 0 };
 
-    /*struct parameter vec1[] = { VAR_v2(rs, 'u'),
-                                STRUCT(&vec1[0], .member_offset = offsetof(struct R, hard_timeout)),
-                                PTR_v2(&vec1[1], .dereference = true),
-                                VECTOR_v2(&vec1[2], &len)
-                            }, p1 = vec1[3];
-
-    struct parameter vec2[] = { VAR_v2(rs, 'u'),
-                                STRUCT(&vec2[0], .member_offset = offsetof(struct R, idle_timeout)),
-                                PTR_v2(&vec2[1], .dereference = true),
-                                VECTOR_v2(&vec2[2], &len)
-                            }, p2 = vec2[3];
-
-    struct parameter vec3[] = { VAR_v2(xs, 'd'),
-                                VECTOR_v2(&vec3[0], &len)
-                            }, p3 = vec3[1];*/
-
     BUNDLE_BEGIN();
-
 
     BEGIN_FOR((struct for_config) {
         .n_iters = &len
@@ -318,10 +303,11 @@ TEST(if, 10) {
 
     hotcall_test_setup();
 
-
     int x = 0, y = 1;
 
     HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+
+    printf("X: %d\n", x);
 
     BUNDLE_BEGIN();
 
@@ -332,6 +318,8 @@ TEST(if, 10) {
 
     BUNDLE_END();
 
+    BUNDLE_BEGIN();
+
     HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
     IF(((struct if_config) { .predicate_fmt = "d" }), VAR(y, 'd'));
     THEN
@@ -339,6 +327,8 @@ TEST(if, 10) {
     END
 
     HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
+
+    BUNDLE_END();
 
     BUNDLE_BEGIN();
 
@@ -361,38 +351,6 @@ TEST(if, 10) {
     hotcall_test_teardown();
 
     ASSERT_EQ(x, 8);
-}
-
-TEST(if,11) {
-    /* Contract:  If statements backtracks in the execution queue in order to calculate the length of its body. */
-
-    hotcall_test_setup();
-
-    struct shared_memory_ctx *sm_ctx = hotcall_test_get_context();
-    sm_ctx->hcall.idx = 0;
-
-    int x = 0, y = 0;
-
-    for(int i = 0; i < MAX_FCS - 1; ++i) {
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
-    }
-
-
-    BUNDLE_BEGIN();
-
-    IF(((struct if_config) { .predicate_fmt = "!d"}), VAR(y, 'd'));
-    THEN
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(y, 'd'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(y, 'd'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(y, 'd'));
-    END
-
-    BUNDLE_END();
-
-    hotcall_test_teardown();
-
-    ASSERT_EQ(x, 199);
-    ASSERT_EQ(y, 3);
 }
 
 TEST(if,12) {
@@ -435,7 +393,7 @@ TEST(if,12) {
 
 TEST(if,13) {
 
-    hotcall_test_setup();
+    /*hotcall_test_setup();
 
     BUNDLE_BEGIN();
 
@@ -457,12 +415,12 @@ TEST(if,13) {
 
     hotcall_test_teardown();
 
-    ASSERT_EQ(x, 5);
+    ASSERT_EQ(x, 5);*/
 }
 
 TEST(if,14) {
 
-    hotcall_test_setup();
+    /*hotcall_test_setup();
 
     BUNDLE_BEGIN();
 
@@ -484,5 +442,5 @@ TEST(if,14) {
 
     hotcall_test_teardown();
 
-    ASSERT_EQ(x, 0);
+    ASSERT_EQ(x, 0);*/
 }

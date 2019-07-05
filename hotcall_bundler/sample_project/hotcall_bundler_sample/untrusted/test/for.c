@@ -4,6 +4,8 @@
 #include "functions.h"
 
 #include "hotcall_for.h"
+#include "postfix_translator.h"
+
 
 TEST(for,1) {
     //Contract: the hcalls inside the for loop should add 3 to each element in xs and 2 to each element in ys.
@@ -48,8 +50,6 @@ TEST(for,2) {
     bool ret;
     int *ptr = NULL;
 
-    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
-
     BUNDLE_BEGIN();
 
     BEGIN_FOR({ .n_iters = &n_iters });
@@ -89,8 +89,6 @@ TEST(for,3) {
     memset(xs, 0, n_iters * n_iters * sizeof(int));
     bool ret;
 
-    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
-
     BUNDLE_BEGIN();
 
     BEGIN_FOR({ .n_iters = &n_iters });
@@ -123,8 +121,6 @@ TEST(for, 4) {
     int xs[n_iters][n_iters];
     memset(xs, 0, n_iters * n_iters * sizeof(int));
     bool ret;
-
-    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     BUNDLE_BEGIN();
 
@@ -163,8 +159,6 @@ TEST(for, 5) {
     int xs[n_iters][n_iters][n_iters];
     memset(xs, 0, n_iters * n_iters * n_iters * sizeof(int));
     bool ret;
-
-    //struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
 
     BUNDLE_BEGIN();
 

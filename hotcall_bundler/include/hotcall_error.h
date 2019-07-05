@@ -11,15 +11,20 @@ struct hotcall_error {
 
 #define _ERROR(SM_CTX, ID, ERROR) \
     struct error_config CAT2(ERROR_CONFIG_,ID) = { ERROR };\
-    hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_ERROR, &CAT2(ERROR_CONFIG_,ID), NULL)
+    struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 }; \
+    hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_ERROR, &CAT2(ERROR_CONFIG_,ID), NULL, &CAT2(QUEUE_ITEM_, ID))
 
 #define ERROR(ERROR) \
     _ERROR(_sm_ctx, UNIQUE_ID, ERROR)
 
 #define RETURN \
-    if(!(_sm_ctx)->hcall.batch.ignore_hcalls) { \
-        _ERROR(_sm_ctx, UNIQUE_ID, 0);\
-    }
+    _ERROR(_sm_ctx, UNIQUE_ID, 0);
+
+
+//if(!(_sm_ctx)->hcall.batch->ignore_hcalls) {
+
+
+//}
 
 
 

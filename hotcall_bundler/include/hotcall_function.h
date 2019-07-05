@@ -23,7 +23,31 @@ enum parameter_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE, POINTER_TYPE_v
 #define FUNC(...) (struct parameter) { .type = FUNCTION_TYPE, .value = { .function = { __VA_ARGS__ }}}
 #define STRUCT(VAL, ...) (struct parameter) { .type = STRUCT_TYPE, .value = { .struct_ = { .arg = (VAL), __VA_ARGS__ }}}
 
+#define _HCALL(SM_CTX, ID, CONFIG, ...) \
+    struct parameter CAT2(HCALL_ARGS_, ID)[] = { __VA_ARGS__ }; \
+    struct hotcall_function_config CAT2(HCALL_CONFIG_, ID) = CONFIG; \
+    CAT2(HCALL_CONFIG_, ID).n_params = sizeof(CAT2(HCALL_ARGS_, ID))/sizeof(struct parameter);\
+    struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 };\
+    CAT2(QUEUE_ITEM_, ID).type = QUEUE_ITEM_TYPE_FUNCTION;\
+    struct hotcall_function *ID;\
+    ID = &(CAT2(QUEUE_ITEM_, ID)).call.fc;\
+    ID->config = &CAT2(HCALL_CONFIG_, ID);\
+    ID->params = CAT2(HCALL_ARGS_, ID);\
+    if(!(SM_CTX)->hcall.batch) { \
+        SM_CTX->hcall.ecall = &CAT2(QUEUE_ITEM_, ID);\
+        make_hotcall(&(SM_CTX)->hcall);\
+    } else if(!(SM_CTX)->hcall.batch->queue) {\
+        SM_CTX->hcall.batch->queue = &CAT2(QUEUE_ITEM_, ID);\
+        SM_CTX->hcall.batch->top = &CAT2(QUEUE_ITEM_, ID);\
+    } else {\
+        CAT2(QUEUE_ITEM_, ID).prev = (SM_CTX)->hcall.batch->top;\
+        SM_CTX->hcall.batch->top->next = &CAT2(QUEUE_ITEM_, ID);\
+        SM_CTX->hcall.batch->top = &CAT2(QUEUE_ITEM_, ID);\
+    }
 
+
+#define HCALL(CONFIG, ...) \
+    _HCALL(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)
 
 
 struct variable_parameter {

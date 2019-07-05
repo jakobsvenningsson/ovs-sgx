@@ -59,6 +59,7 @@ App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/test/filter.c \
 			   $(UNTRUSTED_DIR)/test/reduce.c \
 			   $(UNTRUSTED_DIR)/test/for.c \
+			   $(UNTRUSTED_DIR)/test/assert.c \
 			   $(UNTRUSTED_DIR)/test/functional_chaining.c \
 			   $(UNTRUSTED_DIR)/test/integration.c \
 			   $(UNTRUSTED_DIR)/test/struct.c \

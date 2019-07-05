@@ -6,8 +6,9 @@
 
 #define _BEGIN_FOR(SM_CTX, ID, CONFIG) \
     struct for_config CAT2(FOR_CONFIG_,ID) = CONFIG; \
-    if(!(SM_CTX)->hcall.batch.ignore_hcalls) { \
-        hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_FOR_BEGIN, &CAT2(FOR_CONFIG_,ID), NULL);\
+    struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 }; \
+    if(!(SM_CTX)->hcall.batch->ignore_hcalls) { \
+        hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_FOR_BEGIN, &CAT2(FOR_CONFIG_,ID), NULL, &CAT2(QUEUE_ITEM_, ID));\
     }
 
 
@@ -15,18 +16,17 @@
     _BEGIN_FOR(_sm_ctx, UNIQUE_ID, CONFIG)
 
 
-#define END_FOR() \
-    if(!(_sm_ctx)->hcall.batch.ignore_hcalls) { \
-        hotcall_enqueue_item(_sm_ctx, QUEUE_ITEM_TYPE_FOR_END, NULL, NULL);\
+#define _END_FOR(ID) \
+    struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 }; \
+    if(!(_sm_ctx)->hcall.batch->ignore_hcalls) { \
+        hotcall_enqueue_item(_sm_ctx, QUEUE_ITEM_TYPE_FOR_END, NULL, NULL, &CAT2(QUEUE_ITEM_, ID));\
     }
+#define END_FOR() _END_FOR(UNIQUE_ID)
 
 
 struct for_config {
     unsigned int *n_iters;
-    void *iter[5];
-    unsigned int n_iter_variables;
-    void *tmp_storage[5];
-    unsigned int body_len;
+    struct ecall_queue_item *loop_end;
     bool loop_in_process;
 };
 

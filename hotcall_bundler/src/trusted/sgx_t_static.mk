@@ -53,6 +53,7 @@ hotcall_bundler_C_Files := static_trusted/hotcall_bundler.c \
 						   static_trusted/control_statements/for.c \
 						   static_trusted/control_statements/while.c \
 						   static_trusted/control_statements/if.c \
+						   static_trusted/control_statements/assert.c \
 						   static_trusted/parameter.c \
 						   static_trusted/predicate.c
 

@@ -23,7 +23,7 @@ hotcall_handle_for_each(struct ecall_queue_item *qi, const struct hotcall_config
 
     void *args[n_iters][n_params];
     parse_arguments(tor->params, n_iters, n_params, args, 0);
-    execute_function(hotcall_config, tor->config->function_id, n_iters, n_params, args);
-    //hotcall_config->execute_function(tor->config->function_id, n_iters, n_params, args);
+    //execute_function(hotcall_config, tor->config->function_id, n_iters, n_params, args);
+    hotcall_config->execute_function(tor->config->function_id, n_iters, n_params, args);
 
 }

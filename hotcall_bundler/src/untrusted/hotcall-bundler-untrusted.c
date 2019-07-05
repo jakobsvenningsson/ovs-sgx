@@ -22,40 +22,48 @@ start_enclave_thread(void * vargp){
 
 void
 hotcall_init(struct shared_memory_ctx *ctx, sgx_enclave_id_t eid) {
-
-    ctx->hcall.hotcall_in_progress = false;
-    ctx->hcall.batch.queue_len = 0;
     ctx->hcall.is_inside_chain = false;
-    ctx->hcall.batch.ignore_hcalls = false;
-
     global_eid = eid;
     _sm_ctx = ctx;
-
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, start_enclave_thread, NULL);
 }
 
 void
 hotcall_destroy(struct shared_memory_ctx *sm_ctx) {
-    struct ecall_queue_item *item;
-    item = next_queue_item(sm_ctx);
-    item->type = QUEUE_ITEM_TYPE_DESTROY;
-    enqueue_item(sm_ctx, item);
+    struct ecall_queue_item item;
+    item.type = QUEUE_ITEM_TYPE_DESTROY;
+    sm_ctx->hcall.ecall = &item;
     hotcall_bundle_flush(sm_ctx);
+    sm_ctx->hcall.ecall = NULL;
 }
 
 void
-hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *config, struct parameter *params) {
-    struct ecall_queue_item *item;
-    item = next_queue_item(sm_ctx);
+hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *config, struct parameter *params, struct ecall_queue_item *item) {
     item->type = item_type;
+    bool is_first_element = false;
+    if(!sm_ctx->hcall.batch->queue) {
+        sm_ctx->hcall.batch->queue = sm_ctx->hcall.batch->top = item;
+        is_first_element = true;
+    }
+    else {
+        item->prev = sm_ctx->hcall.batch->top;
+        sm_ctx->hcall.batch->top->next = item;
+        sm_ctx->hcall.batch->top = item;
+    }
+
     switch(item_type) {
+        case QUEUE_ITEM_TYPE_ASSERT:
+            item->call.as.param = params;
+            item->call.as.config = (struct assert_config *) config;
+            break;
         case QUEUE_ITEM_TYPE_IF:
             item->call.tif.params = params;
             item->call.tif.config = (struct if_config *) config;
-            item->call.tif.config->postfix_length = to_postfix(item->call.tif.config->predicate_fmt, item->call.tif.params, item->call.tif.config->postfix);
+            ((struct if_config *) config)->postfix_length = to_postfix(((struct if_config *) config)->predicate_fmt, item->call.tif.params, ((struct if_config *) config)->postfix);
             break;
         case QUEUE_ITEM_TYPE_IF_ELSE:
+            item->call.tife.config = (struct if_else_config *) config;
             break;
         case QUEUE_ITEM_TYPE_IF_END:
             calculate_if_body_length(sm_ctx);
@@ -64,21 +72,21 @@ hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *
             item->call.fi.config = (struct filter_config *) config;
             item->call.fi.params = params;
             item->call.fi.config->postfix_length = to_postfix(item->call.fi.config->predicate_fmt, item->call.fi.params, item->call.fi.config->postfix);
-            if(is_inside_chain(sm_ctx) && sm_ctx->hcall.batch.queue_len > 0) {
+            if(is_inside_chain(sm_ctx) && !is_first_element) {
                 chain_operators(sm_ctx, params);
             }
             break;
         case QUEUE_ITEM_TYPE_MAP:
             item->call.ma.config = (struct map_config *) config;
             item->call.ma.params = params;
-            if(is_inside_chain(sm_ctx) && sm_ctx->hcall.batch.queue_len > 0) {
+            if(is_inside_chain(sm_ctx) && !is_first_element) {
                 chain_operators(sm_ctx, params);
             }
             break;
         case QUEUE_ITEM_TYPE_REDUCE:
             item->call.re.config = (struct reduce_config *) config;
             item->call.re.params = params;
-            if(is_inside_chain(sm_ctx) && sm_ctx->hcall.batch.queue_len > 0) {
+            if(is_inside_chain(sm_ctx) && !is_first_element) {
                 chain_operators(sm_ctx, params);
             }
             break;
@@ -112,5 +120,4 @@ hotcall_enqueue_item(struct shared_memory_ctx *sm_ctx, uint8_t item_type, void *
             break;
         default: SWITCH_DEFAULT_REACHED
     }
-    enqueue_item(sm_ctx, item);
 }

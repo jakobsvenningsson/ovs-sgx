@@ -10,6 +10,8 @@
 #include "parameter.h"
 #include "filter.h"
 #include "execute_function.h"
+#include "assert.h"
+
 
 void
 hotcall_register_config(struct hotcall_config *config) {
@@ -52,7 +54,8 @@ static void *lookup_table[256] = {
     [QUEUE_ITEM_TYPE_ERROR] = hotcall_handle_error,
     [QUEUE_ITEM_TYPE_IF] = hotcall_handle_if,
     [QUEUE_ITEM_TYPE_IF_ELSE] = hotcall_handle_if_else,
-    [QUEUE_ITEM_TYPE_IF_END] = hotcall_handle_if_end
+    [QUEUE_ITEM_TYPE_IF_END] = NULL,
+    [QUEUE_ITEM_TYPE_ASSERT] = hotcall_handle_assert
 };
 
 
@@ -78,22 +81,33 @@ hotcall_execute_bundle(struct hotcall_batch *batch) {
     struct queue_context queue_ctx = { .len = queue_len };
     struct batch_status status = { 0 };
 
-    int n;
-    queue_ctx.queue_pos = &n;
-    for(n = 0; n < queue_len; ++n) {
-        queue_item = batch->queue[n];
-        f = lookup_table[queue_item->type];
-        if(!f) continue;
-        f(queue_item, hotcall_config, &queue_ctx, &status);
+
+    register struct ecall_queue_item *item = batch->queue;
+    while(item) {
+        f = lookup_table[item->type];
+        if(!f) { item = item->next; continue; };
+        f(item, hotcall_config, &queue_ctx, &status);
         if(status.exit_batch) {
             if(status.error == -1) return -1;
             batch->error = status.error;
             goto batch_done;
         };
+        item = item->next;
     }
 
     batch_done:
 
+    return 0;
+}
+
+static inline int
+hotcall_execute_ecall(struct ecall_queue_item *qi) {
+    if(qi->type == QUEUE_ITEM_TYPE_DESTROY) {
+        return -1;
+    }
+    struct hotcall_function *fc = &qi->call.fc;
+    parse_function_arguments(fc->params, fc->config->n_params, 0, fc->args);
+    execute_function(hotcall_config, fc->config->function_id, 1, fc->config->n_params, fc->args);
     return 0;
 }
 
@@ -115,12 +129,10 @@ hotcall_bundler_start(struct shared_memory_ctx *sm_ctx){
 
         if (sm_ctx->hcall.run) {
             sm_ctx->hcall.run = false;
-
-            exit_code = hotcall_execute_bundle(&sm_ctx->hcall.batch);
-            if(exit_code) goto exit;
-
+            if(sm_ctx->hcall.batch) exit_code = hotcall_execute_bundle(sm_ctx->hcall.batch);
+            else exit_code = hotcall_execute_ecall(sm_ctx->hcall.ecall);
             sm_ctx->hcall.is_done = true;
-            sm_ctx->hcall.batch.queue_len = 0;
+            if(exit_code) goto exit;
         }
 
         sgx_spin_unlock(&sm_ctx->hcall.spinlock);
@@ -139,9 +151,7 @@ hotcall_bundler_start(struct shared_memory_ctx *sm_ctx){
 
     exit:
 
-    sm_ctx->hcall.batch.queue_len = 0;
     sgx_spin_unlock(&sm_ctx->hcall.spinlock);
-    sm_ctx->hcall.is_done = true;
 
     return 0;
 } /* ecall_start_poller */

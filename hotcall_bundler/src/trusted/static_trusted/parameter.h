@@ -20,68 +20,85 @@ static inline void
 parse_vector_argument(const struct vector_parameter *vec_param, unsigned int offset, unsigned int param_index, unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
 
     // User has specified a custom offset.
-    /*if(vec_param->vector_offset) {
+    if(vec_param->vector_offset) {
         offset = *vec_param->vector_offset;
-    }*/
-
-    if(vec_param->dereference) {
-        for(int i = 0; i < n_iters; ++i) {
-            args[i][param_index] = ((char *) *((void **) vec_param->arg + offset + i)) + vec_param->member_offset;
+        if(vec_param->dereference) {
+            args[0][param_index] = ((char *) *((void **) vec_param->arg + offset)) + vec_param->member_offset;
+            return;
         }
-        return;
+        switch(vec_param->fmt) {
+            case 'p':
+                args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(void *)) + vec_param->member_offset;
+                break;
+            case 'd':
+                args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(int)) + vec_param->member_offset;
+                break;
+            case 'b':
+                args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(bool)) + vec_param->member_offset;
+                break;
+            case 'u':
+                args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(unsigned int)) + vec_param->member_offset;
+                break;
+            case ui8:
+                args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(uint8_t)) + vec_param->member_offset;
+                break;
+            case ui16:
+                args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(uint16_t)) + vec_param->member_offset;
+                break;
+            case ui32:
+                args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(uint32_t)) + vec_param->member_offset;
+                break;
+            default: SWITCH_DEFAULT_REACHED
+        }
+    } else {
+        if(vec_param->dereference) {
+            for(int i = 0; i < n_iters; ++i) {
+                args[i][param_index] = ((char *) *((void **) vec_param->arg + offset + i)) + vec_param->member_offset;
+            }
+            return;
+        }
+
+        switch(vec_param->fmt) {
+            case 'p':
+                for(int i = 0; i < n_iters; ++i) {
+                    args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(void *)) + vec_param->member_offset;
+                }
+                break;
+            case 'd':
+                for(int i = 0; i < n_iters; ++i) {
+                    args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(int)) + vec_param->member_offset;
+                }
+                break;
+            case 'b':
+                for(int i = 0; i < n_iters; ++i) {
+                    args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(bool)) + vec_param->member_offset;
+                }
+                break;
+            case 'u':
+                for(int i = 0; i < n_iters; ++i) {
+                    args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(unsigned int)) + vec_param->member_offset;
+                }
+                break;
+            case ui8:
+                for(int i = 0; i < n_iters; ++i) {
+                    args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(uint8_t)) + vec_param->member_offset;
+                }
+                break;
+            case ui16:
+                for(int i = 0; i < n_iters; ++i) {
+                    args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(uint16_t)) + vec_param->member_offset;
+                }
+                break;
+            case ui32:
+                for(int i = 0; i < n_iters; ++i) {
+                    args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(uint32_t)) + vec_param->member_offset;
+                }
+                break;
+            default: SWITCH_DEFAULT_REACHED
+        }
     }
 
-    /*unsigned int elem_size = 4;
-    switch(vec_param->fmt) {
-        case 'p': elem_size = sizeof(void *); break;
-        case 'd': elem_size = sizeof(int); break;
-        case 'b': elem_size = sizeof(bool); break;
-        case 'u': elem_size = sizeof(unsigned int); break;
-        case ui8: elem_size = sizeof(uint8_t); break;
-        case ui16: elem_size = sizeof(uint16_t); break;
-        case ui32: elem_size = sizeof(uint32_t); break;
-        default: SWITCH_DEFAULT_REACHED
-    }
-*/
-    //unsigned int elem_size = 4;
-    switch(vec_param->fmt) {
-        case 'p':
-            for(int i = 0; i < n_iters; ++i) {
-                args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(void *)) + vec_param->member_offset;
-            }
-            break;
-        case 'd':
-            for(int i = 0; i < n_iters; ++i) {
-                args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(int)) + vec_param->member_offset;
-            }
-            break;
-        case 'b':
-            for(int i = 0; i < n_iters; ++i) {
-                args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(bool)) + vec_param->member_offset;
-            }
-            break;
-        case 'u':
-            for(int i = 0; i < n_iters; ++i) {
-                args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(unsigned int)) + vec_param->member_offset;
-            }
-            break;
-        case ui8:
-            for(int i = 0; i < n_iters; ++i) {
-                args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(uint8_t)) + vec_param->member_offset;
-            }
-            break;
-        case ui16:
-            for(int i = 0; i < n_iters; ++i) {
-                args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(uint16_t)) + vec_param->member_offset;
-            }
-            break;
-        case ui32:
-            for(int i = 0; i < n_iters; ++i) {
-                args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(uint32_t)) + vec_param->member_offset;
-            }
-            break;
-        default: SWITCH_DEFAULT_REACHED
-    }
+
 
 /*
     for(int i = 0; i < n_iters; ++i) {

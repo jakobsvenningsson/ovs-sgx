@@ -4,6 +4,8 @@
 #include "functions.h"
 
 #include "hotcall_if.h"
+#include "postfix_translator.h"
+
 
 #define TEST_ERROR_CODE_1 1
 

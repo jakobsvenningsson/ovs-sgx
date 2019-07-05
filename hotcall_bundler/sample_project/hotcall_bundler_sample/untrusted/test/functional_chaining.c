@@ -21,13 +21,6 @@ TEST(chaining,1) {
     int ts[n_iters] = { 0 };
     int ks[n_iters] = { 0 };
 
-    /*struct parameter vec1[] = { VAR(xs, 'd'), VECTOR_v2(&vec1[0], &n_iters) }, p1 = vec1[1];
-    struct parameter vec2[] = { VAR(ys, 'd'), VECTOR_v2(&vec2[0], &out_length1) }, p2 = vec2[1];
-    struct parameter vec3[] = { VAR(ws, 'd'), VECTOR_v2(&vec3[0], &out_length1) }, p3 = vec3[1];
-    struct parameter vec4[] = { VAR(us, 'd'), VECTOR_v2(&vec4[0], &out_length1) }, p4 = vec4[1];
-    struct parameter vec5[] = { VAR(ts, 'd'), VECTOR_v2(&vec5[0], &out_length1) }, p5 = vec5[1];
-    struct parameter vec6[] = { VAR(ks, 'd'), VECTOR_v2(&vec6[0], &out_length2) }, p6 = vec6[1];*/
-
     int y = 6, z = 2, w = 3, v = 14;
 
     struct parameter function_parameters[] = { VECTOR(xs, 'd', &n_iters), VAR(y, 'd'), VECTOR(f_res, 'd', &n_iters), };
