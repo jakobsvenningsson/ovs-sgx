@@ -1195,6 +1195,37 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
         return;
     }
     if(n_cls_rules > max_flows && is_eviction_enabled) {
+#elif BUNDLE
+    bool is_read_only = false,
+         no_change = false;
+
+     unsigned int n_cls_rules = 0, is_eviction_enabled = 0, max_flows = 0, random_v = random_uint32();
+
+    BUNDLE_BEGIN();
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_set_name), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), PTR(s->name));
+    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_is_readonly, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_read_only, 'd'));
+
+    BUNDLE_END();
+
+    if(is_read_only) return;
+
+    if (s->groups) {
+        oftable_enable_eviction(ofproto->bridge_id, table_id, s->groups, s->n_groups);
+    } else {
+        HCALL(CONFIG(.function_id = hotcall_ecall_oftable_disable_eviction), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8));
+    }
+
+    BUNDLE_BEGIN();
+
+    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_cls_count, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(n_cls_rules, 'd'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(max_flows, 'u'));
+    HCALL(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_eviction_enabled, 'd'));
+
+    BUNDLE_END();
+
+   if (n_cls_rules > max_flows && is_eviction_enabled) {
 #else
     SGX_oftable_set_name(ofproto->bridge_id, table_id,s->name);
     if(SGX_istable_readonly(ofproto->bridge_id, table_id)){
@@ -3870,7 +3901,7 @@ static enum ofperr
 add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
          const struct ofputil_flow_mod *fm, const struct ofp_header *request)
 {
-    BEGIN
+
 
     #ifdef BATCHING_FLUSH
     SGX_batch_flush();
@@ -3878,7 +3909,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
 
     #ifdef BENCHMARK_FLUSH
     //256
-    unsigned long sz = 1024 * (32);
+    unsigned long sz = 1024 * (256);
     unsigned long *dummy = malloc(sz * sizeof(unsigned long));
     for(size_t i = 0; i < sz; ++i) {
         dummy[i] = rand();
@@ -3886,6 +3917,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     free(dummy);
 
     #endif
+
 
 	struct ofopgroup *group;
     struct rule *victim;
@@ -3917,6 +3949,9 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         return OFPERR_OFPBRC_BAD_TABLE_ID;
     }
 #ifndef SGX
+
+    BEGIN
+
     struct oftable *table;
     table = &ofproto->tables[table_id];
 
@@ -3975,7 +4010,6 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     } else if (victim && victim->pending) {
         error = OFPROTO_POSTPONE;
     } else {
-        BEGIN
         struct ofoperation *op;
         struct rule *evict;
         if (classifier_count(&table->cls) > table->max_flows) {
@@ -3994,7 +4028,14 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         } else {
             evict = NULL;
         }
+        CLOSE
+
+        #ifdef BENCHMARK_ADD
+        SHOWTIME5
+        #endif
 #elif OPTIMIZED
+
+    BEGIN
 
     rule = ofproto->ofproto_class->rule_alloc();
     if (!rule) {
@@ -4039,13 +4080,6 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     unsigned int evict_priority;
 
     uint16_t state = 0;
-
-
-    uint32_t rule_pr = rule_eviction_priority(rule);
-    bool has_timeout = (rule->idle_timeout || rule->hard_timeout);
-
-
-
     SGX_add_flow(ofproto->bridge_id,
                  table_id,
                  &rule->cr,
@@ -4053,25 +4087,19 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
                  &cls_rule_evict,
                  &fm->match,
                  &evict_rule_hash,
-                 &rule->tmp_storage_vid,
-                 &rule->tmp_storage_vid_mask,
                  fm->priority,
                  fm->flags,
              	 rule_eviction_priority(rule),
                  pending_deletions,
                  n_pending,
-                 (rule->idle_timeout || rule->hard_timeout),
                  &state,
-                 &table_update_taggable, &evict_priority);
+                 &evict_priority);
+
 
     is_hidden = state & 32;
-    is_other_table = state & 64;
 
     // read only
     if(state & 16) {
-        char bb[128];
-        sprintf(bb, "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n", ts[0], ts[1], ts[2], ts[3], ts[4], ts[5], ts[6], ts[7], ts[8]);
-        write(5, bb, strlen(bb));
         ofproto->ofproto_class->rule_dealloc(rule);
         return OFPERR_OFPBRC_EPERM;
     }
@@ -4093,11 +4121,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
     rule->tmp_storage_vid_mask_exist = 1;
 
 
-    rule->is_other_table = is_other_table;
-    rule->table_update_taggable = table_update_taggable;
-
     bool may_expire = rule->hard_timeout || rule->idle_timeout;
-
     if (may_expire) {
         list_insert(&ofproto->expirable, &rule->expirable);
     }
@@ -4129,6 +4153,11 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         } else {
             evict = NULL;
         }
+        CLOSE
+
+        #ifdef BENCHMARK_ADD
+        SHOWTIME5
+        #endif
 #elif BUNDLE
 
     rule = ofproto->ofproto_class->rule_alloc();
@@ -4345,13 +4374,6 @@ exit:
         oftable_substitute_rule(rule, victim);
         ofproto_rule_destroy__(rule);
     }
-
-    CLOSE
-
-    #ifdef BENCHMARK_ADD
-    SHOWTIME
-    SHOWTIME5
-    #endif
 
     return error;
 }
@@ -7064,8 +7086,8 @@ oftable_set_name(struct oftable *table, const char *name)
  * number of flows in the table to exceed the configured maximum number: either
  * they can refuse to add the new flow or they can evict some existing flow.
  * This function configures the former policy on 'table'. */
- #ifndef SGX
 
+ #ifndef SGX
 static void
 oftable_disable_eviction(struct oftable *table)
 {
@@ -7085,6 +7107,7 @@ oftable_disable_eviction(struct oftable *table)
         table->n_eviction_fields = 0;
     }
 }
+#endif
 
 /* oftables support a choice of two policies when adding a rule would cause the
  * number of flows in the table to exceed the configured maximum number: either
@@ -7092,12 +7115,10 @@ oftable_disable_eviction(struct oftable *table)
  * This function configures the latter policy on 'table', with fairness based
  * on the values of the 'n_fields' fields specified in 'fields'.  (Specifying
  * 'n_fields' as 0 disables fairness.) */
-static void
-#endif
 
 
 #ifndef OPTIMIZED
-
+static void
 #ifndef SGX
 oftable_enable_eviction(struct oftable *table,
                         const struct mf_subfield *fields, size_t n_fields)
