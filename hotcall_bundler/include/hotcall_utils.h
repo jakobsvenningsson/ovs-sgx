@@ -11,5 +11,6 @@
 #define ui8 'x'
 #define ui16 'y'
 #define ui32 'z'
+#define ui64 't'
 
 #endif

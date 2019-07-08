@@ -147,6 +147,7 @@ evaluate_variable(const struct variable_parameter *param, char ch) {
         case ui8: return *(uint8_t *) arg;
         case ui16: return *(uint16_t *) arg;
         case ui32: return *(uint32_t *) arg;
+        case ui64: return *(uint64_t *) arg;
         default:
             SWITCH_DEFAULT_REACHED
     }

@@ -48,6 +48,9 @@ parse_vector_argument(const struct vector_parameter *vec_param, unsigned int off
             case ui32:
                 args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(uint32_t)) + vec_param->member_offset;
                 break;
+            case ui64:
+                args[0][param_index] = (((char *) vec_param->arg) + (offset) * sizeof(uint64_t)) + vec_param->member_offset;
+                break;
             default: SWITCH_DEFAULT_REACHED
         }
     } else {
@@ -92,6 +95,11 @@ parse_vector_argument(const struct vector_parameter *vec_param, unsigned int off
             case ui32:
                 for(int i = 0; i < n_iters; ++i) {
                     args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(uint32_t)) + vec_param->member_offset;
+                }
+                break;
+            case ui64:
+                for(int i = 0; i < n_iters; ++i) {
+                    args[i][param_index] = (((char *) vec_param->arg) + (offset + i) * sizeof(uint64_t)) + vec_param->member_offset;
                 }
                 break;
             default: SWITCH_DEFAULT_REACHED
