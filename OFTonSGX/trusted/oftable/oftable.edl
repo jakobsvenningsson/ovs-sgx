@@ -79,16 +79,17 @@ enclave {
 					 [user_check] struct cls_rule **evict,
 					 [user_check] struct match *match,
 					 [user_check] uint32_t *evict_rule_hash,
-					 [user_check] uint16_t *vid,
-					 [user_check] uint16_t *vid_mask,
+					 //[user_check] uint16_t *vid,
+					 //[user_check] uint16_t *vid_mask,
 					 unsigned int priority,
 					 uint16_t flags,
 					 uint32_t rule_eviction_priority,
 					 [user_check] struct  cls_rule **pending_deletions,
 					 int n_pending,
-					 bool has_timeout,
+					 //bool has_timeout,
 					 [user_check] uint16_t *state,
-					 [user_check] int *table_update_taggable, [user_check] unsigned int *evict_priority);
+					 //[user_check] int *table_update_taggable,
+					 [user_check] unsigned int *evict_priority);
 
 
 		public size_t

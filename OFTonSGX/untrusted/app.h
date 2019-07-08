@@ -122,16 +122,17 @@ SGX_add_flow(uint8_t bridge_id,
 			 struct cls_rule **evict,
 			 struct match *match,
 			 uint32_t *evict_rule_hash,
-			 uint16_t *vid,
-			 uint16_t *vid_mask,
+			// uint16_t *vid,
+			// uint16_t *vid_mask,
 			 unsigned int priority,
 			 uint16_t flags,
 			 uint32_t rule_eviction_priority,
 			 struct cls_rule **pending_deletions,
 			 int n_pending,
-			 bool has_timeout,
+			// bool has_timeout,
 			 uint16_t *state,
-			 int *table_update_taggable, unsigned int *evict_priority);
+			// int *table_update_taggable,
+			 unsigned int *evict_priority);
 #endif
 
 
@@ -328,7 +329,7 @@ void SGX_ofproto_destroy(uint8_t bridge_id);
 unsigned int SGX_total_rules(uint8_t bridge_id);
 void SGX_table_name(uint8_t bridge_id, uint8_t table_id,char *buf,size_t len);
 size_t SGX_collect_ofmonitor_util_c(uint8_t bridge_id, int ofproto_n_tables,uint8_t table_id,const struct minimatch *match);
-void SGX_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables,struct cls_rule **buf,int elem,uint8_t table_id,const struct minimatch *match);
+size_t SGX_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables,struct cls_rule **buf,int elem,uint8_t table_id,const struct minimatch *match);
 int SGX_cls_rule_is_loose_match(uint8_t bridge_id, struct cls_rule *o_cls_rule,const struct minimatch *criteria);
 size_t SGX_fet_ccfes_c(uint8_t bridge_id);
 

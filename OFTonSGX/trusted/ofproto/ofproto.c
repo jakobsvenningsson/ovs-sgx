@@ -211,16 +211,13 @@ ecall_ofproto_rule_send_removed(uint8_t bridge_id, struct cls_rule *cr, struct m
 bool
 ecall_ofproto_is_flow_deletion_pending(uint8_t bridge_id, uint8_t table_id, struct hmap *deletions, const struct cls_rule *cls_rule) {
     if (hmap_is_empty(deletions)) {
-        printf("deletions empty\n");
         return false;
     }
     struct ofoperation *op;
     HMAP_FOR_EACH_WITH_HASH (op, hmap_node, ecall_cls_rule_hash(bridge_id, cls_rule, table_id), deletions) {
         if (ecall_cls_rule_equal(bridge_id, cls_rule, &op->rule->cr)) {
-            printf("found\n");
             return true;
         }
     }
-    printf("not found\n");
     return false;
 }

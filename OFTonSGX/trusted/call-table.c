@@ -582,17 +582,13 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
                 (struct cls_rule **) args[4],
                 (struct match *) args[5],
                 (uint32_t *) args[6],
-                (uint16_t *) args[7],
-                (uint16_t *) args[8],
-                *(unsigned int *) args[9],
-                *(uint16_t *) args[10],
-                *(uint32_t *) args[11],
-                (struct cls_rule **) args[12],
-                *(int *) args[13],
-                *(bool *) args[14],
-                (uint16_t *) args[15],
-                (int *) args[16],
-                (unsigned int *) args[17]
+                *(unsigned int *) args[7],
+                *(uint16_t *) args[8],
+                *(uint32_t *) args[9],
+                (struct cls_rule **) args[10],
+                *(int *) args[11],
+                (uint16_t *) args[12],
+                (unsigned int *) args[13]
             );
             break;
         case hotcall_ecall_collect_rules_loose:

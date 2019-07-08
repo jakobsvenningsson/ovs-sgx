@@ -89,26 +89,28 @@ struct oftable {
     struct heap eviction_groups_by_size;
 };
 
-//Internal hmap table
+struct oftable_shared {
+    enum oftable_flags flags;
+    bool is_eviction_fields_enabled;
+    char *name;
+    unsigned int max_flows;
+};
 
 struct sgx_cls_table {
 	struct hmap cls_rules;
-	//int n_table_rules;
 };
 
 //Internal Enclave cls_rule structure
 struct sgx_cls_rule {
-	//size_t p_cls_rule;
 	struct cls_rule  cls_rule; //Pointer of cls_rule in untrusted memory
 	struct cls_rule *o_cls_rule;  //cls rule created in trusted memory
-	struct heap_node rule_evg_node; //evg_node in a rule
-	struct eviction_group *evict_group; //points to a struct evict in trusted memory
-	bool evictable;              /* If false, prevents eviction. */
-	//struct sgx_cls_rule *node;
+	struct heap_node rule_evg_node;
+	struct eviction_group *evict_group;
 	struct hmap_node hmap_node;
     struct list *block_list_node;
 
 
+    bool evictable;              /* If false, prevents eviction. */
     uint16_t hard_timeout;       /* In seconds from ->modified. */
     uint16_t idle_timeout;       /* In seconds from ->used. */
 };
@@ -118,7 +120,6 @@ struct sgx_cls_rule {
  */
 
 struct SGX_table_dpif {
-//	int table_id;
 	struct cls_table *catchall_table; /* Table that wildcards all fields. */
 	struct cls_table *other_table;    /* Table with any other wildcard set. */
 	uint32_t basis;
@@ -181,14 +182,5 @@ struct rule {
     bool is_other_table;
     int table_update_taggable;
 };
-
-
-
-
-
-
-/* Returns the priority to use for an eviction_group that contains 'n_rules'
- * rules.  The priority contains low-order random bits to ensure that eviction
- * groups with the same number of rules are prioritized randomly. */
 
 #endif /* ENCLAVE_MYENCLAVE_TRUSTED_LIB_OFPROTO_PROVIDER_H_ */

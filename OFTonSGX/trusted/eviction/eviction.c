@@ -52,7 +52,7 @@ ecall_evg_remove_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_c
     // Resize heap to reflect changes in eviction group size
     size_t n_rules = (size_t) heap_count_ovs(&evg->rules);
     uint16_t size  = MIN(UINT16_MAX, n_rules);
-    size_t p       = (size << 16) | random_uint16();
+    size_t p       = (size << 16) | 123141;//random_uint16();
     sgx_evg_group_resize(bridge_id, table_id, o_cls_rule, p, evg);
     return;
 }
@@ -96,21 +96,23 @@ ecall_choose_rule_to_evict_p(uint8_t bridge_id, uint8_t table_id, struct cls_rul
 
 void
 ecall_oftable_disable_eviction(uint8_t bridge_id, uint8_t table_id){
-    if (SGX_oftables[bridge_id][table_id].eviction_fields) {
-        struct eviction_group * evg, * next;
-        HMAP_FOR_EACH_SAFE(evg, next, id_node,
-          &SGX_oftables[bridge_id][table_id].eviction_groups_by_id)
-        {
-            sgx_evg_destroy(bridge_id, table_id, evg);
-        }
-
-        hmap_destroy(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id);
-        heap_destroy_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
-
-        free(SGX_oftables[bridge_id][table_id].eviction_fields);
-        SGX_oftables[bridge_id][table_id].eviction_fields   = NULL;
-        SGX_oftables[bridge_id][table_id].n_eviction_fields = 0;
+    if (!SGX_oftables[bridge_id][table_id].eviction_fields) {
+        return;
     }
+    struct eviction_group * evg, * next;
+    HMAP_FOR_EACH_SAFE(evg, next, id_node,
+      &SGX_oftables[bridge_id][table_id].eviction_groups_by_id)
+    {
+        sgx_evg_destroy(bridge_id, table_id, evg);
+    }
+
+    hmap_destroy(&SGX_oftables[bridge_id][table_id].eviction_groups_by_id);
+    heap_destroy_ovs(&SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
+
+    free(SGX_oftables[bridge_id][table_id].eviction_fields);
+    SGX_oftables[bridge_id][table_id].eviction_fields   = NULL;
+    SGX_oftables[bridge_id][table_id].n_eviction_fields = 0;
+
 }
 
 void

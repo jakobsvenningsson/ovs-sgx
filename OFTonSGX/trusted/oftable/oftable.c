@@ -105,7 +105,7 @@ ecall_oftable_classifier_replace(uint8_t bridge_id, uint8_t table_id, struct cls
 int
 ecall_oftable_is_other_table(uint8_t bridge_id, int id){
     if (SGX_table_dpif[bridge_id][id].other_table) {
-        return 100;
+        return 1;
     }
     return 0;
 }
@@ -362,7 +362,7 @@ ecall_oftable_configure(uint8_t bridge_id,
 
     if (groups) {
         bool no_change = false;
-        ecall_oftable_enable_eviction(bridge_id, table_id, groups, n_groups, random_uint32(), &no_change);
+        ecall_oftable_enable_eviction(bridge_id, table_id, groups, n_groups, 23423523, &no_change);
         if(no_change || !ecall_is_eviction_fields_enabled(bridge_id, table_id)) {
             goto exit;
         }
@@ -416,16 +416,12 @@ ecall_add_flow(uint8_t bridge_id,
              struct cls_rule **evict,
 			 struct match *match,
              uint32_t *evict_rule_hash,
-             uint16_t *vid,
-             uint16_t *vid_mask,
 			 unsigned int priority,
 			 uint16_t flags,
              uint32_t eviction_rule_priority,
              struct  cls_rule **pending_deletions,
              int n_pending,
-             bool has_timout,
              uint16_t *state,
-             int *table_update_taggable,
              unsigned int *evict_priority)
  {
      if (ecall_oftable_is_readonly(bridge_id, table_id)){
@@ -459,7 +455,9 @@ ecall_add_flow(uint8_t bridge_id,
          ecall_evg_remove_rule(bridge_id, table_id, *victim);
      }
 
-     if(ecall_is_eviction_fields_enabled(bridge_id, table_id) && has_timout) {
+     struct rule *add_rule;
+     add_rule = CONTAINER_OF(cr, struct rule, cr);
+     if(ecall_is_eviction_fields_enabled(bridge_id, table_id) && (add_rule->idle_timeout || add_rule->hard_timeout)) {
      	ecall_evg_add_rule(bridge_id, table_id, cr, NULL,
      	    			eviction_rule_priority);
 
@@ -489,16 +487,13 @@ ecall_add_flow(uint8_t bridge_id,
          }
      }
 
-     *vid = ecall_miniflow_get_vid(bridge_id, cr);
-     *vid_mask = ecall_minimask_get_vid_mask(bridge_id, cr);
+     add_rule->tmp_storage_vid = ecall_miniflow_get_vid(bridge_id, cr);
+     add_rule->tmp_storage_vid_mask = ecall_minimask_get_vid_mask(bridge_id, cr);
+     add_rule->is_other_table = ecall_oftable_is_other_table(bridge_id, table_id);
+     add_rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, table_id);
 
      //*is_hidden
      *state |= ((ecall_cr_priority(bridge_id, cr) > UINT16_MAX) << 5);
-
-     *table_update_taggable = ecall_oftable_update_taggable(bridge_id, table_id);
-
-     //*is_other_table
-     *state |= (ecall_oftable_is_other_table(bridge_id, table_id) << 6);
 
  }
 

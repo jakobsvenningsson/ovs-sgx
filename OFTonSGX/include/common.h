@@ -34,10 +34,6 @@ struct hmap_node {
     struct hmap_node *next;     /* Next in linked list. */
 };
 
-//struct list {
-//    struct list *prev;     /* Previous list element. */
-//    struct list *next;     /* Next list element. */
-//};
 
 /* Configuration of OpenFlow tables. */
 struct ofproto_table_settings {

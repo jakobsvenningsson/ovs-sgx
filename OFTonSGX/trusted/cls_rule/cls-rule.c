@@ -69,11 +69,9 @@ ecall_cr_priority(uint8_t bridge_id, const struct cls_rule * o_cls_rule){
 int
 ecall_cls_rule_is_loose_match(uint8_t bridge_id, struct cls_rule * o_cls_rule, const struct minimatch * criteria){
     struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
-
     if (cls_rule_is_loose_match(&sgx_cls_rule->cls_rule, criteria)) {
-        return 100;
+        return 1;
     }
-
     return 0;
 }
 
