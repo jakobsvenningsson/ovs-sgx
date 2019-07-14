@@ -52,6 +52,10 @@ int SGX_CDECL main(int argc, char *argv[])
         return -1;
     }
 
+    sm_ctx.mem.max_n_function_caches = 256;
+    sm_ctx.mem.function_cache_size[hotcall_ecall_add_and_count] = 10;
+    sm_ctx.mem.function_cache_size[hotcall_ecall_get_addr] = 5;
+
     if(argc > 1 && !strcmp(argv[1], "-t")) {
         printf("Running test...\n");
         return hotcall_run_tests(&sm_ctx);
@@ -60,7 +64,7 @@ int SGX_CDECL main(int argc, char *argv[])
     ecall_configure_hotcall(global_eid);
     hotcall_init(&sm_ctx, global_eid);
 
-    benchmark(&sm_ctx, benchmark_if_optimized, ROUNDS, ITERATIONS);
+    benchmark(&sm_ctx, benchmark_cache, ROUNDS, ITERATIONS);
 
     hotcall_destroy(&sm_ctx);
 

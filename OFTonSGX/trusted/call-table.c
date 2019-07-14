@@ -7,9 +7,12 @@
 #include "flow.h"
 #include "functions.h"
 
-void
-execute_function(uint8_t function_id, void *args[], void *return_value){
 
+void
+execute_function(uint8_t function_id, void *args[], void *return_value, void *ctx){
+
+
+    struct ovs_enclave_ctx *e_ctx = (struct ovs_enclave_ctx *) ctx;
 
     //cls_cache_entry * cache_entry, * next;
 
@@ -48,6 +51,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_backup_and_set_evictable:
             ecall_backup_and_set_evictable(
+                e_ctx,
                 *(uint8_t *) args[0],
                 args[1],
                 *(bool *) args[2]
@@ -55,18 +59,21 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_restore_evictable:
             ecall_restore_evictable(
+                e_ctx,
                 *(uint8_t *) args[0],
                 args[1]
             );
             break;
         case hotcall_ecall_backup_evictable:
             ecall_backup_evictable(
+                e_ctx,
                 *(uint8_t *) args[0],
                 args[1]
             );
             break;
         case hotcall_ecall_set_evictable:
             ecall_set_evictable(
+                e_ctx,
                 *(uint8_t *) args[0],
                 args[1],
                 *(bool *) args[2]
@@ -74,12 +81,14 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_is_evictable:
             *(bool *) return_value = ecall_is_evictable(
+                e_ctx,
                 *(uint8_t *) args[0],
                 args[1]
             );
             break;
         case hotcall_ecall_rule_update_used:
             ecall_rule_update_used(
+                e_ctx,
                 *(uint8_t *) args[0],
                 args[1],
                 *(uint32_t *) args[2]
@@ -87,12 +96,14 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_oftable_is_readonly:
             *(int *) return_value = ecall_oftable_is_readonly(
+                e_ctx,
               *(uint8_t *) args[0],
               *(uint8_t *) args[1]
               );
             break;
         case hotcall_ecall_cls_rule_init:
             ecall_cls_rule_init(
+              e_ctx,
               *(uint8_t *) args[0],
               args[1],
               (const struct match *) args[2],
@@ -102,12 +113,13 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         case hotcall_ecall_cls_rule_destroy:
         {
             struct cls_rule * ut_cr = (struct cls_rule *) args[1];
-            ecall_cls_rule_destroy(*((int *) args[0]), ut_cr);
+            ecall_cls_rule_destroy(e_ctx, *((int *) args[0]), ut_cr);
             //flow_map_cache_remove_ut_cr(flow_cache, ut_cr);
             break;
         }
         case hotcall_ecall_cr_rule_overlaps:
             *(int *) return_value = ecall_cr_rule_overlaps(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule *) args[2]
@@ -116,12 +128,14 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
 
         case hotcall_ecall_oftable_set_readonly:
             ecall_oftable_set_readonly(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
             break;
         case hotcall_ecall_oftable_set_name:
             ecall_oftable_set_name(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (char *) args[2]
@@ -129,12 +143,14 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_oftable_disable_eviction:
             ecall_oftable_disable_eviction(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
             break;
         case hotcall_ecall_oftable_mflows_set:
             ecall_oftable_mflows_set(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 *(unsigned int *) args[2]
@@ -142,29 +158,34 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_oftable_cls_count:
             *(int *) return_value = ecall_oftable_cls_count(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
             break;
         case hotcall_ecall_oftable_mflows:
             *(unsigned int *) return_value = ecall_oftable_mflows(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
             break;
         case hotcall_ecall_is_eviction_fields_enabled:
             *(int *) return_value = ecall_is_eviction_fields_enabled(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
             break;
         case hotcall_ecall_flush_c:
             *(int *) return_value = ecall_flush_c(
+                e_ctx,
                 *(uint8_t *) args[0]
             );
             break;
         case hotcall_ecall_flush_r:
             ecall_flush_r(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule **) args[1],
                 *(int *) args[2]
@@ -172,16 +193,19 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_ofproto_destroy:
             ecall_ofproto_destroy(
+                e_ctx,
                 *(uint8_t *) args[0]
             );
             break;
         case hotcall_ecall_total_rules:
             *(unsigned int *) return_value = ecall_total_rules(
+                e_ctx,
                 *(int *) args[0]
             );
             break;
         case hotcall_ecall_oftable_cls_find_match_exactly:
             ecall_oftable_cls_find_match_exactly(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (const struct match *) args[2],
@@ -191,18 +215,21 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_cr_priority:
             *(unsigned int *) return_value = ecall_cr_priority(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule *) args[1]
             );
             break;
         case hotcall_ecall_oftable_get_flags:
             *(enum oftable_flags *) return_value = ecall_oftable_get_flags(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
             break;
         case hotcall_ecall_oftable_name:
             ecall_oftable_name(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (char *) args[2],
@@ -211,6 +238,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_collect_rules_loose_c:
             *(int *) return_value = ecall_collect_rules_loose_c(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 *(uint8_t *) args[2],
@@ -219,6 +247,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_collect_rules_loose_r:
             *(int *) return_value = ecall_collect_rules_loose_r(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule **) args[2],
@@ -229,6 +258,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_minimatch_expand:
             ecall_minimatch_expand(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule *) args[1],
                 (struct match *) args[2]
@@ -236,6 +266,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_cls_rule_format:
             *(unsigned int *) return_value = ecall_cls_rule_format(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (const struct cls_rule *) args[1],
                 (struct match *) args[2]
@@ -243,11 +274,13 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_flow_stats_c:
             *(int *) return_value = ecall_flow_stats_c(
+                e_ctx,
                 *(uint8_t *) args[0]
             );
             break;
         case hotcall_ecall_flow_stats_r:
             ecall_flow_stats_r(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule **) args[1],
                 *(int *) args[2]
@@ -255,6 +288,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_cls_rule_hash:
             *((uint32_t *) return_value) = ecall_cls_rule_hash(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (const struct cls_rule *) args[1],
                 *(uint32_t *) args[2]
@@ -262,6 +296,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_cls_rule_equal:
             *((int *) return_value) = ecall_cls_rule_equal(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (const struct cls_rule *) args[1],
                 (const struct cls_rule *) args[2]
@@ -269,6 +304,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_choose_rule_to_evict:
             ecall_choose_rule_to_evict(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule **) args[2]
@@ -276,6 +312,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_choose_rule_to_evict_p:
             ecall_choose_rule_to_evict_p(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule **) args[2],
@@ -284,6 +321,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_collect_ofmonitor_util_c:
             *(int *) return_value = ecall_collect_ofmonitor_util_c(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 *(uint8_t *) args[2],
@@ -292,6 +330,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_collect_ofmonitor_util_r:
             ecall_collect_ofmonitor_util_r(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule **) args[2],
@@ -302,6 +341,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_cls_rule_is_loose_match:
             *(int *) return_value = ecall_cls_rule_is_loose_match(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule *) args[1],
                 (const struct minimatch *) args[2]
@@ -309,18 +349,21 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_minimask_get_vid_mask:
             *(uint16_t *) return_value = ecall_minimask_get_vid_mask(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule *) args[1]
             );
             break;
         case hotcall_ecall_miniflow_get_vid:
             *(uint16_t *) return_value = ecall_miniflow_get_vid(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule *) args[1]
             );
             break;
         case hotcall_ecall_evg_add_rule:
             ecall_evg_add_rule(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule *) args[2],
@@ -330,6 +373,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_oftable_enable_eviction:
             ecall_oftable_enable_eviction(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (const struct mf_subfield *) args[2],
@@ -340,12 +384,14 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_oftable_enable_eviction_c:
             *(unsigned int *) return_value = ecall_oftable_enable_eviction_c(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
             break;
         case hotcall_ecall_oftable_enable_eviction_r:
             *(unsigned int *) return_value = ecall_oftable_enable_eviction_r(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule **) args[1],
                 *(int *) args[2],
@@ -359,7 +405,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             uint8_t table_id  = *(uint8_t *) args[1];
             struct cls_rule * ut_cr = (struct cls_rule *) args[2];
 
-            ecall_cls_remove(bridge_id, table_id, ut_cr);
+            ecall_cls_remove(e_ctx, bridge_id, table_id, ut_cr);
             //flow_map_cache_remove_ut_cr(flow_cache, ut_cr);
             break;
         }
@@ -370,7 +416,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             struct cls_rule * ut_cr_insert  = (struct cls_rule *) args[2];
             struct cls_rule ** ut_cr_remove = (struct cls_rule **) args[3];
 
-            ecall_oftable_classifier_replace(bridge_id, table_id, ut_cr_insert, ut_cr_remove);
+            ecall_oftable_classifier_replace(e_ctx, bridge_id, table_id, ut_cr_insert, ut_cr_remove);
 
             if (!*ut_cr_remove) {
                 return;
@@ -380,11 +426,13 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         }
         case hotcall_ecall_ofproto_get_vlan_c:
             *(int *) return_value = ecall_ofproto_get_vlan_c(
+                e_ctx,
                 *(uint8_t *) args[0]
             );
             break;
         case hotcall_ecall_ofproto_get_vlan_r:
             ecall_ofproto_get_vlan_r(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (uint16_t *) args[1],
                 *((int *) args[2])
@@ -392,6 +440,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_collect_rules_strict_c:
             *((int *) return_value) = ecall_collect_rules_strict_c(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 *(uint8_t *) args[2],
@@ -401,6 +450,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_collect_rules_strict_r:
             *((int *) return_value) = ecall_collect_rules_strict_r(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule **) args[2],
@@ -412,11 +462,13 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_oftable_hidden_check:
             ecall_oftable_hidden_check(
+                e_ctx,
                 *(uint8_t *) args[0]
             );
             break;
         case hotcall_ecall_miniflow_expand:
             ecall_miniflow_expand(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule *) args[1],
                 (struct flow *) args[2]
@@ -424,6 +476,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_rule_calculate_tag:
             *(uint32_t *) return_value = ecall_rule_calculate_tag(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule *) args[1],
                 (const struct flow *) args[2],
@@ -432,6 +485,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_rule_calculate_tag_s:
             *(uint32_t *) return_value = ecall_rule_calculate_tag_s(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (const struct flow *) args[2]
@@ -441,6 +495,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         {
             int * ret_value = (int *) return_value;
             *ret_value = ecall_oftable_update_taggable(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
@@ -451,6 +506,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         break;
         case hotcall_ecall_oftable_is_other_table:
             *(int *) return_value = ecall_oftable_is_other_table(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1]
             );
@@ -463,7 +519,9 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             int bridge_id = *(uint8_t *) args[0];
             struct cls_rule ** ut_cr = (struct cls_rule **) args[1];
 
-            ecall_oftable_cls_lookup(bridge_id,
+            ecall_oftable_cls_lookup(
+            e_ctx,
+              bridge_id,
               ut_cr,
               table_id,
               flow,
@@ -476,6 +534,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         }
         case hotcall_ecall_evg_remove_rule:
             ecall_evg_remove_rule(
+                e_ctx,
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                  (struct cls_rule *) args[2]
@@ -483,11 +542,13 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_dpif_destroy_c:
             *(int *) return_value = ecall_dpif_destroy_c(
+                e_ctx,
                 *(uint8_t *) args[0]
             );
             break;
         case hotcall_ecall_dpif_destroy_r:
             ecall_dpif_destroy_r(
+                e_ctx,
                 *(uint8_t *) args[0],
                 (struct cls_rule **) args[1],
                 *(int *) args[2]

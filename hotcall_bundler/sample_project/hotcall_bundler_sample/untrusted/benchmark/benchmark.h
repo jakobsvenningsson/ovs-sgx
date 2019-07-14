@@ -87,4 +87,10 @@ unsigned int
 benchmark_for_each(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
 unsigned int
 benchmark_for(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
+
+
+unsigned int
+benchmark_cache(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds);
+
+
 #endif

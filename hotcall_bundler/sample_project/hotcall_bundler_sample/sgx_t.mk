@@ -4,7 +4,7 @@ SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 
 HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/include
-HOTCALL_BUNDLER_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/trusted
+HOTCALL_BUNDLER_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src
 
 ifeq ($(shell getconf LONG_BIT), 32)
 	SGX_ARCH := x86
@@ -49,7 +49,7 @@ Crypto_Library_Name := sgx_tcrypto
 Hotcall_bundler_sample_C_Files := trusted/hotcall_bundler_sample.c trusted/ecalls.c
 
 Hotcall_bundler_sample_Include_Paths := -Iinclude -Itrusted -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx \
- -I$(HOTCALL_BUNDLER_INCLUDE_PATH)
+ -I$(HOTCALL_BUNDLER_INCLUDE_PATH) -I$(HOTCALL_BUNDLER_LIB_PATH)/lib
 
 
 Flags_Just_For_C := -Wno-implicit-function-declaration -std=c11
@@ -58,7 +58,7 @@ Hotcall_bundler_sample_C_Flags := $(Flags_Just_For_C) $(Common_C_Cpp_Flags)
 
 Hotcall_bundler_sample_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -L$(HOTCALL_BUNDLER_LIB_PATH) -lhotcall_bundler_trusted -lgtest -Wl,--end-group \
+	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -L$(HOTCALL_BUNDLER_LIB_PATH)/trusted -lhotcall_bundler_trusted -lgtest -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
@@ -99,7 +99,7 @@ endif
 ######## hotcall_bundler_sample Objects ########
 trusted/hotcall_bundler_sample_t.c: $(SGX_EDGER8R) ./trusted/hotcall_bundler_sample.edl
 	@cd ./trusted && $(SGX_EDGER8R) --trusted ../trusted/hotcall_bundler_sample.edl --search-path ../trusted --search-path $(SGX_SDK)/include \
-	--search-path $(HOTCALL_BUNDLER_LIB_PATH)/static_trusted
+	--search-path $(HOTCALL_BUNDLER_LIB_PATH)/trusted/static_trusted
 	@echo "GEN  =>  $@"
 
 trusted/hotcall_bundler_sample_t.o: ./trusted/hotcall_bundler_sample_t.c

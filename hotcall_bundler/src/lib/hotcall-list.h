@@ -13,46 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef LIST_H
-#define LIST_H 1
+#ifndef _LIST_HOTCALL_TRUSTED_H
+#define _LIST_HOTCALL_TRUSTED_H 1
+
+
+#include <stddef.h>
+#include <stdbool.h>
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 
 /* Doubly linked list. */
-
-#include <stdbool.h>
-#include <stddef.h>
-#include "util.h"
+#define CONST_CAST(TYPE, POINTER)                               \
+    ((void) sizeof ((int) ((POINTER) == (TYPE) (POINTER))),     \
+     (TYPE) (POINTER))
 
 /* Doubly linked list head or element. */
-struct list {
-    struct list *prev;     /* Previous list element. */
-    struct list *next;     /* Next list element. */
+struct hcall_list {
+    struct hcall_list *prev;     /* Previous list element. */
+    struct hcall_list *next;     /* Next list element. */
 };
 
 #define LIST_INITIALIZER(LIST) { LIST, LIST }
 
-void list_init(struct list *);
-void list_poison(struct list *);
+void hcall_list_init(struct hcall_list *);
+void hcall_list_poison(struct hcall_list *);
 
 /* List insertion. */
-void list_insert(struct list *, struct list *);
-void list_splice(struct list *before, struct list *first, struct list *last);
-void list_push_front(struct list *, struct list *);
-void list_push_back(struct list *, struct list *);
-void list_replace(struct list *, const struct list *);
-void list_moved(struct list *);
+void hcall_list_insert(struct hcall_list *, struct hcall_list *);
+void hcall_list_splice(struct hcall_list *before, struct hcall_list *first, struct hcall_list *last);
+void hcall_list_push_front(struct hcall_list *, struct hcall_list *);
+void hcall_list_replace(struct hcall_list *, const struct hcall_list *);
+void hcall_list_moved(struct hcall_list *);
 
 /* List removal. */
-struct list *list_remove(struct list *);
-struct list *list_pop_back(struct list *);
+struct hcall_list *hcall_list_pop_front(struct hcall_list *);
+struct hcall_list *hcall_list_pop_back(struct hcall_list *);
 
 /* List elements. */
-struct list *list_front(const struct list *);
-struct list *list_back(const struct list *);
+struct hcall_list *hcall_list_front(const struct hcall_list *);
+struct hcall_list *hcall_list_back(const struct hcall_list *);
 
 /* List properties. */
-size_t list_size(const struct list *);
-bool list_is_singleton(const struct list *);
-bool list_is_short(const struct list *);
+size_t hcall_list_size(const struct hcall_list *);
+bool hcall_list_is_empty(const struct hcall_list *);
+bool hcall_list_is_singleton(const struct hcall_list *);
+bool hcall_list_is_short(const struct hcall_list *);
 
 #define LIST_FOR_EACH(ITER, MEMBER, LIST)                               \
     for (ASSIGN_CONTAINER(ITER, (LIST)->next, MEMBER);                  \
@@ -78,22 +86,28 @@ bool list_is_short(const struct list *);
          (ITER) = (NEXT))
 
 
-/* Returns true if 'list' is empty, false otherwise. */
-static inline bool
-list_is_empty(const struct list *list)
+ /* Removes 'elem' from its list and returns the element that followed it.
+    Undefined behavior if 'elem' is not in a list. */
+ static inline struct hcall_list *
+ hcall_list_remove(struct hcall_list *elem)
+ {
+     elem->prev->next = elem->next;
+     elem->next->prev = elem->prev;
+     return elem->next;
+ }
+
+
+ /* Inserts 'elem' at the end of 'list', so that it becomes the back in
+  * 'list'. */
+static inline void
+hcall_list_push_back(struct hcall_list *list, struct hcall_list *elem)
 {
- return list->next == list;
+    hcall_list_insert(list, elem);
 }
 
 
-/* Removes the front element from 'list' and returns it.  Undefined behavior if
-   'list' is empty before removal. */
-static inline struct list *
-list_pop_front(struct list *list)
-{
-    struct list *front = list->next;
-    list_remove(front);
-    return front;
-}
+ #ifdef  __cplusplus
+ }
+ #endif
 
 #endif /* list.h */

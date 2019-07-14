@@ -11,6 +11,7 @@
 #include "filter.h"
 #include "execute_function.h"
 #include "assert.h"
+#include "cache_trusted.h"
 
 
 void
@@ -101,13 +102,21 @@ hotcall_execute_bundle(struct hotcall_batch *batch) {
 }
 
 static inline int
-hotcall_execute_ecall(struct ecall_queue_item *qi) {
+hotcall_execute_ecall(struct ecall_queue_item *qi, struct memoize *mem) {
     if(qi->type == QUEUE_ITEM_TYPE_DESTROY) {
         return -1;
     }
     struct hotcall_function *fc = &qi->call.fc;
     parse_function_arguments(fc->params, fc->config->n_params, 0, fc->args);
     execute_function(hotcall_config, fc->config->function_id, 1, fc->config->n_params, fc->args);
+    if(fc->config->memoize.on) {
+        memoize_value(mem, fc->config, fc->args[0][fc->config->n_params - 1]);
+    }
+    /*if(fc->config->memoize_invalidate.n_caches_to_invalidate > 0) {
+        for(int i = 0; i < fc->config->memoize_invalidate.n_caches_to_invalidate; ++i) {
+            invalidate_value_in_cache(mem, fc->config->memoize_invalidate.invalidate_return_value_in_caches[i], fc->args[0][fc->config->n_params - 1], 'd');
+        }
+    }*/
     return 0;
 }
 
@@ -130,7 +139,7 @@ hotcall_bundler_start(struct shared_memory_ctx *sm_ctx){
         if (sm_ctx->hcall.run) {
             sm_ctx->hcall.run = false;
             if(sm_ctx->hcall.batch) exit_code = hotcall_execute_bundle(sm_ctx->hcall.batch);
-            else exit_code = hotcall_execute_ecall(sm_ctx->hcall.ecall);
+            else exit_code = hotcall_execute_ecall(sm_ctx->hcall.ecall, &sm_ctx->mem);
             sm_ctx->hcall.is_done = true;
             if(exit_code) goto exit;
         }

@@ -1,21 +1,23 @@
 #ifndef _H_OFTABLE_
 #define _H_OFTABLE_
 
+#include "enclave.h"
+
 void
-sgx_table_dpif_init(uint8_t bridge_id, int n_tables);
+sgx_table_dpif_init(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int n_tables);
 void
 oftable_init(struct oftable * table);
 void
-sgx_table_cls_init(uint8_t bridge_id);
+sgx_table_cls_init(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id);
 void
-sgx_oftable_destroy(uint8_t bridge_id, uint8_t table_id);
+sgx_oftable_destroy(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id);
 
 struct oftable *
-next_matching_table(uint8_t bridge_id, int ofproto_n_tables, const struct oftable * table, uint8_t table_id);
+next_matching_table(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, const struct oftable * table, uint8_t table_id);
 struct oftable *
-first_matching_table(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id);
+first_matching_table(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id);
 struct oftable *
-next_visible_table(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id);
+next_visible_table(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id);
 uint32_t
 rule_eviction_priority(struct rule *rule, uint32_t time_boot_msec);
 

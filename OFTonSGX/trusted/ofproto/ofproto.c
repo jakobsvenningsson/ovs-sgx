@@ -4,6 +4,7 @@
 #include "oftable.h"
 #include "hmap.h"
 #include "common.h"
+#include "enclave.h"
 
 
 struct ofoperation {
@@ -29,47 +30,43 @@ struct ofoperation {
 
 
 // Global data structures
+/*
 extern struct oftable * SGX_oftables[100];
 extern struct SGX_table_dpif * SGX_table_dpif[100];
 extern int SGX_n_tables[100];
-extern struct sgx_cls_table * SGX_hmap_table[100];
+extern struct sgx_cls_table * SGX_hmap_table[100];*/
 
 // Vanilla ECALLS
 
 void
-ecall_ofproto_destroy(uint8_t bridge_id){
+ecall_ofproto_destroy(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
     int i;
 
-    for (i = 0; i < SGX_n_tables[bridge_id]; i++) {
-        sgx_oftable_destroy(bridge_id, i);
+    for (i = 0; i < e_ctx->SGX_n_tables[bridge_id]; i++) {
+        sgx_oftable_destroy(e_ctx, bridge_id, i);
     }
-    free(SGX_oftables[bridge_id]);
+    free(e_ctx->SGX_oftables[bridge_id]);
 }
 
 unsigned int
-ecall_total_rules(uint8_t bridge_id){
+ecall_total_rules(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
     int i;
     unsigned int n_rules;
 
     n_rules = 0;
-    for (i = 0; i < SGX_n_tables[bridge_id]; i++) {
-        n_rules += classifier_count(&SGX_oftables[bridge_id][i].cls);
+    for (i = 0; i < e_ctx->SGX_n_tables[bridge_id]; i++) {
+        n_rules += classifier_count(&e_ctx->SGX_oftables[bridge_id][i].cls);
     }
     return n_rules;
 }
 
 size_t
-ecall_ofproto_get_vlan_c(uint8_t bridge_id){
-    return ecall_ofproto_get_vlan_r(bridge_id, NULL, -1);
-}
-
-size_t
-ecall_ofproto_get_vlan_r(uint8_t bridge_id, uint16_t * buf, int elem){
+ecall_ofproto_get_vlan_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint16_t * buf, int elem){
     struct oftable * oftable;
     bool count_only = buf == NULL ? true : false;
     size_t p = 0;
     int i;
-    for (i = 0; i < SGX_n_tables[bridge_id]; i++) {
+    for (i = 0; i < e_ctx->SGX_n_tables[bridge_id]; i++) {
         const struct cls_table * table;
 
         HMAP_FOR_EACH(table, hmap_node, &oftable->cls.tables){
@@ -97,12 +94,13 @@ ecall_ofproto_get_vlan_r(uint8_t bridge_id, uint16_t * buf, int elem){
 }
 
 size_t
-ecall_collect_ofmonitor_util_c(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id, const struct minimatch * match){
-    return ecall_collect_ofmonitor_util_r(bridge_id, ofproto_n_tables, NULL, -1, table_id, match);
+ecall_ofproto_get_vlan_c(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
+    return ecall_ofproto_get_vlan_r(e_ctx, bridge_id, NULL, -1);
 }
 
+
 size_t
-ecall_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables, struct cls_rule ** buf, int elem, uint8_t table_id,
+ecall_collect_ofmonitor_util_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, struct cls_rule ** buf, int elem, uint8_t table_id,
   const struct minimatch * match){
     struct cls_rule target;
     const struct oftable * table;
@@ -110,7 +108,7 @@ ecall_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables, struct c
     size_t p = 0;
 
     cls_rule_init_from_minimatch(&target, match, 0);
-    FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables){
+    FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables, e_ctx){
         struct cls_cursor cursor;
         struct sgx_cls_rule * rule;
 
@@ -133,6 +131,11 @@ ecall_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables, struct c
 }
 
 size_t
+ecall_collect_ofmonitor_util_c(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id, const struct minimatch * match){
+    return ecall_collect_ofmonitor_util_r(e_ctx, bridge_id, ofproto_n_tables, NULL, -1, table_id, match);
+}
+
+size_t
 ecall_ofproto_get_vlan_usage(uint8_t bridge_id,
                            size_t buf_size,
                            uint16_t *vlan_buffer,
@@ -140,7 +143,7 @@ ecall_ofproto_get_vlan_usage(uint8_t bridge_id,
                            size_t end_index,
                            size_t *n_vlan)
 {
-    struct oftable * oftable;
+    /*struct oftable * oftable;
     size_t i = 0, n = 0;
     for (size_t i = 0; i < SGX_n_tables[bridge_id]; i++) {
         const struct cls_table * table;
@@ -160,7 +163,7 @@ ecall_ofproto_get_vlan_usage(uint8_t bridge_id,
         }
     }
     *n_vlan = i;
-    return n;
+    return n;*/
 }
 
 size_t
@@ -172,7 +175,7 @@ ecall_ofproto_flush(uint8_t bridge_id,
                     size_t end_index,
                     size_t *n_rules) {
 
-    int count = 0, n = 0;
+    /*int count = 0, n = 0;
     for (size_t i = 0; i < SGX_n_tables[bridge_id]; i++) {
         struct sgx_cls_rule * rule, * next_rule;
         struct cls_cursor cursor;
@@ -193,24 +196,24 @@ ecall_ofproto_flush(uint8_t bridge_id,
         }
     }
     *n_rules = count;
-    return n;
+    return n;*/
 }
 
 void
 ecall_ofproto_rule_send_removed(uint8_t bridge_id, struct cls_rule *cr, struct match *match, unsigned int *priority, bool *rule_is_hidden)
 {
-    unsigned int pr = ecall_cr_priority(bridge_id, cr);
+    /*unsigned int pr = ecall_cr_priority(bridge_id, cr);
     *rule_is_hidden = pr > UINT16_MAX;
     if (*rule_is_hidden) {
         return;
     }
     ecall_minimatch_expand(bridge_id, cr, match);
-    *priority = pr;
+    *priority = pr;*/
 }
 
 bool
 ecall_ofproto_is_flow_deletion_pending(uint8_t bridge_id, uint8_t table_id, struct hmap *deletions, const struct cls_rule *cls_rule) {
-    if (hmap_is_empty(deletions)) {
+    /*if (hmap_is_empty(deletions)) {
         return false;
     }
     struct ofoperation *op;
@@ -219,5 +222,5 @@ ecall_ofproto_is_flow_deletion_pending(uint8_t bridge_id, uint8_t table_id, stru
             return true;
         }
     }
-    return false;
+    return false;*/
 }

@@ -4,7 +4,7 @@ SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 
 HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/include
-HOTCALL_BUNDLER_TRUSTED_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/trusted
+HOTCALL_BUNDLER_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src
 
 ifeq ($(shell getconf LONG_BIT), 32)
 	SGX_ARCH := x86
@@ -79,7 +79,8 @@ Enclave_Include_Paths := -Iinclude \
 						-I$(SGX_SDK)/include/libcxx \
 						-Itrusted/lib \
 						-Itrusted/include \
-						-I$(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/static_trusted \
+						-I$(HOTCALL_BUNDLER_LIB_PATH)/lib \
+						-I$(HOTCALL_BUNDLER_LIB_PATH)/trusted/static_trusted \
 						-I$(HOTCALL_BUNDLER_INCLUDE_PATH)
 
 
@@ -90,7 +91,7 @@ Enclave_C_Flags := $(Flags_Just_For_C) $(Common_C_Cpp_Flags) $(LFLAGS)
 Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
 	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) \
-	-L$(HOTCALL_BUNDLER_TRUSTED_LIB_PATH) -lhotcall_bundler_trusted -Wl,--end-group \
+	-L$(HOTCALL_BUNDLER_LIB_PATH)/trusted -lhotcall_bundler_trusted -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
@@ -132,7 +133,7 @@ endif
 
 trusted/enclave_t.c: $(SGX_EDGER8R) ./trusted/enclave.edl
 	@cd ./trusted && $(SGX_EDGER8R) --trusted ../trusted/enclave.edl --search-path ../trusted --search-path $(SGX_SDK)/include \
-	--search-path $(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/static_trusted
+	--search-path $(HOTCALL_BUNDLER_LIB_PATH)/trusted/static_trusted
 	@echo "GEN  =>  $@"
 
 trusted/enclave_t.o: ./trusted/enclave_t.c

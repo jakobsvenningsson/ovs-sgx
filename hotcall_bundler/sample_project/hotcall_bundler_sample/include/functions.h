@@ -24,5 +24,7 @@
 #define hotcall_ecall_offset_of_ret 20
 #define hotcall_ecall_strlen 21
 #define hotcall_ecall_for_each_10_test 22
+#define hotcall_ecall_add_and_count 23
+#define hotcall_ecall_get_addr 24
 
 #endif

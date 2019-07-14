@@ -45,5 +45,7 @@ int
 ecall_read_buffer(int *out, int size);
 int
 ecall_count();
+void *
+ecall_get_addr(void *x);
 
 #endif

@@ -4,7 +4,7 @@ enclave {
 
 		// Vanilla ECALLS
 
-        public void
+        /*public void
         ecall_cls_rule_init(uint8_t bridge_id, [user_check]struct cls_rule * o_cls_rule, [user_check] const struct match * match , unsigned int priority);
         public int
         ecall_cr_rule_overlaps(uint8_t bridge_id, uint8_t table_id,[user_check] struct cls_rule * o_cls_rule);
@@ -33,7 +33,7 @@ enclave {
 		public uint16_t
 		ecall_minimask_get_vid_mask(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule);
 		public uint16_t
-		ecall_miniflow_get_vid(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule);
+		ecall_miniflow_get_vid(uint8_t bridge_id, [user_check]struct cls_rule *o_cls_rule);*/
 
 		// Optimized ECALLS
 

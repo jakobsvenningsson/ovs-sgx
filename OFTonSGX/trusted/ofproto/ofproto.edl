@@ -4,7 +4,7 @@ enclave {
 
 		// Vanilla ECALLS
 
-        public void
+        /*public void
         ecall_ofproto_destroy(uint8_t bridge_id);
         public unsigned int
         ecall_total_rules(uint8_t bridge_id);
@@ -15,7 +15,7 @@ enclave {
 		public size_t
 		ecall_collect_ofmonitor_util_c(uint8_t bridge_id, int ofproto_n_tables,uint8_t table_id,[user_check]const struct minimatch *match);
 		public size_t
-		ecall_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables,[user_check]struct cls_rule **buf,int elem,uint8_t table_id,[user_check]const struct minimatch *match);
+		ecall_collect_ofmonitor_util_r(uint8_t bridge_id, int ofproto_n_tables,[user_check]struct cls_rule **buf,int elem,uint8_t table_id,[user_check]const struct minimatch *match);*/
 
 		// Optimized ECALLS
 

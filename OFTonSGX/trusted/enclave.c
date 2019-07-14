@@ -10,22 +10,14 @@
 #include "openflow-common.h"
 #include <sgx_spinlock.h>
 #include "oftable.h"
-#include "enclave-batch-allocator.h"
 #include "hotcall.h"
 #include "hotcall-bundler-trusted.h"
 #include "cache-trusted.h"
 #include "functions.h"
 
 
-// Global data structures
-struct oftable * SGX_oftables[100];
-struct SGX_table_dpif * SGX_table_dpif[100];
-int SGX_n_tables[100];
-struct sgx_cls_table * SGX_hmap_table[100];
-const struct batch_allocator cr_ba;
-const struct batch_allocator evg_ba;
-//const struct batch_allocator heap_ba;
 bool hotcall_configured = false;
+struct ovs_enclave_ctx e_ctx = { 0 };
 
 void
 ecall_plus_one(int *x) {
@@ -132,7 +124,6 @@ wrapper_ecall_oftable_mflows(unsigned int n_iters, unsigned int n_params, void *
     }
 }
 
-
 #define CALL_TABLE_CAPACITY 256
 
 void *call_table[CALL_TABLE_CAPACITY] = {
@@ -148,7 +139,6 @@ void *call_table[CALL_TABLE_CAPACITY] = {
     [hotcall_ecall_is_eviction_fields_enabled] = wrapper_ecall_is_eviction_fields_enabled,
     [hotcall_ecall_oftable_cls_count] = wrapper_ecall_oftable_cls_count,
     [hotcall_ecall_oftable_mflows] = wrapper_ecall_oftable_mflows
-
 };
 
 
@@ -170,7 +160,8 @@ configure_hotcall() {
     struct hotcall_config conf = {
         .execute_function_legacy = execute_function,
         .execute_function = batch_execute_function,
-        .n_spinlock_jobs = 0
+        .n_spinlock_jobs = 0,
+        .ctx = &e_ctx
         //.n_spinlock_jobs = 1,
         //.spin_lock_tasks = { &flow_map_cache_validate },
         //.spin_lock_task_timeouts = { 99999999 },
@@ -186,24 +177,30 @@ configure_hotcall() {
 void
 ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
 
+    if(!hotcall_configured) {
+        configure_hotcall();
+        //e_ctx = malloc(sizeof(struct ovs_enclave_ctx));
+        //memset(e_ctx, 0, sizeof(struct ovs_enclave_ctx));
+    }
+
     struct oftable * table;
 
-    SGX_n_tables[bridge_id] = n_tables;
-    SGX_oftables[bridge_id] = xmalloc(n_tables * sizeof(struct oftable));
-    OFPROTO_FOR_EACH_TABLE(table, SGX_oftables[bridge_id]){
+    e_ctx.SGX_n_tables[bridge_id] = n_tables;
+    e_ctx.SGX_oftables[bridge_id] = xmalloc(n_tables * sizeof(struct oftable));
+    OFPROTO_FOR_EACH_TABLE(table, e_ctx.SGX_oftables[bridge_id], e_ctx.SGX_n_tables[bridge_id]){
         oftable_init(table);
     }
-    sgx_table_cls_init(bridge_id);
-    sgx_table_dpif_init(bridge_id, n_tables);
+    sgx_table_cls_init(&e_ctx, bridge_id);
+    sgx_table_dpif_init(&e_ctx, bridge_id, n_tables);
 
 
     #ifdef BATCH_ALLOCATION
 
-    batch_allocator_init(&cr_ba, sizeof(struct sgx_cls_rule));
-    batch_allocator_add_block(&cr_ba);
+    batch_allocator_init(&e_ctx.cr_ba, sizeof(struct sgx_cls_rule));
+    batch_allocator_add_block(&e_ctx.cr_ba);
 
-    batch_allocator_init(&evg_ba, sizeof(struct eviction_group));
-    batch_allocator_add_block(&evg_ba);
+    batch_allocator_init(&e_ctx.evg_ba, sizeof(struct eviction_group));
+    batch_allocator_add_block(&e_ctx.evg_ba);
 
     /*batch_allocator_init(&heap_ba, sizeof(struct heap_node));
     batch_allocator_add_block(&heap_ba);*/
@@ -211,7 +208,5 @@ ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
     #endif
 
 
-    if(!hotcall_configured) {
-        configure_hotcall();
-    }
+
 }

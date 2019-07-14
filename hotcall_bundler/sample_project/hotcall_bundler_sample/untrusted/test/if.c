@@ -339,18 +339,9 @@ TEST(if, 10) {
 
     BUNDLE_END();
 
-    BUNDLE_BEGIN();
-    if(y) {
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
-        HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(x, 'd'));
-    }
-    BUNDLE_END();
-
     hotcall_test_teardown();
 
-    ASSERT_EQ(x, 8);
+    ASSERT_EQ(x, 4);
 }
 
 TEST(if,12) {

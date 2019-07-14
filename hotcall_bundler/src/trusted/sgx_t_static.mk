@@ -55,9 +55,14 @@ hotcall_bundler_C_Files := static_trusted/hotcall_bundler.c \
 						   static_trusted/control_statements/if.c \
 						   static_trusted/control_statements/assert.c \
 						   static_trusted/parameter.c \
-						   static_trusted/predicate.c
+						   static_trusted/predicate.c \
+						   static_trusted/cache/cache_trusted.c \
+						   ../lib/hotcall-hmap.c \
+						   ../lib/hotcall-hash.c \
+						   ../lib/hotcall-list.c
 
-hotcall_bundler_Include_Paths := -Istatic_trusted -Istatic_trusted/control_statements -Istatic_trusted/functional_operators -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -I../../include
+
+hotcall_bundler_Include_Paths := -Istatic_trusted -I../lib -Istatic_trusted/cache -Istatic_trusted/control_statements -Istatic_trusted/functional_operators -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -I../../include
 
 Flags_Just_For_C := -Wno-implicit-function-declaration -std=c11
 Common_C_Cpp_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(hotcall_bundler_Include_Paths) -fno-builtin-printf -I.

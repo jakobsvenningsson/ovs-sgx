@@ -11,6 +11,7 @@
 
 
 # define HOTCALL_BUNDLER_SAMPLE_FILENAME "hotcall_bundler_sample.signed.so"
+#define CACHE_SIZE 10
 
 extern sgx_enclave_id_t global_eid;    /* global enclave id */
 

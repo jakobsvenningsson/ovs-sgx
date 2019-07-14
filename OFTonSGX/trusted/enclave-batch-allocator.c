@@ -4,11 +4,11 @@
 #include "util.h"
 #include "list.h"
 
+/*
 #define BATCH_SIZE 1024
 
 void
 batch_allocator_add_block(struct batch_allocator * ba) {
-    printf("adding block\n");
     ba->bytes[ba->n_blocks] = malloc(ba->block_sz * BATCH_SIZE + sizeof(struct bblock) * BATCH_SIZE);
     if(ba->bytes[ba->n_blocks] == NULL) {
         printf("Failed to malloc\n");
@@ -25,17 +25,7 @@ batch_allocator_add_block(struct batch_allocator * ba) {
 }
 
 struct bblock *
-batch_allocator_get_block(struct batch_allocator * ba) {
-    if(list_is_empty(&ba->free_list)) {
-        batch_allocator_add_block(ba);
-    }
-    struct list *free_list_node;
-    free_list_node = list_pop_front(&ba->free_list);
-    struct bblock *b;
-    b = CONTAINER_OF(free_list_node, struct bblock, list_node);
 
-    return b;
-}
 
 void
 batch_allocator_free_block(struct batch_allocator *ba, struct list *list_node) {
@@ -51,3 +41,4 @@ batch_allocator_init(struct batch_allocator *ba, unsigned int block_sz) {
     ba->block_sz = block_sz;
     list_init(&ba->free_list);
 }
+*/

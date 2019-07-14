@@ -23,6 +23,27 @@ start_enclave_thread(void * vargp){
 void
 hotcall_init(struct shared_memory_ctx *ctx, sgx_enclave_id_t eid) {
     ctx->hcall.is_inside_chain = false;
+
+    // Inititalize function memoize caches.
+    struct function_cache_ctx *mem_ctx;
+    struct cache_entry *entries;
+    unsigned int cache_sz;
+    for(int i = 0; i < ctx->mem.max_n_function_caches; ++i) {
+        cache_sz = ctx->mem.function_cache_size[i];
+        if(cache_sz == 0) continue;
+        mem_ctx = malloc(sizeof(struct function_cache_ctx));
+        entries = malloc(sizeof(struct cache_entry) * cache_sz);
+        hcall_list_init(&mem_ctx->lru_list);
+        for(int j = 0; j < cache_sz; ++j) {
+            hcall_list_insert(&mem_ctx->lru_list, &entries[j].lru_list_node);
+        }
+        hcall_hmap_init(&mem_ctx->cache);
+        hcall_hmap_reserve(&mem_ctx->cache, cache_sz);
+        hcall_hmap_init(&mem_ctx->val_cache);
+        hcall_hmap_reserve(&mem_ctx->val_cache, cache_sz);
+        ctx->mem.functions[i] = mem_ctx;
+    }
+
     global_eid = eid;
     _sm_ctx = ctx;
     pthread_t thread_id;

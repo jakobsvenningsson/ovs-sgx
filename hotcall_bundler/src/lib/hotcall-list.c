@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <config.h>
-#include "list.h"
+#include "hotcall-list.h"
+#include <string.h>
+#include <assert.h>
+
 
 /* Initializes 'list' as an empty list. */
 void
-list_init(struct list *list)
+hcall_list_init(struct hcall_list *list)
 {
     list->next = list->prev = list;
 }
@@ -26,14 +28,14 @@ list_init(struct list *list)
 /* Initializes 'list' with pointers that will (probably) cause segfaults if
  * dereferenced and, better yet, show up clearly in a debugger. */
 void
-list_poison(struct list *list)
+hcall_list_poison(struct hcall_list *list)
 {
     memset(list, 0xcc, sizeof *list);
 }
 
 /* Inserts 'elem' just before 'before'. */
 void
-list_insert(struct list *before, struct list *elem)
+hcall_list_insert(struct hcall_list *before, struct hcall_list *elem)
 {
     elem->prev = before->prev;
     elem->next = before;
@@ -44,7 +46,7 @@ list_insert(struct list *before, struct list *elem)
 /* Removes elements 'first' though 'last' (exclusive) from their current list,
    then inserts them just before 'before'. */
 void
-list_splice(struct list *before, struct list *first, struct list *last)
+hcall_list_splice(struct hcall_list *before, struct hcall_list *first, struct hcall_list *last)
 {
     if (first == last) {
         return;
@@ -65,23 +67,17 @@ list_splice(struct list *before, struct list *first, struct list *last)
 /* Inserts 'elem' at the beginning of 'list', so that it becomes the front in
    'list'. */
 void
-list_push_front(struct list *list, struct list *elem)
+hcall_list_push_front(struct hcall_list *list, struct hcall_list *elem)
 {
-    list_insert(list->next, elem);
+    hcall_list_insert(list->next, elem);
 }
 
-/* Inserts 'elem' at the end of 'list', so that it becomes the back in
- * 'list'. */
-void
-list_push_back(struct list *list, struct list *elem)
-{
-    list_insert(list, elem);
-}
+
 
 /* Puts 'elem' in the position currently occupied by 'position'.
  * Afterward, 'position' is not part of a list. */
 void
-list_replace(struct list *element, const struct list *position)
+hcall_list_replace(struct hcall_list *element, const struct hcall_list *position)
 {
     element->next = position->next;
     element->next->prev = element;
@@ -96,60 +92,59 @@ list_replace(struct list *element, const struct list *position)
  * of a non-empty list.  It fails badly, however, if 'list' is the head of an
  * empty list; just use list_init() in that case. */
 void
-list_moved(struct list *list)
+hcall_list_moved(struct hcall_list *list)
 {
     list->prev->next = list->next->prev = list;
 }
 
-/* Removes 'elem' from its list and returns the element that followed it.
-   Undefined behavior if 'elem' is not in a list. */
-struct list *
-list_remove(struct list *elem)
-{
-    elem->prev->next = elem->next;
-    elem->next->prev = elem->prev;
-    return elem->next;
-}
 
+
+/* Removes the front element from 'list' and returns it.  Undefined behavior if
+   'list' is empty before removal. */
+struct hcall_list *
+hcall_list_pop_front(struct hcall_list *list)
+{
+    struct hcall_list *front = list->next;
+    hcall_list_remove(front);
+    return front;
+}
 
 /* Removes the back element from 'list' and returns it.
    Undefined behavior if 'list' is empty before removal. */
-struct list *
-list_pop_back(struct list *list)
+struct hcall_list *
+hcall_list_pop_back(struct hcall_list *list)
 {
-    struct list *back = list->prev;
-    list_remove(back);
+    struct hcall_list *back = list->prev;
+    hcall_list_remove(back);
     return back;
 }
 
 /* Returns the front element in 'list_'.
    Undefined behavior if 'list_' is empty. */
-struct list *
-list_front(const struct list *list_)
+struct hcall_list *
+hcall_list_front(const struct hcall_list *list_)
 {
-    struct list *list = CONST_CAST(struct list *, list_);
+    struct hcall_list *list = CONST_CAST(struct hcall_list *, list_);
 
-    ovs_assert(!list_is_empty(list));
     return list->next;
 }
 
 /* Returns the back element in 'list_'.
    Undefined behavior if 'list_' is empty. */
-struct list *
-list_back(const struct list *list_)
+struct hcall_list *
+hcall_list_back(const struct hcall_list *list_)
 {
-    struct list *list = CONST_CAST(struct list *, list_);
+    struct hcall_list *list = CONST_CAST(struct hcall_list *, list_);
 
-    ovs_assert(!list_is_empty(list));
     return list->prev;
 }
 
 /* Returns the number of elements in 'list'.
    Runs in O(n) in the number of elements. */
 size_t
-list_size(const struct list *list)
+hcall_list_size(const struct hcall_list *list)
 {
-    const struct list *e;
+    const struct hcall_list *e;
     size_t cnt = 0;
 
     for (e = list->next; e != list; e = e->next) {
@@ -158,17 +153,23 @@ list_size(const struct list *list)
     return cnt;
 }
 
+/* Returns true if 'list' is empty, false otherwise. */
+bool
+hcall_list_is_empty(const struct hcall_list *list)
+{
+    return list->next == list;
+}
 
 /* Returns true if 'list' has exactly 1 element, false otherwise. */
 bool
-list_is_singleton(const struct list *list)
+hcall_list_is_singleton(const struct hcall_list *list)
 {
-    return list_is_short(list) && !list_is_empty(list);
+    return hcall_list_is_short(list) && !hcall_list_is_empty(list);
 }
 
 /* Returns true if 'list' has 0 or 1 elements, false otherwise. */
 bool
-list_is_short(const struct list *list)
+hcall_list_is_short(const struct hcall_list *list)
 {
     return list->next == list->prev;
 }

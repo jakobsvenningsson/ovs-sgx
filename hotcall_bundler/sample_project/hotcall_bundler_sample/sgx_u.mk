@@ -4,8 +4,7 @@ SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 UNTRUSTED_DIR=untrusted
 
-HOTCALL_BUNDLER_TRUSTED_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/trusted
-HOTCALL_BUNDLER_UNTRUSTED_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src/untrusted
+HOTCALL_BUNDLER_LIB_PATH := /home/jakob/ovs-sgx/hotcall_bundler/src
 HOTCALL_BUNDLER_INCLUDE_PATH = /home/jakob/ovs-sgx/hotcall_bundler/include
 
 ifeq ($(shell getconf LONG_BIT), 32)
@@ -63,12 +62,15 @@ App_C_Files := $(UNTRUSTED_DIR)/sample.c \
 			   $(UNTRUSTED_DIR)/test/functional_chaining.c \
 			   $(UNTRUSTED_DIR)/test/integration.c \
 			   $(UNTRUSTED_DIR)/test/struct.c \
+			   $(UNTRUSTED_DIR)/test/cache.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark.c \
+			   $(UNTRUSTED_DIR)/benchmark/benchmark_cache.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_hotcall.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_filter.c \
 			   $(UNTRUSTED_DIR)/benchmark/benchmark_if.c
 
-App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include -I$(HOTCALL_BUNDLER_INCLUDE_PATH) -I$(HOTCALL_BUNDLER_UNTRUSTED_LIB_PATH) -I/home/jakob/ovs-sgx/benchmark/include
+App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include -I$(HOTCALL_BUNDLER_INCLUDE_PATH) \
+	-I$(HOTCALL_BUNDLER_LIB_PATH)/untrusted -I/home/jakob/ovs-sgx/benchmark/include -I$(HOTCALL_BUNDLER_LIB_PATH)/lib -I$(HOTCALL_BUNDLER_LIB_PATH)/trusted/static_trusted/cache
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
 
@@ -84,7 +86,7 @@ else
         App_C_Flags += -DNDEBUG -UEDEBUG -UDEBUG
 endif
 
-App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(HOTCALL_BUNDLER_UNTRUSTED_LIB_PATH) -lhotcall_bundler_untrusted  -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -lpthread -lgtest
+App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(HOTCALL_BUNDLER_LIB_PATH)/untrusted -lhotcall_bundler_untrusted  -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -lpthread -lgtest
 
 ifneq ($(SGX_MODE), HW)
 	App_Link_Flags += -lsgx_uae_service_sim
@@ -129,7 +131,7 @@ endif
 ######## App Objects ########
 $(UNTRUSTED_DIR)/hotcall_bundler_sample_u.c: $(SGX_EDGER8R) trusted/hotcall_bundler_sample.edl
 	@cd $(UNTRUSTED_DIR) && $(SGX_EDGER8R) --untrusted ../trusted/hotcall_bundler_sample.edl --search-path ../trusted --search-path $(SGX_SDK)/include \
-	--search-path $(HOTCALL_BUNDLER_TRUSTED_LIB_PATH)/static_trusted
+	--search-path $(HOTCALL_BUNDLER_LIB_PATH)/trusted/static_trusted
 	@echo "GEN  =>  $@"
 
 $(UNTRUSTED_DIR)/hotcall_bundler_sample_u.o: $(UNTRUSTED_DIR)/hotcall_bundler_sample_u.c

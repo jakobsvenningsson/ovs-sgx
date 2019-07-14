@@ -57,6 +57,7 @@ App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) \
 					 -I$(HOME)/ovs-sgx/ovs/lib \
 					 -I$(HOME)/ovs-sgx/benchmark/include \
 					 -I/home/jakob/ovs-sgx/hotcall_bundler/include \
+					 -I/home/jakob/ovs-sgx/hotcall_bundler/src/lib \
 					 -I/home/jakob/ovs-sgx/hotcall_bundler/src/untrusted
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths) $(LFLAGS) \

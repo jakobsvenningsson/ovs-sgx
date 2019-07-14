@@ -4,10 +4,10 @@ enclave {
 
 		// Vanilla ECALLS
 
-        public size_t
+        /*public size_t
         ecall_flow_stats_c(uint8_t bridge_id);
         public size_t
-        ecall_flow_stats_r(uint8_t bridge_id,[user_check]struct cls_rule **buf,int elem);
+        ecall_flow_stats_r(uint8_t bridge_id,[user_check]struct cls_rule **buf,int elem);*/
 
 		// Optimized ECALLS
 

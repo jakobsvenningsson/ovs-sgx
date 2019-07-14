@@ -18,6 +18,7 @@
 #include "hotcall_assign_variable.h"
 #include "hotcall_function.h"
 #include "hotcall_assert.h"
+#include "hotcall_cache.h"
 
 
 #define QUEUE_ITEM_TYPE_IF_NULL 1
@@ -91,13 +92,19 @@ struct hotcall {
     struct hotcall_batch *batch;
     struct ecall_queue_item *ecall;
     int error;
-    //struct ecall_queue_item fcs[MAX_FCS];
-    //size_t idx;
 };
 
+struct memoize {
+    unsigned int function_cache_size[256];
+    unsigned int max_n_function_caches;
+    struct function_cache_ctx *functions[256];
+};
+
+
 struct shared_memory_ctx {
-  struct hotcall hcall;
-  void *custom_object_ptr[MAX_N_VARIABLES];
+    struct memoize mem;
+    struct hotcall hcall;
+    void *custom_object_ptr[MAX_N_VARIABLES];
 };
 
 #endif

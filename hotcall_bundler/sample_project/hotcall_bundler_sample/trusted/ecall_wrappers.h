@@ -5,6 +5,20 @@
 #include "ecalls.h"
 
 static void
+wrapper_ecall_add_and_count(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        *(int *) args[i][n_params - 1] = ecall_add_and_count(*(int *) args[i][0], *(int *) args[i][1], (int *) args[i][2]);
+    }
+}
+
+static void
+wrapper_ecall_get_addr(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
+    for(int i = 0; i < n_iters; ++i) {
+        args[i][n_params - 1] = ecall_get_addr(args[i][0]);
+    }
+}
+
+static void
 wrapper_ecall_greater_than_y(unsigned int n_iters, unsigned int n_params, void *args[n_iters][n_params]) {
     for(int i = 0; i < n_iters; ++i) {
         *(bool *) args[i][n_params - 1] = ecall_greater_than_y((int *) args[i][0], *(int *) args[i][1]);

@@ -34,6 +34,8 @@ void *call_table[CALL_TABLE_CAPACITY] = {
     [hotcall_ecall_greater_than_y] = wrapper_ecall_greater_than_y,
     [hotcall_ecall_plus_plus] = wrapper_ecall_plus_plus,
     [hotcall_ecall_for_each_10_test] = wrapper_ecall_for_each_10_test,
+    [hotcall_ecall_add_and_count] = wrapper_ecall_add_and_count,
+    [hotcall_ecall_get_addr] = wrapper_ecall_get_addr
 
 };
 

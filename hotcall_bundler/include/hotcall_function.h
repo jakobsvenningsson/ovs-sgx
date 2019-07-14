@@ -26,10 +26,35 @@ enum parameter_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE, POINTER_TYPE_v
 #define _HCALL(SM_CTX, ID, CONFIG, ...) \
     struct parameter CAT2(HCALL_ARGS_, ID)[] = { __VA_ARGS__ }; \
     struct hotcall_function_config CAT2(HCALL_CONFIG_, ID) = CONFIG; \
-    CAT2(HCALL_CONFIG_, ID).n_params = sizeof(CAT2(HCALL_ARGS_, ID))/sizeof(struct parameter);\
     struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 };\
-    CAT2(QUEUE_ITEM_, ID).type = QUEUE_ITEM_TYPE_FUNCTION;\
     struct hotcall_function *ID;\
+    CAT2(HCALL_CONFIG_, ID).n_params = sizeof(CAT2(HCALL_ARGS_, ID))/sizeof(struct parameter);\
+    if(CAT2(HCALL_CONFIG_, ID).memoize.on) { \
+        struct function_cache_ctx *_f_ctx; \
+        _f_ctx = (SM_CTX)->mem.functions[CAT2(HCALL_CONFIG_, ID).function_id]; \
+        struct cache_entry *ce; \
+        HCALL_HMAP_FOR_EACH_WITH_HASH(ce, hmap_node, CAT2(HCALL_CONFIG_, ID).memoize.hash, &_f_ctx->cache) { \
+            hcall_list_remove(&ce->lru_list_node); \
+            hcall_list_push_back(&_f_ctx->lru_list, &ce->lru_list_node); \
+            switch(CAT2(HCALL_CONFIG_, ID).memoize.return_type) { \
+                case 'd': \
+                    *(int *) CAT2(HCALL_ARGS_, ID)[CAT2(HCALL_CONFIG_, ID).n_params - 1].value.variable.arg = ACCESS_FIELD(ce->type, INT_TYPE); \
+                    break; \
+                case 'b': \
+                    *(bool *) CAT2(HCALL_ARGS_, ID)[CAT2(HCALL_CONFIG_, ID).n_params - 1].value.variable.arg = ACCESS_FIELD(ce->type, BOOL_TYPE); \
+                    break; \
+                case 'u': \
+                    *(unsigned int *) CAT2(HCALL_ARGS_, ID)[CAT2(HCALL_CONFIG_, ID).n_params - 1].value.variable.arg = ACCESS_FIELD(ce->type, UNSIGNED_TYPE); \
+                    break; \
+                case 'p': \
+                    CAT2(HCALL_ARGS_, ID)[CAT2(HCALL_CONFIG_, ID).n_params - 1].value.variable.arg = ACCESS_FIELD(ce->type, POINTER_TYPE); \
+                    break; \
+                default: SWITCH_DEFAULT_REACHED \
+            } \
+            goto CAT2(EXIT_, ID);\
+        }\
+    }\
+    CAT2(QUEUE_ITEM_, ID).type = QUEUE_ITEM_TYPE_FUNCTION;\
     ID = &(CAT2(QUEUE_ITEM_, ID)).call.fc;\
     ID->config = &CAT2(HCALL_CONFIG_, ID);\
     ID->params = CAT2(HCALL_ARGS_, ID);\
@@ -43,7 +68,8 @@ enum parameter_type { FUNCTION_TYPE, VARIABLE_TYPE, POINTER_TYPE, POINTER_TYPE_v
         CAT2(QUEUE_ITEM_, ID).prev = (SM_CTX)->hcall.batch->top;\
         SM_CTX->hcall.batch->top->next = &CAT2(QUEUE_ITEM_, ID);\
         SM_CTX->hcall.batch->top = &CAT2(QUEUE_ITEM_, ID);\
-    }
+    }\
+    CAT2(EXIT_, ID):
 
 
 #define HCALL(CONFIG, ...) \
@@ -115,17 +141,28 @@ struct parameter {
 };
 
 
+struct memoize_config {
+    const bool on;
+    const char return_type;
+    uint32_t hash;
+};
+
+struct memoize_invalidate {
+    uint8_t n_caches_to_invalidate;
+    uint8_t invalidate_return_value_in_caches[16];
+};
+
 struct hotcall_function_config {
     const uint8_t function_id;
     const bool has_return;
-    const bool async;
+    struct memoize_config memoize;
+    struct memoize_invalidate memoize_invalidate;
     unsigned int n_params;
 };
 
 struct hotcall_function {
     struct parameter *params;
     struct hotcall_function_config *config;
-    //void *return_value;
     void *args[1][HOTCALL_MAX_ARG];
 };
 

@@ -115,3 +115,14 @@ ecall_for_each_10_test(uint8_t bridge_id, uint8_t table_id, int *buf, unsigned g
     user_prio++;
     *buf = *buf + 1;
 }
+
+int
+ecall_add_and_count(int x, int y, int *counter) {
+    ++*counter;
+    return x + y;
+}
+
+void *
+ecall_get_addr(void *x) {
+    return x;
+}
