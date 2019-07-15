@@ -7,9 +7,8 @@
 #define _BEGIN_FOR(SM_CTX, ID, CONFIG) \
     struct for_config CAT2(FOR_CONFIG_,ID) = CONFIG; \
     struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 }; \
-    if(!(SM_CTX)->hcall.batch->ignore_hcalls) { \
-        hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_FOR_BEGIN, &CAT2(FOR_CONFIG_,ID), NULL, &CAT2(QUEUE_ITEM_, ID));\
-    }
+    hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_FOR_BEGIN, &CAT2(FOR_CONFIG_,ID), NULL, &CAT2(QUEUE_ITEM_, ID));\
+
 
 
 #define BEGIN_FOR(CONFIG) \
@@ -18,9 +17,8 @@
 
 #define _END_FOR(ID) \
     struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 }; \
-    if(!(_sm_ctx)->hcall.batch->ignore_hcalls) { \
-        hotcall_enqueue_item(_sm_ctx, QUEUE_ITEM_TYPE_FOR_END, NULL, NULL, &CAT2(QUEUE_ITEM_, ID));\
-    }
+    hotcall_enqueue_item(_sm_ctx, QUEUE_ITEM_TYPE_FOR_END, NULL, NULL, &CAT2(QUEUE_ITEM_, ID));\
+
 #define END_FOR() _END_FOR(UNIQUE_ID)
 
 

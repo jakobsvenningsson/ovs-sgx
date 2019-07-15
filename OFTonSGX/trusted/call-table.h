@@ -4,6 +4,6 @@
 #include "hotcall.h"
 
 void
-execute_function(uint8_t function_id, void *args[], void *return_value, void *ctx);
+execute_function(uint8_t function_id, void *args[], void *return_value);
 
 #endif

@@ -4,7 +4,7 @@ enclave {
 
 		// Vanilla ECALLS
 
-    /*    public void
+        public void
         ecall_oftable_set_readonly(uint8_t bridge_id, uint8_t table_id);
         public int
         ecall_oftable_is_readonly(uint8_t bridge_id, uint8_t table_id);
@@ -43,7 +43,7 @@ enclave {
 		public size_t
 		ecall_collect_rules_strict_c(uint8_t bridge_id, int ofproto_n_tables,uint8_t table_id,[user_check]const struct match *match,unsigned int priority);
 		public size_t
-		ecall_collect_rules_strict_r(uint8_t bridge_id, int ofproto_n_tables,[user_check]struct cls_rule **buf,int elem,uint8_t table_id,[user_check]const struct match *match,unsigned int priority);*/
+		ecall_collect_rules_strict_r(uint8_t bridge_id, int ofproto_n_tables,[user_check]struct cls_rule **buf,int elem,uint8_t table_id,[user_check]const struct match *match,unsigned int priority);
 
         // Optimized ECALLS
 

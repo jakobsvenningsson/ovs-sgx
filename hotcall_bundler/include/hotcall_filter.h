@@ -12,10 +12,9 @@
     struct postfix_item CAT2(POSTFIX_, ID)[strlen(CAT2(FILTER_CONFIG_, ID).predicate_fmt)];\
     struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 }; \
     CAT2(FILTER_CONFIG_,ID).postfix = CAT2(POSTFIX_, ID);\
-    if(!(SM_CTX)->hcall.batch->ignore_hcalls) { \
-        CAT2(FILTER_CONFIG_,ID).n_params = sizeof(CAT2(FILTER_ARG_,ID))/sizeof(struct parameter);\
-        hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_FILTER, &CAT2(FILTER_CONFIG_,ID), CAT2(FILTER_ARG_, ID), &CAT2(QUEUE_ITEM_, ID));\
-    }
+    CAT2(FILTER_CONFIG_,ID).n_params = sizeof(CAT2(FILTER_ARG_,ID))/sizeof(struct parameter);\
+    hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_FILTER, &CAT2(FILTER_CONFIG_,ID), CAT2(FILTER_ARG_, ID), &CAT2(QUEUE_ITEM_, ID))
+
 
 #define FILTER(CONFIG, ...) \
     _FILTER(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)

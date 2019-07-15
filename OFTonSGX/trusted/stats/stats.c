@@ -18,15 +18,15 @@ extern struct sgx_cls_table * SGX_hmap_table[100];
 
 // 51.2 REQUEST
 size_t
-ecall_flow_stats_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule ** buf, int elem){
+ecall_flow_stats_r(uint8_t bridge_id, struct cls_rule ** buf, int elem){
     size_t p = 0;
     bool count_only = buf == NULL ? true : false;
 
     int i;
-    for (i = 0; i < e_ctx->SGX_n_tables[bridge_id]; i++) {
+    for (i = 0; i < e_ctx.SGX_n_tables[bridge_id]; i++) {
         struct sgx_cls_rule * rule;
         struct cls_cursor cursor;
-        cls_cursor_init(&cursor, &e_ctx->SGX_oftables[bridge_id][i].cls, NULL);
+        cls_cursor_init(&cursor, &e_ctx.SGX_oftables[bridge_id][i].cls, NULL);
         CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
             if(count_only) {
                 p++;
@@ -44,8 +44,8 @@ ecall_flow_stats_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_
 }
 
 size_t
-ecall_flow_stats_c(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
-    return ecall_flow_stats_r(e_ctx, bridge_id, NULL, -1);
+ecall_flow_stats_c(uint8_t bridge_id){
+    return ecall_flow_stats_r(bridge_id, NULL, -1);
 }
 
 // Optimized ECALLS
@@ -62,7 +62,7 @@ ecall_collect_rules_loose_stats_request(uint8_t bridge_id,
                                       unsigned int *priorities,
                                       size_t *n_rules)
 {
-    /*struct oftable * table;
+    struct oftable * table;
     struct cls_rule cr;
     sgx_cls_rule_init_i(bridge_id, &cr, match, 0);
 
@@ -95,5 +95,5 @@ ecall_collect_rules_loose_stats_request(uint8_t bridge_id,
     if(n_rules) {
         *n_rules = count;
     }
-    return n;*/
+    return n;
 }

@@ -10,11 +10,11 @@ struct bblock {
 };
 
 struct batch_allocator {
+    struct list free_list;
+    uint8_t *bytes[200];
     unsigned int block_sz;
     unsigned int n_blocks;
     unsigned int n_allocated;
-    uint8_t *bytes[200];
-    struct list free_list;
 };
 
 
@@ -23,11 +23,7 @@ struct batch_allocator {
 static inline void
 batch_allocator_add_block(struct batch_allocator * ba) {
     ba->bytes[ba->n_blocks] = malloc(ba->block_sz * BATCH_SIZE + sizeof(struct bblock) * BATCH_SIZE);
-    if(ba->bytes[ba->n_blocks] == NULL) {
-        //printf("Failed to malloc\n");
-    }
-    //memset(ba->bytes[ba->n_blocks], 0, ba->block_sz * BATCH_SIZE + sizeof(struct bblock) * BATCH_SIZE);
-
+    if(ba->bytes[ba->n_blocks] == NULL) {}
     struct bblock *b;
     for(size_t i = 0; i < BATCH_SIZE; ++i) {
         b = (struct bblock *) ((char *) ba->bytes[ba->n_blocks] + (ba->block_sz * BATCH_SIZE + i * sizeof(struct bblock)));

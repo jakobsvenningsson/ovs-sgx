@@ -161,7 +161,6 @@ configure_hotcall() {
         .execute_function_legacy = execute_function,
         .execute_function = batch_execute_function,
         .n_spinlock_jobs = 0,
-        .ctx = &e_ctx
         //.n_spinlock_jobs = 1,
         //.spin_lock_tasks = { &flow_map_cache_validate },
         //.spin_lock_task_timeouts = { 99999999 },
@@ -190,8 +189,8 @@ ecall_ofproto_init_tables(uint8_t bridge_id, int n_tables){
     OFPROTO_FOR_EACH_TABLE(table, e_ctx.SGX_oftables[bridge_id], e_ctx.SGX_n_tables[bridge_id]){
         oftable_init(table);
     }
-    sgx_table_cls_init(&e_ctx, bridge_id);
-    sgx_table_dpif_init(&e_ctx, bridge_id, n_tables);
+    sgx_table_cls_init(bridge_id);
+    sgx_table_dpif_init(bridge_id, n_tables);
 
 
     #ifdef BATCH_ALLOCATION

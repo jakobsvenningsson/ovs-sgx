@@ -53,16 +53,6 @@ xzalloc(size_t size)
     return xcalloc(1, size);
 }
 
-void *
-xmalloc(size_t size)
-{
-    void *p = malloc(size ? size : 1);
-    //COVERAGE_INC(util_xalloc);
-    if (p == NULL) {
-        abort();
-    }
-    return p;
-}
 
 void *
 xrealloc(void *p, size_t size)

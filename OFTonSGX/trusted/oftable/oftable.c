@@ -20,27 +20,27 @@ extern struct sgx_cls_table * SGX_hmap_table[100];*/
 
 
 void
-ecall_oftable_set_name(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, char * name){
+ecall_oftable_set_name(uint8_t bridge_id, uint8_t table_id, char * name){
     if (name && name[bridge_id]) {
         int len = strnlen(name, OFP_MAX_TABLE_NAME_LEN);
-        if (!e_ctx->SGX_oftables[bridge_id][table_id].name || strncmp(name, e_ctx->SGX_oftables[bridge_id][table_id].name, len)) {
-            free(e_ctx->SGX_oftables[bridge_id][table_id].name);
-            e_ctx->SGX_oftables[bridge_id][table_id].name = xmemdup0(name, len);
+        if (!e_ctx.SGX_oftables[bridge_id][table_id].name || strncmp(name, e_ctx.SGX_oftables[bridge_id][table_id].name, len)) {
+            free(e_ctx.SGX_oftables[bridge_id][table_id].name);
+            e_ctx.SGX_oftables[bridge_id][table_id].name = xmemdup0(name, len);
         }
     } else {
-        free(e_ctx->SGX_oftables[bridge_id][table_id].name);
-        e_ctx->SGX_oftables[bridge_id][table_id].name = NULL;
+        free(e_ctx.SGX_oftables[bridge_id][table_id].name);
+        e_ctx.SGX_oftables[bridge_id][table_id].name = NULL;
     }
 }
 
 void
-ecall_oftable_name(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, char * buf, size_t len){
+ecall_oftable_name(uint8_t bridge_id, uint8_t table_id, char * buf, size_t len){
     // I set the value manually to 100;
-    if (e_ctx->SGX_oftables[bridge_id][table_id].name) {
-        if (len > strlen(e_ctx->SGX_oftables[bridge_id][table_id].name)) {
-            memcpy(buf, e_ctx->SGX_oftables[bridge_id][table_id].name, strlen(e_ctx->SGX_oftables[bridge_id][table_id].name) + 1);
+    if (e_ctx.SGX_oftables[bridge_id][table_id].name) {
+        if (len > strlen(e_ctx.SGX_oftables[bridge_id][table_id].name)) {
+            memcpy(buf, e_ctx.SGX_oftables[bridge_id][table_id].name, strlen(e_ctx.SGX_oftables[bridge_id][table_id].name) + 1);
         } else  {
-            memcpy(buf, e_ctx->SGX_oftables[bridge_id][table_id].name, len);
+            memcpy(buf, e_ctx.SGX_oftables[bridge_id][table_id].name, len);
         }
     } else  {
         memset(buf, 0, len);
@@ -49,41 +49,41 @@ ecall_oftable_name(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t tab
 
 enum
 oftable_flags
-ecall_oftable_get_flags(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    return e_ctx->SGX_oftables[bridge_id][table_id].flags;
+ecall_oftable_get_flags(uint8_t bridge_id, uint8_t table_id){
+    return e_ctx.SGX_oftables[bridge_id][table_id].flags;
 }
 
 int
-ecall_oftable_cls_count(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    return classifier_count(&e_ctx->SGX_oftables[bridge_id][table_id].cls);
+ecall_oftable_cls_count(uint8_t bridge_id, uint8_t table_id){
+    return classifier_count(&e_ctx.SGX_oftables[bridge_id][table_id].cls);
 }
 
 unsigned int
-ecall_oftable_mflows(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    return e_ctx->SGX_oftables[bridge_id][table_id].max_flows;
+ecall_oftable_mflows(uint8_t bridge_id, uint8_t table_id){
+    return e_ctx.SGX_oftables[bridge_id][table_id].max_flows;
 }
 
 void
-ecall_oftable_mflows_set(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, unsigned int value){
-    e_ctx->SGX_oftables[bridge_id][table_id].max_flows = value;
+ecall_oftable_mflows_set(uint8_t bridge_id, uint8_t table_id, unsigned int value){
+    e_ctx.SGX_oftables[bridge_id][table_id].max_flows = value;
 }
 
 void
-ecall_oftable_set_readonly(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    e_ctx->SGX_oftables[bridge_id][table_id].flags = OFTABLE_HIDDEN | OFTABLE_READONLY;
+ecall_oftable_set_readonly(uint8_t bridge_id, uint8_t table_id){
+    e_ctx.SGX_oftables[bridge_id][table_id].flags = OFTABLE_HIDDEN | OFTABLE_READONLY;
 }
 
 int
-ecall_oftable_is_readonly(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    return e_ctx->SGX_oftables[bridge_id][table_id].flags & OFTABLE_READONLY;
+ecall_oftable_is_readonly(uint8_t bridge_id, uint8_t table_id){
+    return e_ctx.SGX_oftables[bridge_id][table_id].flags & OFTABLE_READONLY;
 }
 
 void
-ecall_oftable_hidden_check(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
+ecall_oftable_hidden_check(uint8_t bridge_id){
     int i;
-    for (i = 0; i + 1 < e_ctx->SGX_n_tables[bridge_id]; i++) {
-        enum oftable_flags flags      = e_ctx->SGX_oftables[bridge_id][i].flags;
-        enum oftable_flags next_flags = e_ctx->SGX_oftables[bridge_id][i + 1].flags;
+    for (i = 0; i + 1 < e_ctx.SGX_n_tables[bridge_id]; i++) {
+        enum oftable_flags flags      = e_ctx.SGX_oftables[bridge_id][i].flags;
+        enum oftable_flags next_flags = e_ctx.SGX_oftables[bridge_id][i + 1].flags;
         ovs_assert(!(flags & OFTABLE_HIDDEN) || (next_flags & OFTABLE_HIDDEN));
     }
 }
@@ -91,10 +91,10 @@ ecall_oftable_hidden_check(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
 
 // Takes rougly 10000 - 12000 clock cycles.
 void
-ecall_oftable_classifier_replace(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct cls_rule *ut_cr, struct cls_rule **cls_rule_rtrn){
-    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(e_ctx, bridge_id, ut_cr);
+ecall_oftable_classifier_replace(uint8_t bridge_id, uint8_t table_id, struct cls_rule *ut_cr, struct cls_rule **cls_rule_rtrn){
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, ut_cr);
     struct cls_rule * cls_rule = NULL;
-    cls_rule = classifier_replace(&e_ctx->SGX_oftables[bridge_id][table_id].cls, &sgx_cls_rule->cls_rule);
+    cls_rule = classifier_replace(&e_ctx.SGX_oftables[bridge_id][table_id].cls, &sgx_cls_rule->cls_rule);
     if (cls_rule) {
         struct sgx_cls_rule * sgx_cls_rule_r = CONTAINER_OF(cls_rule, struct sgx_cls_rule, cls_rule);
         *cls_rule_rtrn = sgx_cls_rule_r->o_cls_rule;
@@ -104,26 +104,26 @@ ecall_oftable_classifier_replace(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_i
 }
 
 int
-ecall_oftable_is_other_table(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int id){
-    if (e_ctx->SGX_table_dpif[bridge_id][id].other_table) {
+ecall_oftable_is_other_table(uint8_t bridge_id, int id){
+    if (e_ctx.SGX_table_dpif[bridge_id][id].other_table) {
         return 1;
     }
     return 0;
 }
 
 int
-ecall_oftable_update_taggable(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
+ecall_oftable_update_taggable(uint8_t bridge_id, uint8_t table_id){
     // SGX_table_dpif[table_id]
     struct cls_table * catchall, * other;
     struct cls_table * t;
 
     catchall = other = NULL;
-    switch (hmap_count(&e_ctx->SGX_oftables[bridge_id][table_id].cls.tables)) {
+    switch (hmap_count(&e_ctx.SGX_oftables[bridge_id][table_id].cls.tables)) {
         case 0:
             break;
         case 1:
         case 2:
-            HMAP_FOR_EACH(t, hmap_node, &e_ctx->SGX_oftables[bridge_id][table_id].cls.tables){
+            HMAP_FOR_EACH(t, hmap_node, &e_ctx.SGX_oftables[bridge_id][table_id].cls.tables){
                 if (cls_table_is_catchall(t)) {
                     catchall = t;
                 } else if (!other)  {
@@ -137,10 +137,10 @@ ecall_oftable_update_taggable(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, 
             break;
     }
 
-    if (e_ctx->SGX_table_dpif[bridge_id][table_id].catchall_table != catchall ||
-      e_ctx->SGX_table_dpif[bridge_id][table_id].other_table != other) {
-        e_ctx->SGX_table_dpif[bridge_id][table_id].catchall_table = catchall;
-        e_ctx->SGX_table_dpif[bridge_id][table_id].other_table    = other;
+    if (e_ctx.SGX_table_dpif[bridge_id][table_id].catchall_table != catchall ||
+      e_ctx.SGX_table_dpif[bridge_id][table_id].other_table != other) {
+        e_ctx.SGX_table_dpif[bridge_id][table_id].catchall_table = catchall;
+        e_ctx.SGX_table_dpif[bridge_id][table_id].other_table    = other;
         return 4; // REV_FLOW_TABLE
     }
 
@@ -151,9 +151,9 @@ ecall_oftable_update_taggable(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, 
  * same matching criteria as 'target'.  Returns a null pointer if 'cls' doesn't
  * contain an exact match. */
 void
-ecall_oftable_cls_find_match_exactly(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, const struct match * target, unsigned int priority,
+ecall_oftable_cls_find_match_exactly(uint8_t bridge_id, uint8_t table_id, const struct match * target, unsigned int priority,
   struct cls_rule ** o_cls_rule){
-    struct cls_rule * cls_rule = classifier_find_match_exactly(&e_ctx->SGX_oftables[bridge_id][table_id].cls, target, priority);
+    struct cls_rule * cls_rule = classifier_find_match_exactly(&e_ctx.SGX_oftables[bridge_id][table_id].cls, target, priority);
 
     *o_cls_rule = cls_rule ?
       CONTAINER_OF(cls_rule, struct sgx_cls_rule, cls_rule)->o_cls_rule :
@@ -161,10 +161,10 @@ ecall_oftable_cls_find_match_exactly(struct ovs_enclave_ctx *e_ctx, uint8_t brid
 }
 
 void
-ecall_oftable_cls_lookup(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule **ut_cr, uint8_t table_id, const struct flow *flow,
+ecall_oftable_cls_lookup(uint8_t bridge_id, struct cls_rule **ut_cr, uint8_t table_id, const struct flow *flow,
   struct flow_wildcards * wc){
     struct cls_rule * cls_rule;
-    cls_rule = classifier_lookup(&e_ctx->SGX_oftables[bridge_id][table_id].cls, flow, wc);
+    cls_rule = classifier_lookup(&e_ctx.SGX_oftables[bridge_id][table_id].cls, flow, wc);
     if (cls_rule) {
         // Need to retrieve the sgx_cls_rule and return the pointer
         // to untrusted memory
@@ -176,7 +176,7 @@ ecall_oftable_cls_lookup(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struc
 }
 
 size_t
-ecall_collect_rules_loose_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, struct cls_rule ** buf, int elem, uint8_t table_id,
+ecall_collect_rules_loose_r(uint8_t bridge_id, int ofproto_n_tables, struct cls_rule ** buf, int elem, uint8_t table_id,
   const struct match * match){
     struct oftable * table;
     struct cls_rule cr;
@@ -184,7 +184,7 @@ ecall_collect_rules_loose_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, in
 
     sgx_cls_rule_init_i(bridge_id, &cr, match, 0);
     size_t p = 0;
-    FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables, e_ctx){
+    FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables){
         struct cls_cursor cursor;
         struct sgx_cls_rule * rule;
 
@@ -207,23 +207,23 @@ ecall_collect_rules_loose_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, in
 }
 
 size_t
-ecall_collect_rules_loose_c(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id, const struct match * match){
-    return ecall_collect_rules_loose_r(e_ctx, bridge_id, ofproto_n_tables, NULL, -1, table_id, match);
+ecall_collect_rules_loose_c(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id, const struct match * match){
+    return ecall_collect_rules_loose_r(bridge_id, ofproto_n_tables, NULL, -1, table_id, match);
 }
 
 size_t
-ecall_flush_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule ** buf, int elem){
+ecall_flush_r(uint8_t bridge_id, struct cls_rule ** buf, int elem){
     size_t p = 0;
     bool count_only = buf == NULL ? true : false;
 
     int i;
-    for (i = 0; i < e_ctx->SGX_n_tables[bridge_id]; i++) {
+    for (i = 0; i < e_ctx.SGX_n_tables[bridge_id]; i++) {
         struct sgx_cls_rule * rule, * next_rule;
         struct cls_cursor cursor;
-        if (e_ctx->SGX_oftables[bridge_id][i].flags & OFTABLE_HIDDEN) {
+        if (e_ctx.SGX_oftables[bridge_id][i].flags & OFTABLE_HIDDEN) {
             continue;
         }
-        cls_cursor_init(&cursor, &e_ctx->SGX_oftables[bridge_id][i].cls, NULL);
+        cls_cursor_init(&cursor, &e_ctx.SGX_oftables[bridge_id][i].cls, NULL);
         CLS_CURSOR_FOR_EACH_SAFE(rule, next_rule, cls_rule, &cursor){
             if(count_only) {
                 p++;
@@ -241,12 +241,12 @@ ecall_flush_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule 
 }
 
 size_t
-ecall_flush_c(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
-    return ecall_flush_r(e_ctx, bridge_id, NULL, -1);
+ecall_flush_c(uint8_t bridge_id){
+    return ecall_flush_r(bridge_id, NULL, -1);
 }
 
 size_t
-ecall_collect_rules_strict_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, struct cls_rule ** buf, int elem, uint8_t table_id,
+ecall_collect_rules_strict_r(uint8_t bridge_id, int ofproto_n_tables, struct cls_rule ** buf, int elem, uint8_t table_id,
   const struct match * match,
   unsigned int priority){
     struct oftable * table;
@@ -255,7 +255,7 @@ ecall_collect_rules_strict_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, i
 
     sgx_cls_rule_init_i(bridge_id, &cr, match, priority);
     size_t p = 0;
-    FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables, e_ctx){
+    FOR_EACH_MATCHING_TABLE(bridge_id, table, table_id, ofproto_n_tables){
         struct cls_rule * cls_rule = classifier_find_rule_exactly(&table->cls, &cr);
 
         if (cls_rule) {
@@ -277,8 +277,8 @@ ecall_collect_rules_strict_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, i
 }
 
 size_t
-ecall_collect_rules_strict_c(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id, const struct match * match, unsigned int priority){
-    return ecall_collect_rules_strict_r(e_ctx, bridge_id, ofproto_n_tables, NULL, -1, table_id, match, priority);
+ecall_collect_rules_strict_c(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id, const struct match * match, unsigned int priority){
+    return ecall_collect_rules_strict_r(bridge_id, ofproto_n_tables, NULL, -1, table_id, match, priority);
 }
 
 
@@ -293,10 +293,10 @@ ecall_oftable_get_cls_rules(uint8_t bridge_id,
                     size_t buf_size,
                     size_t *n_rules) {
 
-/*    size_t n = 0, i = 0;
+    size_t n = 0, i = 0;
     struct cls_cursor cursor;
     struct sgx_cls_rule * rule;
-    cls_cursor_init(&cursor, &SGX_oftables[bridge_id][table_id].cls, NULL);
+    cls_cursor_init(&cursor, &e_ctx.SGX_oftables[bridge_id][table_id].cls, NULL);
     CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
         bool buffer_is_full = n >= buf_size;
         // We only want to fetch the rules between [start, end)
@@ -308,7 +308,7 @@ ecall_oftable_get_cls_rules(uint8_t bridge_id,
         buf[n++] = rule->o_cls_rule;
     }
     *n_rules = i;
-    return n;*/
+    return n;
 }
 
 uint32_t
@@ -354,7 +354,7 @@ ecall_oftable_configure(uint8_t bridge_id,
                      bool *is_read_only)
 {
 
-    /*ecall_oftable_set_name(bridge_id, table_id, name);
+    ecall_oftable_set_name(bridge_id, table_id, name);
 
     if(ecall_oftable_is_readonly(bridge_id, table_id)){
         *is_read_only = true;
@@ -372,7 +372,7 @@ ecall_oftable_configure(uint8_t bridge_id,
         struct cls_cursor cursor;
         struct sgx_cls_rule *sgx_rule;
         struct rule *rule;
-        cls_cursor_init(&cursor, &SGX_oftables[bridge_id][table_id].cls, NULL);
+        cls_cursor_init(&cursor, &e_ctx.SGX_oftables[bridge_id][table_id].cls, NULL);
         CLS_CURSOR_FOR_EACH(sgx_rule, cls_rule, &cursor){
             rule = CONTAINER_OF(sgx_rule->o_cls_rule, struct rule, cr);
             if(!(rule->hard_timeout || rule->idle_timeout)) {
@@ -390,12 +390,12 @@ ecall_oftable_configure(uint8_t bridge_id,
 
     exit:
     ecall_oftable_mflows_set(bridge_id, table_id, max_flows);
-    *need_to_evict = ecall_need_to_evict(bridge_id, table_id);*/
+    *need_to_evict = ecall_need_to_evict(bridge_id, table_id);
 }
 
 void
 ecall_oftable_remove_rules(uint8_t bridge_id, uint8_t *table_ids, struct cls_rule **rules, bool *is_hidden, size_t n_rules) {
-    /*struct rule *rule = NULL;
+    struct rule *rule = NULL;
     for(size_t i = 0; i < n_rules; ++i) {
         is_hidden[i] = ecall_cr_priority(bridge_id, rules[i]) > UINT16_MAX;
         rule = CONTAINER_OF(rules[i], struct rule, cr);
@@ -407,7 +407,7 @@ ecall_oftable_remove_rules(uint8_t bridge_id, uint8_t *table_ids, struct cls_rul
             ecall_cls_remove(bridge_id, table_ids[i], rules[i]);
             ecall_evg_remove_rule(bridge_id, table_ids[i], rules[i]);
         }
-    }*/
+    }
 }
 
 void
@@ -426,7 +426,7 @@ ecall_add_flow(uint8_t bridge_id,
              uint16_t *state,
              unsigned int *evict_priority)
  {
-    /* if (ecall_oftable_is_readonly(bridge_id, table_id)){
+     if (ecall_oftable_is_readonly(bridge_id, table_id)){
          //is_read_only
          *state |= (1 << 4);
          return;
@@ -495,7 +495,7 @@ ecall_add_flow(uint8_t bridge_id,
      add_rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, table_id);
 
      //*is_hidden
-     *state |= ((ecall_cr_priority(bridge_id, cr) > UINT16_MAX) << 5);*/
+     *state |= ((ecall_cr_priority(bridge_id, cr) > UINT16_MAX) << 5);
 
  }
 
@@ -519,7 +519,7 @@ ecall_add_flow(uint8_t bridge_id,
                          bool *postpone,
                          size_t *n_rules)
  {
-    /* size_t n;
+    size_t n;
      n = ecall_collect_rules_loose(
          bridge_id, table_id, n_tables, offset, match, ut_crs, buffer_size, cookie, cookie_mask, out_port, postpone, n_rules
      );
@@ -547,7 +547,7 @@ ecall_add_flow(uint8_t bridge_id,
          bridge_id, ut_crs, rule_hashes, rule_priorities, matches, n
      );
 
-     return n;*/
+     return n;
  }
 
 
@@ -569,7 +569,7 @@ ecall_delete_flows_strict(uint8_t bridge_id,
                         bool *ofproto_postpone,
                         size_t buffer_size)
 {
-/*    size_t n;
+    size_t n;
     n = ecall_collect_rules_strict(
         bridge_id, table_id, ofproto_n_tables, match, priority, cookie, cookie_mask, out_port, ut_crs, ofproto_postpone, buffer_size
     );
@@ -596,7 +596,7 @@ ecall_delete_flows_strict(uint8_t bridge_id,
         bridge_id, ut_crs, rule_hashes, rule_priorities, matches, n
     );
 
-    return n;*/
+    return n;
 }
 
 size_t
@@ -614,7 +614,7 @@ ecall_modify_flows_strict(uint8_t bridge_id,
                         bool *ofproto_postpone,
                         size_t buffer_size)
 {
-    /*size_t n;
+    size_t n;
     n = ecall_collect_rules_strict(
         bridge_id, table_id, ofproto_n_tables, match, priority, cookie, cookie_mask, out_port, cls_rule_buffer, ofproto_postpone, buffer_size
     );
@@ -630,7 +630,7 @@ ecall_modify_flows_strict(uint8_t bridge_id,
         rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, rule->table_id);
         rule->is_other_table = ecall_oftable_is_other_table(bridge_id, rule->table_id);
     }
-    return n;*/
+    return n;
 }
 
  size_t
@@ -646,7 +646,7 @@ ecall_modify_flows_strict(uint8_t bridge_id,
                               bool *ofproto_postpone,
                               size_t buffer_size)
   {
-     /* struct oftable * table;
+      struct oftable * table;
       struct cls_rule cr;
       size_t n = 0;
       sgx_cls_rule_init_i(bridge_id, &cr, match, priority);
@@ -674,7 +674,7 @@ ecall_modify_flows_strict(uint8_t bridge_id,
       }
       exit:
       cls_rule_destroy(&cr);
-      return n;*/
+      return n;
   }
 
 size_t
@@ -693,7 +693,7 @@ ecall_modify_flows_loose(uint8_t bridge_id,
                         bool *postpone,
                         size_t *n_rules)
 {
-    /*size_t n;
+    size_t n;
     n = ecall_collect_rules_loose(
         bridge_id, table_id, n_tables, offset, match, cr_rules, buffer_size, cookie, cookie_mask, out_port, postpone, n_rules
     );
@@ -710,7 +710,7 @@ ecall_modify_flows_loose(uint8_t bridge_id,
         rule->table_update_taggable = ecall_oftable_update_taggable(bridge_id, rule->table_id);
         rule->is_other_table = ecall_oftable_is_other_table(bridge_id, rule->table_id);
     }
-    return n;*/
+    return n;
 }
 
 
@@ -727,7 +727,7 @@ ecall_modify_flows_loose(uint8_t bridge_id,
                             bool *postpone,
                             size_t *n_rules)
    {
-       /*struct oftable * table;
+       struct oftable * table;
        struct cls_rule cr;
        sgx_cls_rule_init_i(bridge_id, &cr, match, 0);
        size_t n = 0, count = 0;
@@ -764,28 +764,28 @@ ecall_modify_flows_loose(uint8_t bridge_id,
        exit:
        cls_rule_destroy(&cr);
        *n_rules = count;
-       return n;*/
+       return n;
    }
 
 
 
 void
 ecall_configure_tables(uint8_t bridge_id, int n_tables, uint32_t time_boot_msec, struct ofproto_table_settings *settings, bool *need_to_evict) {
-    /*bool is_read_only = false;
+    bool is_read_only = false;
     struct ofproto_table_settings s;
     for(int table_id = 0; table_id < n_tables; table_id++) {
         ovs_assert(table_id >= 0 && table_id < n_tables);
         s = settings[table_id];
         ecall_oftable_configure(bridge_id, table_id, s.name, s.max_flows, s.groups, s.n_groups, time_boot_msec, &need_to_evict[table_id], &is_read_only);
-    }*/
+    }
 }
 
 // Helpers
 
 void
-sgx_table_cls_init(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
-    e_ctx->SGX_hmap_table[bridge_id] = xmalloc(sizeof(struct sgx_cls_table));
-    hmap_init(&e_ctx->SGX_hmap_table[bridge_id]->cls_rules, NULL);
+sgx_table_cls_init(uint8_t bridge_id){
+    e_ctx.SGX_hmap_table[bridge_id] = xmalloc(sizeof(struct sgx_cls_table));
+    hmap_init(&e_ctx.SGX_hmap_table[bridge_id]->cls_rules, NULL);
 }
 
 void
@@ -796,31 +796,31 @@ oftable_init(struct oftable * table){
 }
 
 void
-sgx_table_dpif_init(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int n_tables){
+sgx_table_dpif_init(uint8_t bridge_id, int n_tables){
     // I need to create the struct SGX_table_dpif in memory
     int i;
 
-    e_ctx->SGX_table_dpif[bridge_id] = xmalloc(n_tables * sizeof(struct SGX_table_dpif));
+    e_ctx.SGX_table_dpif[bridge_id] = xmalloc(n_tables * sizeof(struct SGX_table_dpif));
     for (i = 0; i < n_tables; i++) {
-        e_ctx->SGX_table_dpif[bridge_id][i].catchall_table = NULL;
-        e_ctx->SGX_table_dpif[bridge_id][i].other_table    = NULL;
+        e_ctx.SGX_table_dpif[bridge_id][i].catchall_table = NULL;
+        e_ctx.SGX_table_dpif[bridge_id][i].other_table    = NULL;
     }
 }
 
 void
-sgx_oftable_destroy(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    ovs_assert(classifier_is_empty(&e_ctx->SGX_oftables[bridge_id][table_id].cls));
-    ecall_oftable_disable_eviction(e_ctx, bridge_id, table_id);
-    classifier_destroy(&e_ctx->SGX_oftables[bridge_id][table_id].cls);
-    free(e_ctx->SGX_oftables[bridge_id][table_id].name);
+sgx_oftable_destroy(uint8_t bridge_id, uint8_t table_id){
+    ovs_assert(classifier_is_empty(&e_ctx.SGX_oftables[bridge_id][table_id].cls));
+    ecall_oftable_disable_eviction(bridge_id, table_id);
+    classifier_destroy(&e_ctx.SGX_oftables[bridge_id][table_id].cls);
+    free(e_ctx.SGX_oftables[bridge_id][table_id].name);
 }
 
 struct oftable *
-next_visible_table(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id){
+next_visible_table(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id){
     struct oftable * table;
 
-    for (table = &e_ctx->SGX_oftables[bridge_id][table_id];
-      table < &e_ctx->SGX_oftables[bridge_id][ofproto_n_tables];
+    for (table = &e_ctx.SGX_oftables[bridge_id][table_id];
+      table < &e_ctx.SGX_oftables[bridge_id][ofproto_n_tables];
       table++)
     {
         if (!(table->flags & OFTABLE_HIDDEN)) {
@@ -831,20 +831,20 @@ next_visible_table(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto
 }
 
 struct oftable *
-first_matching_table(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id){
+first_matching_table(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id){
     if (table_id == 0xff) {
-        return next_visible_table(e_ctx, bridge_id, ofproto_n_tables, 0);
+        return next_visible_table(bridge_id, ofproto_n_tables, 0);
     } else if (table_id < ofproto_n_tables) {
-        return &e_ctx->SGX_oftables[bridge_id][table_id];
+        return &e_ctx.SGX_oftables[bridge_id][table_id];
     } else {
         return NULL;
     }
 }
 
 struct oftable *
-next_matching_table(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, int ofproto_n_tables, const struct oftable * table, uint8_t table_id){
+next_matching_table(uint8_t bridge_id, int ofproto_n_tables, const struct oftable * table, uint8_t table_id){
     return (table_id == 0xff ?
-      next_visible_table(e_ctx, bridge_id, ofproto_n_tables, (table - e_ctx->SGX_oftables[bridge_id]) + 1) :
+      next_visible_table(bridge_id, ofproto_n_tables, (table - e_ctx.SGX_oftables[bridge_id]) + 1) :
       NULL);
 }
 
@@ -856,10 +856,10 @@ delete_flows(uint8_t bridge_id,
                  struct match *match,
                  size_t n)
 {
-    /*struct rule *rule;
+    struct rule *rule;
     for(int i = 0; i < n; ++i) {
         rule = CONTAINER_OF(cls_rules[i], struct rule, cr);
         ecall_cls_remove(bridge_id, rule->table_id, cls_rules[i]);
         ecall_evg_remove_rule(bridge_id, rule->table_id, cls_rules[i]);
-    }*/
+    }
 }

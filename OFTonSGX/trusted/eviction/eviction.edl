@@ -4,7 +4,7 @@ enclave {
 
 		// Vanilla ECALLS
 
-        /*public
+        public
         int ecall_is_eviction_fields_enabled(uint8_t bridge_id, uint8_t table_id);
 		public
 		void ecall_evg_add_rule(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule *o_cls_rule, [user_check]uint32_t *priority,uint32_t rule_evict_prioriy);
@@ -36,7 +36,7 @@ enclave {
 		ecall_backup_and_set_evictable(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr, bool new_value);
 
 		public void
-		ecall_rule_update_used(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr, uint32_t eviction_rule_priority);*/
+		ecall_rule_update_used(uint8_t bridge_id, [user_check] struct cls_rule *ut_cr, uint32_t eviction_rule_priority);
 
 		// Optimized ECALLS
 

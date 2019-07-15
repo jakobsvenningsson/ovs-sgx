@@ -76,7 +76,6 @@ sgx_ofproto_init_tables(int n_tables){
     sm_ctx.mem.function_cache_size[hotcall_ecall_oftable_get_flags] = 10;
     sm_ctx.mem.function_cache_size[hotcall_ecall_cr_priority] = 10;
     sm_ctx.mem.function_cache_size[hotcall_ecall_oftable_cls_count] = 10;
-
     #endif
 
     #ifdef HOTCALL
@@ -231,7 +230,7 @@ SGX_rule_get_flags(uint8_t bridge_id, uint8_t table_id){
 int
 SGX_cls_count(uint8_t bridge_id, uint8_t table_id){
     int ecall_return;
-    #ifdef MEMOIZE
+    #ifdef MEMOIZE1
     uint32_t tmp[] = { bridge_id, table_id };
     uint32_t hash = hcall_hash_words(tmp, 2, 0);
     HCALL(
@@ -361,7 +360,7 @@ SGX_table_mflows(uint8_t bridge_id, uint8_t table_id){
 
 void
 SGX_table_mflows_set(uint8_t bridge_id, uint8_t table_id, unsigned int new_value){
-    #ifdef MEMOIZE
+    #ifdef MEMOIZE1
     HCALL(
         CONFIG(
             .function_id = hotcall_ecall_oftable_mflows_set,

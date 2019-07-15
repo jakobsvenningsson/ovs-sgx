@@ -18,27 +18,27 @@ extern const struct batch_allocator evg_ba;*/
 // Vanilla ECALLS
 
 int
-ecall_is_eviction_fields_enabled(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    return  e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields ? true : false;
+ecall_is_eviction_fields_enabled(uint8_t bridge_id, uint8_t table_id){
+    return  e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields ? true : false;
 }
 
 void
-ecall_evg_add_rule(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule, uint32_t *group_priority, uint32_t rule_evict_prioriy){
-    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(e_ctx, bridge_id, o_cls_rule);
+ecall_evg_add_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule, uint32_t *group_priority, uint32_t rule_evict_prioriy){
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
     struct eviction_group * evg;
-    evg = sgx_evg_find(e_ctx, bridge_id, table_id, eviction_group_hash_rule(e_ctx, bridge_id, table_id,
+    evg = sgx_evg_find(bridge_id, table_id, eviction_group_hash_rule(bridge_id, table_id,
           &sgx_cls_rule->cls_rule), group_priority ? *group_priority : eviction_group_priority(0));
     sgx_cls_rule->evict_group   = evg;
     //sgx_cls_rule->rule_evg_node = rule_evg_node;
     heap_insert_ovs(&evg->rules, &sgx_cls_rule->rule_evg_node, rule_evict_prioriy);
     size_t n_rules      = (size_t) heap_count_ovs(&evg->rules);
     size_t new_priority = eviction_group_priority(n_rules);
-    sgx_evg_group_resize(e_ctx, bridge_id, table_id, o_cls_rule, new_priority, evg);
+    sgx_evg_group_resize(bridge_id, table_id, o_cls_rule, new_priority, evg);
 }
 
 void
-ecall_evg_remove_rule(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule){
-    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(e_ctx, bridge_id, o_cls_rule);
+ecall_evg_remove_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule){
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, o_cls_rule);
 
     if (!sgx_cls_rule->evict_group) {
         return;
@@ -48,25 +48,25 @@ ecall_evg_remove_rule(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t 
     heap_remove_ovs(&evg->rules, &sgx_cls_rule->rule_evg_node);
     // Remove heap if its empty, i.e. no eviction groups
     if (heap_is_empty_ovs(&evg->rules)) {
-        sgx_evg_destroy(e_ctx, bridge_id, table_id, evg);
+        sgx_evg_destroy(bridge_id, table_id, evg);
         return;
     }
     // Resize heap to reflect changes in eviction group size
     size_t n_rules = (size_t) heap_count_ovs(&evg->rules);
     uint16_t size  = MIN(UINT16_MAX, n_rules);
     size_t p       = (size << 16) | 123141;//random_uint16();
-    sgx_evg_group_resize(e_ctx, bridge_id, table_id, o_cls_rule, p, evg);
+    sgx_evg_group_resize(bridge_id, table_id, o_cls_rule, p, evg);
     return;
 }
 
 void
-ecall_choose_rule_to_evict(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct cls_rule ** o_cls_rule){
+ecall_choose_rule_to_evict(uint8_t bridge_id, uint8_t table_id, struct cls_rule ** o_cls_rule){
     *o_cls_rule = NULL;
-    if (!e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields) {
+    if (!e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields) {
         return;
     }
     struct eviction_group * evg;
-    HEAP_FOR_EACH(evg, size_node, &e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_size){
+    HEAP_FOR_EACH(evg, size_node, &e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_size){
         struct sgx_cls_rule * sgx_cls_rule;
 
         HEAP_FOR_EACH(sgx_cls_rule, rule_evg_node, &evg->rules){
@@ -80,15 +80,15 @@ ecall_choose_rule_to_evict(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uin
 
 // Choose and return a rule to evict from table, without including the rule itself
 void
-ecall_choose_rule_to_evict_p(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct cls_rule ** ut_cr, struct cls_rule * replacer){
-    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(e_ctx, bridge_id, replacer);
+ecall_choose_rule_to_evict_p(uint8_t bridge_id, uint8_t table_id, struct cls_rule ** ut_cr, struct cls_rule * replacer){
+    struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, replacer);
     bool was_evictable;
 
     was_evictable = sgx_cls_rule->evictable;
     // Make rule we are inserting immune to eviction.
     sgx_cls_rule->evictable = false;
     struct cls_rule * tmp = NULL;
-    ecall_choose_rule_to_evict(e_ctx, bridge_id, table_id, &tmp);
+    ecall_choose_rule_to_evict(bridge_id, table_id, &tmp);
     // Put back old eviction status
     sgx_cls_rule->evictable = was_evictable;
     //return tmp ? tmp : NULL;
@@ -97,59 +97,59 @@ ecall_choose_rule_to_evict_p(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, u
 }
 
 void
-ecall_oftable_disable_eviction(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    if (!e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields) {
+ecall_oftable_disable_eviction(uint8_t bridge_id, uint8_t table_id){
+    if (!e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields) {
         return;
     }
     struct eviction_group * evg, * next;
     HMAP_FOR_EACH_SAFE(evg, next, id_node,
-      &e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_id)
+      &e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_id)
     {
-        sgx_evg_destroy(e_ctx, bridge_id, table_id, evg);
+        sgx_evg_destroy(bridge_id, table_id, evg);
     }
 
-    hmap_destroy(&e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_id);
-    heap_destroy_ovs(&e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
+    hmap_destroy(&e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_id);
+    heap_destroy_ovs(&e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
 
-    free(e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields);
-    e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields   = NULL;
-    e_ctx->SGX_oftables[bridge_id][table_id].n_eviction_fields = 0;
+    free(e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields);
+    e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields   = NULL;
+    e_ctx.SGX_oftables[bridge_id][table_id].n_eviction_fields = 0;
 
 }
 
 void
-ecall_oftable_enable_eviction(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, const struct mf_subfield * fields, size_t n_fields,
+ecall_oftable_enable_eviction(uint8_t bridge_id, uint8_t table_id, const struct mf_subfield * fields, size_t n_fields,
   uint32_t random_v,
   bool * no_change){
-    if (e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields &&
-      n_fields == e_ctx->SGX_oftables[bridge_id][table_id].n_eviction_fields &&
+    if (e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields &&
+      n_fields == e_ctx.SGX_oftables[bridge_id][table_id].n_eviction_fields &&
       (!n_fields ||
-          !memcmp(fields, e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields,
+          !memcmp(fields, e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields,
               n_fields * sizeof *fields)))
     {
         *no_change = true;
         return;
     }
 
-    ecall_oftable_disable_eviction(e_ctx, bridge_id, table_id);
+    ecall_oftable_disable_eviction(bridge_id, table_id);
 
 
-    e_ctx->SGX_oftables[bridge_id][table_id].n_eviction_fields = n_fields;
-    e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields         = xmemdup(fields, n_fields * sizeof *fields);
-    e_ctx->SGX_oftables[bridge_id][table_id].eviction_group_id_basis = random_v;
+    e_ctx.SGX_oftables[bridge_id][table_id].n_eviction_fields = n_fields;
+    e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields         = xmemdup(fields, n_fields * sizeof *fields);
+    e_ctx.SGX_oftables[bridge_id][table_id].eviction_group_id_basis = random_v;
 
-    hmap_init(&e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_id, NULL);
-    heap_init_ovs(&e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
+    hmap_init(&e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_id, NULL);
+    heap_init_ovs(&e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_size);
 }
 
 unsigned int
-ecall_oftable_enable_eviction_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule ** buf, int elem, uint8_t table_id, int *n_cr_rules){
+ecall_oftable_enable_eviction_r(uint8_t bridge_id, struct cls_rule ** buf, int elem, uint8_t table_id, int *n_cr_rules){
     struct cls_cursor cursor;
     struct sgx_cls_rule * rule;
     unsigned int p = 0, n = 0;
     bool count_only = buf == NULL ? true : false;
 
-    cls_cursor_init(&cursor, &e_ctx->SGX_oftables[bridge_id][table_id].cls, NULL);
+    cls_cursor_init(&cursor, &e_ctx.SGX_oftables[bridge_id][table_id].cls, NULL);
     CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
         if (rule) {
             p++;
@@ -167,50 +167,50 @@ ecall_oftable_enable_eviction_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id
 }
 
 unsigned int
-ecall_oftable_enable_eviction_c(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id){
-    return ecall_oftable_enable_eviction_r(e_ctx, bridge_id, NULL, -1, table_id, NULL);
+ecall_oftable_enable_eviction_c(uint8_t bridge_id, uint8_t table_id){
+    return ecall_oftable_enable_eviction_r(bridge_id, NULL, -1, table_id, NULL);
 }
 
 static bool was_evictable;
 
 void
-ecall_backup_evictable(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule *ut_cr) {
+ecall_backup_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
     struct sgx_cls_rule *sgx_cr;
-    sgx_cr = sgx_rule_from_ut_cr(e_ctx, bridge_id, ut_cr);
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
     was_evictable = sgx_cr->evictable;
 }
 
 void
-ecall_restore_evictable(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule *ut_cr) {
+ecall_restore_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
     struct sgx_cls_rule *sgx_cr;
-    sgx_cr = sgx_rule_from_ut_cr(e_ctx, bridge_id, ut_cr);
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
     sgx_cr->evictable = was_evictable;
 }
 
 void
-ecall_set_evictable(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule *ut_cr, bool new_value) {
+ecall_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, bool new_value) {
     struct sgx_cls_rule *sgx_cr;
-    sgx_cr = sgx_rule_from_ut_cr(e_ctx, bridge_id, ut_cr);
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
     sgx_cr->evictable = new_value;
 }
 
 bool
-ecall_is_evictable(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule *ut_cr) {
+ecall_is_evictable(uint8_t bridge_id, struct cls_rule *ut_cr) {
     struct sgx_cls_rule *sgx_cr;
-    sgx_cr = sgx_rule_from_ut_cr(e_ctx, bridge_id, ut_cr);
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
     return sgx_cr->evictable;
 }
 
 void
-ecall_backup_and_set_evictable(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule *ut_cr, bool new_value) {
-    ecall_backup_evictable(e_ctx, bridge_id, ut_cr);
-    ecall_set_evictable(e_ctx, bridge_id, ut_cr, new_value);
+ecall_backup_and_set_evictable(uint8_t bridge_id, struct cls_rule *ut_cr, bool new_value) {
+    ecall_backup_evictable(bridge_id, ut_cr);
+    ecall_set_evictable(bridge_id, ut_cr, new_value);
 }
 
 void
-ecall_rule_update_used(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t eviction_rule_priority) {
+ecall_rule_update_used(uint8_t bridge_id, struct cls_rule *ut_cr, uint32_t eviction_rule_priority) {
     struct sgx_cls_rule *sgx_cr;
-    sgx_cr = sgx_rule_from_ut_cr(e_ctx, bridge_id, ut_cr);
+    sgx_cr = sgx_rule_from_ut_cr(bridge_id, ut_cr);
     struct eviction_group *evg = sgx_cr->evict_group;
     if (evg) {
         heap_change_ovs(&evg->rules, &sgx_cr->rule_evg_node, eviction_rule_priority);
@@ -229,7 +229,7 @@ ecall_ofproto_evict(uint8_t bridge_id,
                     size_t *n_evictions)
 {
 
-    /*size_t n = 0, total_nr_evictions = 0;
+    size_t n = 0, total_nr_evictions = 0;
 
     for(size_t table_id = 0; table_id < ofproto_n_tables; table_id++){
         if(!ecall_is_eviction_fields_enabled(bridge_id, table_id)) {
@@ -278,49 +278,49 @@ ecall_ofproto_evict(uint8_t bridge_id,
     exit:
     *n_evictions = total_nr_evictions;
 
-    return n;*/
+    return n;
 }
 
 bool
 ecall_need_to_evict(uint8_t bridge_id, uint8_t table_id) {
-    /*bool eviction_is_enabled = ecall_is_eviction_fields_enabled(bridge_id, table_id);
+    bool eviction_is_enabled = ecall_is_eviction_fields_enabled(bridge_id, table_id);
     bool overflow = ecall_oftable_cls_count(bridge_id, table_id) > ecall_oftable_mflows(bridge_id, table_id);
-    return eviction_is_enabled && overflow;*/
+    return eviction_is_enabled && overflow;
 }
 
 // Helpers
 
 static struct eviction_group *
-sgx_evg_find(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, uint32_t evg_id, uint32_t priority){
+sgx_evg_find(uint8_t bridge_id, uint8_t table_id, uint32_t evg_id, uint32_t priority){
     struct eviction_group * evg;
 
-    HMAP_FOR_EACH_WITH_HASH(evg, id_node, evg_id, &e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_id){
+    HMAP_FOR_EACH_WITH_HASH(evg, id_node, evg_id, &e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_id){
         return evg;
     }
     #ifdef BATCH_ALLOCATION
     struct bblock *b;
-    b = batch_allocator_get_block(&e_ctx->evg_ba);
+    b = batch_allocator_get_block(&e_ctx.evg_ba);
     evg = (struct eviction_group *) b->ptr;
     evg->block_list_node = &b->list_node;
     #else
     evg = xmalloc(sizeof *evg);
     #endif
-    hmap_insert(&e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node, evg_id, NULL, 0);
-    heap_insert_ovs(&e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_size, &evg->size_node, priority);
+    hmap_insert(&e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node, evg_id, NULL, 0);
+    heap_insert_ovs(&e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_size, &evg->size_node, priority);
     heap_init_ovs(&evg->rules);
     return evg;
 }
 
 static uint32_t
-eviction_group_hash_rule(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct cls_rule * cls_rule){
+eviction_group_hash_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * cls_rule){
     const struct mf_subfield * sf;
     struct flow flow;
     uint32_t hash;
 
-    hash = e_ctx->SGX_oftables[bridge_id][table_id].eviction_group_id_basis;
+    hash = e_ctx.SGX_oftables[bridge_id][table_id].eviction_group_id_basis;
     miniflow_expand(&cls_rule->match.flow, &flow);
-    for (sf = e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields;
-      sf < &e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields[e_ctx->SGX_oftables[bridge_id][table_id].n_eviction_fields];
+    for (sf = e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields;
+      sf < &e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields[e_ctx.SGX_oftables[bridge_id][table_id].n_eviction_fields];
       sf++)
     {
         if (mf_are_prereqs_ok(sf->field, &flow)) {
@@ -347,17 +347,17 @@ eviction_group_hash_rule(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8
  * removes all the rules, if any, from evg. it does not destroy the rules just removes them from the eviction group.
  */
 void
-sgx_evg_destroy(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct eviction_group * evg){
+sgx_evg_destroy(uint8_t bridge_id, uint8_t table_id, struct eviction_group * evg){
     while (!heap_is_empty_ovs(&evg->rules)) {
         struct sgx_cls_rule * sgx_cls_rule = CONTAINER_OF(heap_pop_ovs(&evg->rules), struct sgx_cls_rule, rule_evg_node);
         sgx_cls_rule->evict_group = NULL;
     }
-    hmap_remove(&e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node);
-    heap_remove_ovs(&e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_size, &evg->size_node);
+    hmap_remove(&e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_id, &evg->id_node);
+    heap_remove_ovs(&e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_size, &evg->size_node);
     heap_destroy_ovs(&evg->rules);
 
     #ifdef BATCH_ALLOCATION
-    batch_allocator_free_block(&e_ctx->evg_ba, evg->block_list_node);
+    batch_allocator_free_block(&e_ctx.evg_ba, evg->block_list_node);
     #else
     free(evg);
     #endif
@@ -365,14 +365,14 @@ sgx_evg_destroy(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_
 
 
 void
-choose_rule_to_evict(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct sgx_cls_rule ** o_cls_rule, struct sgx_cls_rule **exclude_rules, size_t n_excluded){
+choose_rule_to_evict(uint8_t bridge_id, uint8_t table_id, struct sgx_cls_rule ** o_cls_rule, struct sgx_cls_rule **exclude_rules, size_t n_excluded){
     *o_cls_rule = NULL;
     struct sgx_cls_rule *victim = NULL;
-    if (!e_ctx->SGX_oftables[bridge_id][table_id].eviction_fields) {
+    if (!e_ctx.SGX_oftables[bridge_id][table_id].eviction_fields) {
         return;
     }
     struct eviction_group * evg;
-    HEAP_FOR_EACH(evg, size_node, &e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_size){
+    HEAP_FOR_EACH(evg, size_node, &e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_size){
         struct sgx_cls_rule * sgx_cls_rule;
 
         HEAP_FOR_EACH(sgx_cls_rule, rule_evg_node, &evg->rules){
@@ -402,9 +402,9 @@ choose_rule_to_evict(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t t
 
 
 void
-sgx_evg_group_resize(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule, size_t priority,
+sgx_evg_group_resize(uint8_t bridge_id, uint8_t table_id, struct cls_rule * o_cls_rule, size_t priority,
   struct eviction_group * evg){
-    struct heap * h      = &e_ctx->SGX_oftables[bridge_id][table_id].eviction_groups_by_size;
+    struct heap * h      = &e_ctx.SGX_oftables[bridge_id][table_id].eviction_groups_by_size;
     struct heap_node * n = &evg->size_node;
     heap_change_ovs(h, n, priority);
 }

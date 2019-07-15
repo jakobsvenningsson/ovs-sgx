@@ -15,10 +15,10 @@
 
 
 struct eviction_group {
+    struct list *block_list_node;
     struct hmap_node id_node;   /* In oftable's "eviction_groups_by_id". */
     struct heap_node size_node; /* In oftable's "eviction_groups_by_size". */
     struct heap rules;          /* Contains "struct rule"s. */
-    struct list *block_list_node;
 };
 
 /* Number of implemented OpenFlow tables. */
@@ -89,12 +89,6 @@ struct oftable {
     struct heap eviction_groups_by_size;
 };
 
-struct oftable_shared {
-    enum oftable_flags flags;
-    bool is_eviction_fields_enabled;
-    char *name;
-    unsigned int max_flows;
-};
 
 struct sgx_cls_table {
 	struct hmap cls_rules;
@@ -102,17 +96,16 @@ struct sgx_cls_table {
 
 //Internal Enclave cls_rule structure
 struct sgx_cls_rule {
-	struct cls_rule  cls_rule; //Pointer of cls_rule in untrusted memory
-	struct cls_rule *o_cls_rule;  //cls rule created in trusted memory
-	struct heap_node rule_evg_node;
+    struct cls_rule  cls_rule;
+    struct heap_node rule_evg_node;
+    struct hmap_node hmap_node;
+	struct cls_rule *o_cls_rule; 
 	struct eviction_group *evict_group;
-	struct hmap_node hmap_node;
     struct list *block_list_node;
-
-
-    bool evictable;              /* If false, prevents eviction. */
     uint16_t hard_timeout;       /* In seconds from ->modified. */
     uint16_t idle_timeout;       /* In seconds from ->used. */
+    bool evictable;              /* If false, prevents eviction. */
+
 };
 
 /*Struct SGX_table_dpif: is a struct to store in trusted memory

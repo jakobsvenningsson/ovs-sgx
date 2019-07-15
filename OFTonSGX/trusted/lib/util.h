@@ -180,7 +180,6 @@ extern "C" {
 
 #endif
 
-void *xmalloc(size_t) MALLOC_LIKE;
 void *xcalloc(size_t, size_t) MALLOC_LIKE;
 void *xzalloc(size_t) MALLOC_LIKE;
 char *xmemdup0(const char *, size_t) MALLOC_LIKE;
@@ -232,4 +231,18 @@ static inline uint32_t get_unaligned_u32(const uint32_t *p_)
 
 void bitwise_zero(void *dst_, unsigned int dst_len, unsigned dst_ofs,
                   unsigned int n_bits);
+
+
+
+static inline void *
+xmalloc(size_t size)
+{
+  void *p = malloc(size ? size : 1);
+  //COVERAGE_INC(util_xalloc);
+  if (p == NULL) {
+      abort();
+  }
+  return p;
+}
+
 #endif /* ENCLAVE_MYENCLAVE_TRUSTED_LIB_UTIL_H_ */

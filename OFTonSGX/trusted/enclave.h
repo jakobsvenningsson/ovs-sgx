@@ -15,10 +15,10 @@
          (TABLE)++)
 
 
- #define FOR_EACH_MATCHING_TABLE(BRIDGE_ID, TABLE, TABLE_ID, OFPROTO, E_CTX)         \
-     for ((TABLE) = first_matching_table(E_CTX, BRIDGE_ID, OFPROTO, TABLE_ID);       \
+ #define FOR_EACH_MATCHING_TABLE(BRIDGE_ID, TABLE, TABLE_ID, OFPROTO)         \
+     for ((TABLE) = first_matching_table(BRIDGE_ID, OFPROTO, TABLE_ID);       \
           (TABLE) != NULL;                                         \
-          (TABLE) = next_matching_table(E_CTX,BRIDGE_ID, OFPROTO, TABLE, TABLE_ID))
+          (TABLE) = next_matching_table(BRIDGE_ID, OFPROTO, TABLE, TABLE_ID))
 
 
 #if defined(__cplusplus)
@@ -26,14 +26,16 @@ extern "C" {
 #endif
 
 struct ovs_enclave_ctx {
-    struct oftable * SGX_oftables[5];
-    struct SGX_table_dpif * SGX_table_dpif[5];
-    int SGX_n_tables[5];
-    struct sgx_cls_table * SGX_hmap_table[5];
     struct batch_allocator cr_ba;
     struct batch_allocator evg_ba;
+    struct oftable * SGX_oftables[5];
+    struct SGX_table_dpif *SGX_table_dpif[5];
+    struct sgx_cls_table *SGX_hmap_table[5];
+    int SGX_n_tables[5];
 };
-//extern struct ovs_enclave_ctx e_ctx;
+
+
+extern struct ovs_enclave_ctx e_ctx;
 
 
 void printf(const char *fmt, ...);

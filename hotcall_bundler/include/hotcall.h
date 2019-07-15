@@ -81,29 +81,30 @@ struct hotcall_batch {
 struct hotcall {
     sgx_thread_mutex_t mutex;
     sgx_spinlock_t spinlock;
-    sgx_thread_cond_t cond;
-    bool run;
-    bool running_function;
-    bool is_done;
-    bool sleeping;
     int timeout_counter;
-    bool hotcall_in_progress;
-    bool is_inside_chain;
     struct hotcall_batch *batch;
     struct ecall_queue_item *ecall;
     int error;
+    bool sleeping;
+    bool hotcall_in_progress;
+    bool is_inside_chain;
+    bool is_done;
+    bool run;
+
 };
 
 struct memoize {
     unsigned int function_cache_size[256];
-    unsigned int max_n_function_caches;
     struct function_cache_ctx *functions[256];
+    unsigned int max_n_function_caches;
+
 };
 
 
 struct shared_memory_ctx {
-    struct memoize mem;
     struct hotcall hcall;
+    char pad[64];
+    struct memoize mem;
     void *custom_object_ptr[MAX_N_VARIABLES];
 };
 

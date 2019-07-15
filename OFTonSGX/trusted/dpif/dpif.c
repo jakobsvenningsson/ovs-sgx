@@ -10,14 +10,14 @@ extern int SGX_n_tables[100];
 extern struct sgx_cls_table * SGX_hmap_table[100];*/
 
 size_t
-ecall_dpif_destroy_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cls_rule ** buf, int elem){
+ecall_dpif_destroy_r(uint8_t bridge_id, struct cls_rule ** buf, int elem){
     size_t p = 0;
     bool count_only = buf == NULL ? true : false;
     int i;
-    for (i = 0; i < e_ctx->SGX_n_tables[bridge_id]; i++) {
+    for (i = 0; i < e_ctx.SGX_n_tables[bridge_id]; i++) {
         struct sgx_cls_rule * rule, * next_rule;
         struct cls_cursor cursor;
-        cls_cursor_init(&cursor, &e_ctx->SGX_oftables[bridge_id][i].cls, NULL);
+        cls_cursor_init(&cursor, &e_ctx.SGX_oftables[bridge_id][i].cls, NULL);
         CLS_CURSOR_FOR_EACH_SAFE(rule, next_rule, cls_rule, &cursor){
             if(count_only) {
                 p++;
@@ -36,6 +36,6 @@ ecall_dpif_destroy_r(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id, struct cl
 }
 
 size_t
-ecall_dpif_destroy_c(struct ovs_enclave_ctx *e_ctx, uint8_t bridge_id){
-    return ecall_dpif_destroy_r(e_ctx, bridge_id, NULL, -1);
+ecall_dpif_destroy_c(uint8_t bridge_id){
+    return ecall_dpif_destroy_r(bridge_id, NULL, -1);
 }

@@ -10,10 +10,9 @@
     }; \
     struct map_config CAT2(MAP_CONFIG_,ID) = CONFIG;\
     struct ecall_queue_item CAT2(QUEUE_ITEM_, ID) = { 0 }; \
-    if(!(SM_CTX)->hcall.batch->ignore_hcalls) { \
-        CAT2(MAP_CONFIG_,ID).n_params = sizeof(CAT2(MAP_ARG_,ID))/sizeof(struct parameter);\
-        hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_MAP, &CAT2(MAP_CONFIG_,ID), CAT2(MAP_ARG_, ID), &CAT2(QUEUE_ITEM_, ID));\
-    }
+    CAT2(MAP_CONFIG_,ID).n_params = sizeof(CAT2(MAP_ARG_,ID))/sizeof(struct parameter);\
+    hotcall_enqueue_item(SM_CTX, QUEUE_ITEM_TYPE_MAP, &CAT2(MAP_CONFIG_,ID), CAT2(MAP_ARG_, ID), &CAT2(QUEUE_ITEM_, ID))
+
 
 #define MAP(CONFIG, ...) \
     _MAP(_sm_ctx, UNIQUE_ID, CONFIG, __VA_ARGS__)

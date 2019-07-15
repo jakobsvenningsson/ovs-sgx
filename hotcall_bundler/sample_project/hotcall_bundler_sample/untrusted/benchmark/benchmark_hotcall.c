@@ -12,9 +12,9 @@ benchmark_hotcall(struct shared_memory_ctx *sm_ctx, unsigned int n_rounds) {
         clear_cache();
         int x;
         BEGIN
-        HCALL(CONFIG(.function_id = hotcall_ecall_always_true, .has_return = true), VAR(x, 'd'));
+        HCALL(CONFIG(.function_id = hotcall_ecall_foo));
         CLOSE
-        
+
         if(i >= warmup) {
             rounds[i - warmup] = GET_TIME
         }
