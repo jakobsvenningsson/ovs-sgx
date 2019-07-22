@@ -157,11 +157,11 @@ hotcall_handle_reduce(struct ecall_queue_item *qi, const struct hotcall_config *
         return;
     }
 
-    void *args[1][n_params];
+    void *args[n_params][1];
     for(int i = 0; i < in_len; ++i) {
         parse_function_arguments(re->params, n_params, i, args);
         hotcall_config->execute_function(re->config->function_id, 1, n_params, args);
-        combine_result(re->config->op, re->params[0].value.vector.fmt, &accumulator, args[0][n_params - 1], i);
+        combine_result(re->config->op, re->params[0].value.vector.fmt, &accumulator, args[n_params - 1][0], i);
     }
     *(int *) re->params[n_params - 1].value.variable.arg = accumulator;
 }

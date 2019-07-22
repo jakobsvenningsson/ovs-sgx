@@ -22,7 +22,5 @@ hotcall_handle_map(struct ecall_queue_item *qi, const struct hotcall_config *hot
 
     void *args[n_iters][n_params];
     parse_arguments(ma->params, n_iters, n_params, args, 0);
-    //execute_function(hotcall_config, ma->config->function_id, n_iters, n_params, args);
-    hotcall_config->execute_function(ma->config->function_id, n_iters, n_params, args);
-
+    execute_function(hotcall_config, ma->config->function_id, n_iters, n_params, args);
 }

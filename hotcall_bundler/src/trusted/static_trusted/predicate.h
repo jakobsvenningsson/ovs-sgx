@@ -65,6 +65,7 @@ op_logical_and(unsigned int n_iters, int x[n_iters], int y[n_iters], int result[
 
 static inline void
 _evaluate_predicate(unsigned int postfix_length, int n_iters, int inputs[postfix_length][n_iters], enum input_type input_types[postfix_length], int result[n_iters]) {
+
     unsigned int stack_pos = 0;
     int *operand1, *operand2;
     enum input_type op1_type, op2_type;
@@ -88,15 +89,14 @@ _evaluate_predicate(unsigned int postfix_length, int n_iters, int inputs[postfix
         }
         operand2 = stack[--stack_pos];
         op2_type = type_stack[stack_pos];
-        if(*operand2 == '!') {
+        if(*operand2 == '!' && type_stack[stack_pos] == NEGATION) {
             operand2 = stack[--stack_pos];
             op2_type = type_stack[stack_pos];
             for(int j = 0; j < n_iters; ++j) operand2[j] = !operand2[j];
         }
-
         operand1 = stack[--stack_pos];
         op1_type = type_stack[stack_pos];
-        if(*operand1 == '!') {
+        if(*operand1 == '!' && type_stack[stack_pos] == NEGATION) {
             operand1 = stack[--stack_pos];
             op1_type = type_stack[stack_pos];
             for(int j = 0; j < n_iters; ++j) operand1[j] = !operand1[j];
@@ -225,13 +225,11 @@ evaluate_vector(const struct vector_parameter *vec_param, unsigned int offset, u
 static inline void
 evaluate_function(struct function_parameter *fun_param, const struct hotcall_config *hotcall_config, int n_iters, int inputs[n_iters], int offset) {
     unsigned int n_params = fun_param->n_params;
-    void *args[n_iters][n_params];
+    void *args[n_params][n_iters];
     parse_arguments(fun_param->params, n_iters, n_params, args, offset);
-    //execute_function(hotcall_config, fun_param->function_id, n_iters, n_params, args);
-    hotcall_config->execute_function(fun_param->function_id, n_iters, n_params, args);
-
+    execute_function(hotcall_config, fun_param->function_id, n_iters, n_params, args);
     for(int k = 0; k < n_iters; ++k) {
-        inputs[k] = *(bool *) args[k][n_params - 1];
+        inputs[k] = *(bool *) args[n_params - 1][k];
     }
 }
 

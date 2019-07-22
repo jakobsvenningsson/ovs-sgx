@@ -56,7 +56,6 @@ hotcall_bundler_C_Files := static_trusted/hotcall_bundler.c \
 						   static_trusted/control_statements/assert.c \
 						   static_trusted/parameter.c \
 						   static_trusted/predicate.c \
-						   static_trusted/cache/cache_trusted.c \
 						   ../lib/hotcall-hmap.c \
 						   ../lib/hotcall-hash.c \
 						   ../lib/hotcall-list.c

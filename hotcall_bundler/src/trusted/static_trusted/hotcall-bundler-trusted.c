@@ -110,13 +110,12 @@ hotcall_execute_ecall(struct ecall_queue_item *qi, struct memoize *mem) {
     parse_function_arguments(fc->params, fc->config->n_params, 0, fc->args);
     execute_function(hotcall_config, fc->config->function_id, 1, fc->config->n_params, fc->args);
     if(fc->config->memoize.on) {
-        memoize_value(mem, fc->config, fc->args[0][fc->config->n_params - 1]);
+        memoize_value(mem, fc->config, fc->args[fc->config->n_params - 1][0], fc->args[fc->config->n_params - 2][0]);
     }
-    /*if(fc->config->memoize_invalidate.n_caches_to_invalidate > 0) {
-        for(int i = 0; i < fc->config->memoize_invalidate.n_caches_to_invalidate; ++i) {
-            invalidate_value_in_cache(mem, fc->config->memoize_invalidate.invalidate_return_value_in_caches[i], fc->args[0][fc->config->n_params - 1], 'd');
-        }
-    }*/
+    for(int i = 0; i < fc->config->memoize_invalidate.n_caches_to_invalidate; ++i) {
+        invalidate_cache_line(mem, &fc->config->memoize_invalidate.caches[i], fc->args[fc->config->n_params - 1][0]);
+    }
+
     return 0;
 }
 

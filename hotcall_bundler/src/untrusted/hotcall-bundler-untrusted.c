@@ -32,8 +32,6 @@ hotcall_init(struct shared_memory_ctx *ctx, sgx_enclave_id_t eid) {
         cache_sz = ctx->mem.function_cache_size[i];
         if(cache_sz == 0) continue;
         mem_ctx = malloc(sizeof(struct function_cache_ctx));
-        //mem_ctx->tmp_lru_idx = 0;
-        //mem_ctx->n_lru = 0;
         entries = malloc(sizeof(struct cache_entry) * cache_sz);
         hcall_list_init(&mem_ctx->lru_list);
         for(int j = 0; j < cache_sz; ++j) {

@@ -9,6 +9,7 @@
 
 static inline void
 hotcall_handle_while_begin(struct ecall_queue_item *qi, const struct hotcall_config *hotcall_config, struct queue_context *queue_ctx, struct batch_status * batch_status) {
+
     struct hotcall_while_start *while_s = &qi->call.while_s;
     struct loop_stack_item *loop_stack = queue_ctx->loop_stack;
     unsigned int loop_stack_pos = queue_ctx->loop_stack_pos, loop_offset = (loop_stack_pos > 0 ? loop_stack[loop_stack_pos - 1].offset : 0);
