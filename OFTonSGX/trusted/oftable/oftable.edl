@@ -22,16 +22,16 @@ enclave {
         ecall_oftable_mflows_set(uint8_t bridge_id, uint8_t table_id,unsigned int value);
         public void
         ecall_oftable_hidden_check(uint8_t bridge_id);
-		public void
-		ecall_oftable_classifier_replace(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule* o_cls_rule,[user_check]struct cls_rule ** cls_rule_rtrn);
+		public struct cls_rule *
+		ecall_oftable_classifier_replace(uint8_t bridge_id, uint8_t table_id,[user_check]struct cls_rule* o_cls_rule);
 		public int
 		ecall_oftable_is_other_table(uint8_t bridge_id, int id);
 		public int
 		ecall_oftable_update_taggable(uint8_t bridge_id, uint8_t table_id);
 		public void
 		ecall_oftable_cls_find_match_exactly(uint8_t bridge_id, uint8_t table_id,[user_check]const struct match *target,unsigned int priority,[user_check]struct cls_rule **o_cls_rule);
-		public void
-		ecall_oftable_cls_lookup(uint8_t bridge_id,[user_check]struct cls_rule **o_cls_rule, uint8_t table_id,[user_check]const struct flow *flow,[user_check]struct flow_wildcards *wc);
+		public struct cls_rule *
+		ecall_oftable_cls_lookup(uint8_t bridge_id, uint8_t table_id,[user_check]const struct flow *flow,[user_check]struct flow_wildcards *wc);
 		public size_t
 		ecall_collect_rules_loose_c(uint8_t bridge_id, int ofproto_n_tables, uint8_t table_id,[user_check]const struct match *match);
 		public size_t

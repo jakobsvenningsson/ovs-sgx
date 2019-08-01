@@ -47,7 +47,6 @@ sgx_ofproto_init_tables(int n_tables){
 
         #ifdef HOTCALL
         printf("HOTCALLS ENABLED.\n");
-        //flow_map_cache_init(&sm_ctx.flow_cache);
         #endif
 
         #ifdef BATCH_ALLOCATION
@@ -76,6 +75,11 @@ sgx_ofproto_init_tables(int n_tables){
     sm_ctx.mem.function_cache_size[hotcall_ecall_oftable_get_flags] = 10;
     sm_ctx.mem.function_cache_size[hotcall_ecall_cr_priority] = 10;
     sm_ctx.mem.function_cache_size[hotcall_ecall_oftable_cls_count] = 10;
+    sm_ctx.mem.function_cache_size[hotcall_ecall_oftable_cls_lookup] = 25;
+    sm_ctx.mem.function_cache_size[hotcall_ecall_cls_rule_hash] = 10;
+    sm_ctx.mem.function_cache_size[hotcall_ecall_cls_rule_equal] = 10;
+    sm_ctx.mem.function_cache_size[hotcall_ecall_minimask_get_vid_mask] = 10;
+    sm_ctx.mem.function_cache_size[hotcall_ecall_miniflow_get_vid] = 10;
     #endif
 
     #ifdef HOTCALL
@@ -87,17 +91,30 @@ sgx_ofproto_init_tables(int n_tables){
     return this_bridge_id;
 }
 
-void
-SGX_async_test() {}
+
+uint32_t
+cls_hash(const struct flow *flow, const struct flow_wildcards *wc, int bridge_id, int table_id) {
+    uint32_t hash;
+    if(wc) {
+        struct minimask m;
+        minimask_init(&m, wc);
+        hash = flow_hash_in_minimask(flow, &m, bridge_id + table_id);
+    } else {
+        hash = flow_hash(flow, bridge_id + table_id);
+    }
+    return hash;
+}
 
 void
 SGX_readonly_set(uint8_t bridge_id, uint8_t table_id){
     #ifdef MEMOIZE
+    uint32_t tmp[] = { bridge_id, table_id };
+    uint32_t hash = hcall_hash_words(tmp, 2, 0);
     HCALL(
         CONFIG(
             .function_id = hotcall_ecall_oftable_set_readonly,
-            .memoize = { 0 }
-            //.memoize_invalidate = { .n_caches_to_invalidate = 1, .invalidate_return_value_in_caches = { hotcall_ecall_oftable_is_readonly }}
+            .memoize = { 0 },
+            .memoize_invalidate = { .n_caches_to_invalidate = 1, .caches = {{ hotcall_ecall_oftable_is_readonly, .type = HASH, .invalidate_element = { .hash = hash }}}}
         ),
         VAR(bridge_id, ui8), VAR(table_id, ui8)
     );
@@ -156,7 +173,14 @@ SGX_cr_rule_overlaps(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_c
 
 void
 SGX_cls_rule_destroy(uint8_t bridge_id, struct cls_rule * ut_cr){
-    #ifdef HOTCALL
+    #ifdef MEMOIZE
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_cls_rule_destroy
+        ),
+        VAR(bridge_id, ui8), PTR(ut_cr, 'p')
+    );
+    #elif HOTCALL
     HCALL(
         CONFIG(.function_id = hotcall_ecall_cls_rule_destroy),
         VAR(bridge_id, ui8), PTR(ut_cr, 'p')
@@ -169,7 +193,14 @@ SGX_cls_rule_destroy(uint8_t bridge_id, struct cls_rule * ut_cr){
 uint32_t
 SGX_cls_rule_hash(uint8_t bridge_id, const struct cls_rule * ut_cr, uint32_t basis){
     uint32_t ecall_return;
-    #ifdef HOTCALL
+    #ifdef MEMOIZE
+    uint32_t tmp[] = { bridge_id, (uintptr_t) ut_cr, basis };
+    uint32_t hash = hcall_hash_words(tmp, 3, 0);
+    HCALL(
+        CONFIG(.function_id = hotcall_ecall_cls_rule_hash, .has_return = true, .memoize = { .on = true, .return_type = 'u', .hash = hash }),
+        VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(basis, ui32), VAR(ecall_return, ui32)
+    );
+    #elif HOTCALL
     HCALL(
         CONFIG(.function_id = hotcall_ecall_cls_rule_hash, .has_return = true),
         VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(basis, ui32), VAR(ecall_return, ui32)
@@ -183,7 +214,14 @@ SGX_cls_rule_hash(uint8_t bridge_id, const struct cls_rule * ut_cr, uint32_t bas
 int
 SGX_cls_rule_equal(uint8_t bridge_id, const struct cls_rule * ut_cr_a, const struct cls_rule * ut_cr_b){
     int ecall_return;
-    #ifdef HOTCALL
+    #ifdef MEMOIZE
+    uint32_t tmp[] = { bridge_id, (uintptr_t) ut_cr_a, (uintptr_t) ut_cr_b };
+    uint32_t hash = hcall_hash_words(tmp, 3, 0);
+    HCALL(
+        CONFIG(.function_id = hotcall_ecall_cls_rule_equal, .has_return = true, .memoize = { .on = true, .return_type = 'd', .hash = hash }),
+        VAR(bridge_id, ui8), PTR(ut_cr_a, 'p'), PTR(ut_cr_b, 'p'), VAR(ecall_return, 'd')
+    );
+    #elif HOTCALL
     HCALL(
         CONFIG(.function_id = hotcall_ecall_cls_rule_equal, .has_return = true),
         VAR(bridge_id, ui8), PTR(ut_cr_a, 'p'), PTR(ut_cr_b, 'p'), VAR(ecall_return, 'd')
@@ -194,16 +232,33 @@ SGX_cls_rule_equal(uint8_t bridge_id, const struct cls_rule * ut_cr_a, const str
     return ecall_return;
 }
 
-void
-SGX_classifier_replace(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_cr_insert, struct cls_rule ** ut_cr_remove){
-    #ifdef HOTCALL
+struct cls_rule *
+SGX_classifier_replace(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_cr_insert){
+    struct cls_rule *ut_cr_remove;
+    #ifdef MEMOIZE
     HCALL(
-        CONFIG(.function_id = hotcall_ecall_oftable_classifier_replace),
-        VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(ut_cr_insert, 'p'), PTR(ut_cr_remove, 'p')
+        CONFIG(
+            .function_id = hotcall_ecall_oftable_classifier_replace,
+            .has_return = true,
+            .memoize_invalidate = {
+                .n_caches_to_invalidate = 2,
+                .caches = {
+                    { hotcall_ecall_oftable_cls_count, .type = CLEAR_CACHE },
+                    { hotcall_ecall_oftable_cls_lookup, .type = CLEAR_CACHE }
+                }
+            }
+        ),
+        VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(ut_cr_insert, 'p'), VAR(ut_cr_remove, 'p')
+    );
+    #elif HOTCALL
+    HCALL(
+        CONFIG(.function_id = hotcall_ecall_oftable_classifier_replace, .has_return = true),
+        VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(ut_cr_insert, 'p'), VAR(ut_cr_remove, 'p')
     );
     #elif SGX
-    ECALL(ecall_oftable_classifier_replace, bridge_id, table_id, ut_cr_insert, ut_cr_remove);
+    ECALL(ecall_oftable_classifier_replace, &ut_cr_remove, bridge_id, table_id, ut_cr_insert);
     #endif
+    return ut_cr_remove;
 }
 
 enum oftable_flags
@@ -230,7 +285,7 @@ SGX_rule_get_flags(uint8_t bridge_id, uint8_t table_id){
 int
 SGX_cls_count(uint8_t bridge_id, uint8_t table_id){
     int ecall_return;
-    #ifdef MEMOIZE1
+    #ifdef MEMOIZE
     uint32_t tmp[] = { bridge_id, table_id };
     uint32_t hash = hcall_hash_words(tmp, 2, 0);
     HCALL(
@@ -293,7 +348,9 @@ void
 SGX_evg_remove_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_cr){
     #ifdef HOTCALL
     HCALL(
-        CONFIG(.function_id = hotcall_ecall_evg_remove_rule),
+        CONFIG(
+            .function_id = hotcall_ecall_evg_remove_rule
+        ),
         VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(ut_cr, 'p')
     );
     #elif SGX
@@ -303,7 +360,18 @@ SGX_evg_remove_rule(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_cr
 
 void
 SGX_cls_remove(uint8_t bridge_id, uint8_t table_id, struct cls_rule * ut_cr){
-    #ifdef HOTCALL
+    #ifdef MEMOIZE
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_cls_remove,
+            .memoize_invalidate = { .n_caches_to_invalidate = 1, .caches = {
+                { hotcall_ecall_oftable_cls_count, .type = CLEAR_CACHE },
+                { hotcall_ecall_oftable_cls_lookup, .type = VALUE, .invalidate_element = { .hash = (uintptr_t) ut_cr }}
+            }}
+        ),
+        VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(ut_cr, 'p')
+    );
+    #elif HOTCALL
     HCALL(
         CONFIG(.function_id = hotcall_ecall_cls_remove),
         VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(ut_cr, 'p')
@@ -360,14 +428,18 @@ SGX_table_mflows(uint8_t bridge_id, uint8_t table_id){
 
 void
 SGX_table_mflows_set(uint8_t bridge_id, uint8_t table_id, unsigned int new_value){
-    #ifdef MEMOIZE1
+    #ifdef MEMOIZE
+    uint32_t tmp[] = { bridge_id, table_id };
+    uint32_t hash = hcall_hash_words(tmp, 2, 0);
     HCALL(
         CONFIG(
             .function_id = hotcall_ecall_oftable_mflows_set,
-            .memoize = { 0 }
-            //.memoize_invalidate = { .n_caches_to_invalidate = 1, .invalidate_return_value_in_caches = { hotcall_ecall_oftable_mflows }}
+            .memoize = { 0 },
+            .memoize_invalidate = { .n_caches_to_invalidate = 1, .caches = {{ hotcall_ecall_oftable_mflows, .type = HASH, .invalidate_element = { .hash = hash }}}}
         ),
-        VAR(bridge_id, ui8), VAR(table_id, ui8)
+        VAR(bridge_id, ui8),
+        VAR(table_id, ui8),
+        VAR(new_value, 'u')
     );
     #elif HOTCALL
     HCALL(
@@ -565,10 +637,7 @@ SGX_oftable_enable_eviction(uint8_t bridge_id, uint8_t table_id, const struct mf
     #ifdef HOTCALL
     HCALL(
         CONFIG(
-            .function_id = hotcall_ecall_oftable_enable_eviction,
-            .memoize = { 0 }
-            //.memoize_invalidate = { .n_caches_to_invalidate = 1, .invalidate_line_in_caches = { hotcall_ecall_is_eviction_fields_enabled, .value = { HASH }}}
-
+            .function_id = hotcall_ecall_oftable_enable_eviction
         ),
         VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(fields), VAR(n_fields, 'u'), VAR(random_v, ui32), PTR(no_change)
     );
@@ -582,9 +651,7 @@ SGX_oftable_disable_eviction(uint8_t bridge_id, uint8_t table_id){
     #ifdef HOTCALL
     HCALL(
         CONFIG(
-            .function_id = hotcall_ecall_oftable_disable_eviction,
-            .memoize = { 0 }
-            //.memoize_invalidate = { .n_caches_to_invalidate = 1, .invalidate_line_in_caches = { hotcall_ecall_is_eviction_fields_enabled, .value = { HASH }}}
+            .function_id = hotcall_ecall_oftable_disable_eviction
         ),
         VAR(bridge_id, ui8), VAR(table_id, ui8));
     #elif SGX
@@ -595,7 +662,11 @@ SGX_oftable_disable_eviction(uint8_t bridge_id, uint8_t table_id){
 void
 SGX_ofproto_destroy(uint8_t bridge_id){
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_ofproto_destroy), VAR(bridge_id, ui8));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_ofproto_destroy
+        ),
+        VAR(bridge_id, ui8));
     #elif SGX
     ECALL(ecall_ofproto_destroy, bridge_id);
     #endif
@@ -627,8 +698,11 @@ int
 SGX_cls_rule_is_loose_match(uint8_t bridge_id, struct cls_rule * ut_cr, const struct minimatch * criteria){
     int result;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_cls_rule_is_loose_match, .has_return = true), VAR(bridge_id, ui8), PTR(ut_cr), PTR(criteria), VAR(result, 'd'));
-
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_cls_rule_is_loose_match,
+            .has_return = true
+        ), VAR(bridge_id, ui8), PTR(ut_cr), PTR(criteria), VAR(result, 'd'));
     #elif SGX
     ECALL(ecall_cls_rule_is_loose_match, &result, bridge_id, ut_cr, criteria);
     #endif
@@ -640,7 +714,12 @@ size_t
 SGX_flush_c(uint8_t bridge_id){
     size_t n;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_flush_c, .has_return = true), VAR(bridge_id, ui8), VAR(n, 'u'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_flush_c,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), VAR(n, 'u'));
     #elif SGX
     ECALL(ecall_flush_c, &n, bridge_id);
     #endif
@@ -652,7 +731,12 @@ void
 SGX_flush_r(uint8_t bridge_id, struct cls_rule ** buf, int elem){
     size_t n;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_flush_r, .has_return = true), VAR(bridge_id, ui8), PTR(buf), VAR(elem, 'd'), VAR(n, 'u'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_flush_r,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), PTR(buf), VAR(elem, 'd'), VAR(n, 'u'));
     #elif SGX
     ECALL(ecall_flush_r, &n, bridge_id, buf, elem);
     #endif
@@ -663,7 +747,12 @@ size_t
 SGX_flow_stats_c(uint8_t bridge_id){
     size_t n;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_flow_stats_c, .has_return = true), VAR(bridge_id, ui8), VAR(n, 'u'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_flow_stats_c,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), VAR(n, 'u'));
     #elif SGX
     ECALL(ecall_flow_stats_c, &n, bridge_id);
     #endif
@@ -675,7 +764,12 @@ size_t
 SGX_flow_stats_r(uint8_t bridge_id, struct cls_rule ** buf, int elem){
     size_t n;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_flow_stats_r, .has_return = true), VAR(bridge_id, ui8), PTR(buf), VAR(elem, 'd'), VAR(n, 'u'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_flow_stats_r,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), PTR(buf), VAR(elem, 'd'), VAR(n, 'u'));
     #elif SGX
     ECALL(ecall_flow_stats_r, &n, bridge_id, buf, elem);
     #endif
@@ -683,14 +777,32 @@ SGX_flow_stats_r(uint8_t bridge_id, struct cls_rule ** buf, int elem){
 }
 
 // 33 Classifier_lookup
-void
-SGX_cls_lookup(uint8_t bridge_id, struct cls_rule ** ut_cr, uint8_t table_id, const struct flow *flow,
+struct cls_rule *
+SGX_cls_lookup(uint8_t bridge_id, uint8_t table_id, const struct flow *flow,
   struct flow_wildcards * wc) {
-    #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_cls_lookup), VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(table_id, ui8), PTR(flow, 'p'), PTR(wc, 'p'));
+    struct cls_rule *ut_cr;
+    #ifdef MEMOIZE1
+    uint32_t hash = cls_hash(flow, wc, bridge_id, table_id);
+    uint32_t hash_writeback;
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_oftable_cls_lookup,
+            .has_return = true,
+            .memoize = { .on = true, .return_type = 'p', .manual_update = true, .hash = hash }
+        ),
+        VAR(bridge_id, ui8),
+        VAR(table_id, ui8),
+        PTR(flow, 'p'),
+        PTR(wc, 'p'),
+        VAR(hash_writeback, 'u'),
+        VAR(ut_cr, 'p')
+    );
+    #elif HOTCALL
+    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_cls_lookup, .has_return = true), VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(flow, 'p'), PTR(wc, 'p'), VAR(ut_cr, 'p'));
     #elif SGX
-    ECALL(ecall_oftable_cls_lookup, bridge_id, ut_cr, table_id, flow, wc);
+    ECALL(ecall_oftable_cls_lookup, &ut_cr, bridge_id, table_id, flow, wc);
     #endif
+    return ut_cr;
 }
 
 // Dependencies for destroy
@@ -698,7 +810,12 @@ size_t
 SGX_dpif_destroy_c(uint8_t bridge_id){
     size_t n;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_dpif_destroy_c, .has_return = true), VAR(bridge_id, ui8), VAR(n, 'u'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_dpif_destroy_c,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), VAR(n, 'u'));
     #elif SGX
     ECALL(ecall_dpif_destroy_c, &n, bridge_id);;
     #endif
@@ -710,17 +827,26 @@ void
 SGX_dpif_destroy_r(uint8_t bridge_id, struct cls_rule ** buf, int elem){
     size_t n;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_dpif_destroy_r, .has_return = true), VAR(bridge_id, ui8), PTR(buf), VAR(elem, 'd'), VAR(n, 'u'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_dpif_destroy_r, .has_return = true
+        ),
+        VAR(bridge_id, ui8), PTR(buf), VAR(elem, 'd'), VAR(n, 'u'));
     #elif SGX
     ECALL(ecall_dpif_destroy_r, &n, bridge_id, buf, elem);
     #endif
 }
 
 unsigned int
-SGX_cls_rule_format(uint8_t bridge_id, const struct cls_rule * ut_cr, struct match * megamatch){
+SGX_cls_rule_format(uint8_t bridge_id, const struct cls_rule * ut_cr, struct match *megamatch){
     unsigned int priority;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_cls_rule_format, .has_return = true), VAR(bridge_id, ui8), PTR(ut_cr), PTR(megamatch), VAR(priority, 'u'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_cls_rule_format,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), PTR(ut_cr), PTR(megamatch), VAR(priority, 'u'));
     #elif SGX
     ECALL(ecall_cls_rule_format, &priority, bridge_id, ut_cr, megamatch);
     #endif
@@ -730,7 +856,11 @@ SGX_cls_rule_format(uint8_t bridge_id, const struct cls_rule * ut_cr, struct mat
 void
 SGX_miniflow_expand(uint8_t bridge_id, struct cls_rule * ut_cr, struct flow * flow){
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_miniflow_expand), VAR(bridge_id, ui8), PTR(ut_cr, 'p'), PTR(flow, 'p'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_miniflow_expand
+        ),
+    VAR(bridge_id, ui8), PTR(ut_cr, 'p'), PTR(flow, 'p'));
     #elif SGX
     ECALL(ecall_miniflow_expand, bridge_id, ut_cr, flow);
     #endif
@@ -740,7 +870,12 @@ uint32_t
 SGX_rule_calculate_tag(uint8_t bridge_id, struct cls_rule * ut_cr, const struct flow * flow, uint8_t table_id){
     uint32_t hash;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_rule_calculate_tag, .has_return = true), VAR(bridge_id, ui8), PTR(ut_cr, 'p'), PTR(flow, 'p'), VAR(table_id, ui8), VAR(hash, ui32));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_rule_calculate_tag,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), PTR(ut_cr, 'p'), PTR(flow, 'p'), VAR(table_id, ui8), VAR(hash, ui32));
     #elif SGX
     ECALL(ecall_rule_calculate_tag, &hash, bridge_id, ut_cr, flow, table_id);
     #endif
@@ -756,7 +891,12 @@ SGX_table_update_taggable(uint8_t bridge_id, uint8_t table_id){
     uint32_t tmp[] = { bridge_id, table_id };
     uint32_t hash = hcall_hash_words(tmp, 2, 0);
     HCALL(
-        CONFIG(.function_id = hotcall_ecall_oftable_update_taggable, .has_return = true, .memoize = { .on = true, .return_type = 'd', .hash = hash }),
+        CONFIG(
+            .function_id = hotcall_ecall_oftable_update_taggable,
+            .has_return = true,
+            .memoize = { .on = true, .return_type = 'd', .hash = hash }
+            //.memoize_invalidate = { .n_caches_to_invalidate = 1, .caches = {{ hotcall_ecall_oftable_cls_lookup, .type = CLEAR_CACHE }}}
+        ),
         VAR(bridge_id, ui8), VAR(table_id, ui8), VAR(ecall_return, 'd'));
 
     #elif HOTCALL
@@ -775,7 +915,11 @@ SGX_is_sgx_other_table(uint8_t bridge_id, uint8_t table_id){
     uint32_t tmp[] = { bridge_id, table_id };
     uint32_t hash = hcall_hash_words(tmp, 2, 0);
     HCALL(
-        CONFIG(.function_id = hotcall_ecall_oftable_is_other_table, .has_return = true, .memoize = { .on = true, .return_type = 'd', .hash = hash }),
+        CONFIG(
+            .function_id = hotcall_ecall_oftable_is_other_table,
+            .has_return = true,
+            .memoize = { .on = true, .return_type = 'd', .hash = hash }
+        ),
         VAR(bridge_id, ui8), VAR(table_id, ui8), VAR(ecall_return, 'd'));
 
     #elif HOTCALL
@@ -791,7 +935,11 @@ uint32_t
 SGX_rule_calculate_tag_s(uint8_t bridge_id, uint8_t table_id, const struct flow * flow){
     uint32_t hash;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_rule_calculate_tag_s, .has_return = true), VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(flow, 'p'), VAR(hash, ui32));
+    HCALL(
+        CONFIG(.function_id = hotcall_ecall_rule_calculate_tag_s,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(flow, 'p'), VAR(hash, ui32));
     #elif SGX
     ECALL(ecall_rule_calculate_tag_s, &hash, bridge_id, table_id, flow);
     #endif
@@ -801,7 +949,11 @@ SGX_rule_calculate_tag_s(uint8_t bridge_id, uint8_t table_id, const struct flow 
 void
 sgx_oftable_check_hidden(uint8_t bridge_id){
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_hidden_check), VAR(bridge_id, ui8));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_oftable_hidden_check
+        ),
+        VAR(bridge_id, ui8));
     #elif SGX
     ECALL(ecall_oftable_hidden_check, bridge_id);
     #endif
@@ -810,7 +962,11 @@ sgx_oftable_check_hidden(uint8_t bridge_id){
 void
 SGX_oftable_set_name(uint8_t bridge_id, uint8_t table_id, char * name) {
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_set_name), VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(name, 'p'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_oftable_set_name
+        ),
+        VAR(bridge_id, ui8), VAR(table_id, ui8), PTR(name, 'p'));
     #elif SGX
     ECALL(ecall_oftable_set_name, bridge_id, table_id, name);
     #endif
@@ -819,25 +975,54 @@ SGX_oftable_set_name(uint8_t bridge_id, uint8_t table_id, char * name) {
 // These functions are going to be used by ofopgroup_complete
 uint16_t
 SGX_minimask_get_vid_mask(uint8_t bridge_id, struct cls_rule * ut_cr){
-
     uint16_t ecall_return;
-    #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_minimask_get_vid_mask, .has_return = true), VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(ecall_return, ui16));
+    #ifdef MEMOIZE
+    uint32_t tmp[] = { bridge_id, (uintptr_t) ut_cr };
+    uint32_t hash = hcall_hash_words(tmp, 2, 0);
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_minimask_get_vid_mask,
+            .has_return = true,
+            .memoize = { .on = true, .return_type = ui16, .hash = hash}
+        ),
+        VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(ecall_return, ui16));
+    #elif HOTCALL
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_minimask_get_vid_mask,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(ecall_return, ui16));
     #elif SGX
     ECALL(ecall_minimask_get_vid_mask, &ecall_return, bridge_id, ut_cr);
     #endif
-    return ecall_return;
+    return (uint16_t) ecall_return;
 }
 
 uint16_t
 SGX_miniflow_get_vid(uint8_t bridge_id, struct cls_rule * ut_cr){
-    uint16_t result;
-    #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_miniflow_get_vid, .has_return = true), VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(result, ui16));
+    uint16_t ecall_return;
+    #ifdef MEMOIZE
+    uint32_t tmp[] = { bridge_id, (uintptr_t) ut_cr };
+    uint32_t hash = hcall_hash_words(tmp, 2, 0);
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_miniflow_get_vid,
+            .has_return = true,
+            .memoize = { .on = true, .return_type = ui16, .hash = hash}
+        ),
+        VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(ecall_return, ui16));
+    #elif HOTCALL
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_miniflow_get_vid,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), PTR(ut_cr, 'p'), VAR(ecall_return, ui16));
     #elif SGX
-    ECALL(ecall_miniflow_get_vid, &result, bridge_id, ut_cr);
+    ECALL(ecall_miniflow_get_vid, &ecall_return, bridge_id, ut_cr);
     #endif
-    return result;
+    return ecall_return;
 }
 
 // These functions are depencencies for ofproto_get_vlan_usage
@@ -846,7 +1031,11 @@ size_t
 SGX_ofproto_get_vlan_usage_c(uint8_t bridge_id){
     size_t n;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_ofproto_get_vlan_c, .has_return = true), VAR(bridge_id, ui8), VAR(n, 'd'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_ofproto_get_vlan_c, .has_return = true
+        ),
+        VAR(bridge_id, ui8), VAR(n, 'd'));
     #elif SGX
     ECALL(ecall_ofproto_get_vlan_c, &n, bridge_id);
     #endif
@@ -858,7 +1047,12 @@ void
 SGX_ofproto_get_vlan_usage__r(uint8_t bridge_id, uint16_t * buf, int elem){
     size_t n;
     #ifdef HOTCALL
-    HCALL(CONFIG(.function_id = hotcall_ecall_ofproto_get_vlan_r, .has_return = true), VAR(bridge_id, ui8), PTR(buf, ui16), VAR(elem, 'd'), VAR(n, 'u'));
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_ofproto_get_vlan_r,
+            .has_return = true
+        ),
+        VAR(bridge_id, ui8), PTR(buf, ui16), VAR(elem, 'd'), VAR(n, 'u'));
     #elif SGX
     ECALL(ecall_ofproto_get_vlan_r, &n, bridge_id, buf, elem);
     #endif
@@ -937,7 +1131,23 @@ SGX_ofproto_flush(uint8_t bridge_id,
                   size_t end_index,
                   size_t *n_rules) {
     size_t n;
-    #ifdef HOTCALL
+    #ifdef MEMOIZE111
+    HCALL(
+        CONFIG(
+            .function_id = hotcall_ecall_ofproto_flush,
+            .has_return = true
+            //.memoize_invalidate = { .n_caches_to_invalidate = 1, .caches = {{ hotcall_ecall_oftable_cls_lookup, .type = CLEAR_CACHE }}}
+        ),
+        VAR(bridge_id, ui8),
+        PTR(ut_crs),
+        PTR(hashes),
+        VAR(buf_size, 'u'),
+        VAR(start_index, 'u'),
+        VAR(end_index, 'u'),
+        PTR(n_rules),
+        VAR(n, 'u')
+    );
+    #elif HOTCALL
     HCALL(
         CONFIG(.function_id = hotcall_ecall_ofproto_flush, .has_return = true),
         VAR(bridge_id, ui8),

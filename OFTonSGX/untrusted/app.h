@@ -291,7 +291,7 @@ void SGX_cls_rule_destroy(uint8_t bridge_id, struct cls_rule *o_cls_rule);
 int SGX_cls_rule_equal(uint8_t bridge_id, const struct cls_rule *o_cls_rule_a,
 		const struct cls_rule *o_cls_rule_b);
 uint32_t SGX_cls_rule_hash(uint8_t bridge_id, const struct cls_rule *o_cls_rule, uint32_t basis);
-void SGX_classifier_replace(uint8_t bridge_id, uint8_t table_id,struct cls_rule* o_cls_rule,struct cls_rule ** cls_rule_rtrn);
+struct cls_rule *SGX_classifier_replace(uint8_t bridge_id, uint8_t table_id,struct cls_rule* o_cls_rule);
 enum oftable_flags SGX_rule_get_flags (uint8_t bridge_id, uint8_t table_id);
 int SGX_cls_count(uint8_t bridge_id, uint8_t table_id);
 int SGX_eviction_fields_enable(uint8_t bridge_id, uint8_t table_id);
@@ -334,8 +334,7 @@ int SGX_cls_rule_is_loose_match(uint8_t bridge_id, struct cls_rule *o_cls_rule,c
 size_t SGX_fet_ccfes_c(uint8_t bridge_id);
 
 
-void SGX_cls_lookup(uint8_t bridge_id, struct cls_rule **o_cls_rule,uint8_t table_id,const struct flow *flow,
-		struct flow_wildcards *wc);
+struct cls_rule * SGX_cls_lookup(uint8_t bridge_id, uint8_t table_id,const struct flow *flow, struct flow_wildcards *wc);
 
 unsigned int SGX_cls_rule_format(uint8_t bridge_id, const struct cls_rule *o_cls_rule,struct match *megamatch);
 void SGX_miniflow_expand(uint8_t bridge_id, struct cls_rule *o_cls_rule,struct flow *flow);

@@ -90,17 +90,16 @@ ecall_oftable_hidden_check(uint8_t bridge_id){
 
 
 // Takes rougly 10000 - 12000 clock cycles.
-void
-ecall_oftable_classifier_replace(uint8_t bridge_id, uint8_t table_id, struct cls_rule *ut_cr, struct cls_rule **cls_rule_rtrn){
+struct cls_rule *
+ecall_oftable_classifier_replace(uint8_t bridge_id, uint8_t table_id, struct cls_rule *ut_cr){
     struct sgx_cls_rule * sgx_cls_rule = sgx_rule_from_ut_cr(bridge_id, ut_cr);
     struct cls_rule * cls_rule = NULL;
     cls_rule = classifier_replace(&e_ctx.SGX_oftables[bridge_id][table_id].cls, &sgx_cls_rule->cls_rule);
     if (cls_rule) {
         struct sgx_cls_rule * sgx_cls_rule_r = CONTAINER_OF(cls_rule, struct sgx_cls_rule, cls_rule);
-        *cls_rule_rtrn = sgx_cls_rule_r->o_cls_rule;
-    } else  {
-        *cls_rule_rtrn = NULL;
+        return sgx_cls_rule_r->o_cls_rule;
     }
+    return NULL;
 }
 
 int
@@ -160,19 +159,15 @@ ecall_oftable_cls_find_match_exactly(uint8_t bridge_id, uint8_t table_id, const 
       NULL;
 }
 
-void
-ecall_oftable_cls_lookup(uint8_t bridge_id, struct cls_rule **ut_cr, uint8_t table_id, const struct flow *flow,
-  struct flow_wildcards * wc){
+struct cls_rule *
+ecall_oftable_cls_lookup(uint8_t bridge_id, uint8_t table_id, const struct flow *flow, struct flow_wildcards * wc){
     struct cls_rule * cls_rule;
     cls_rule = classifier_lookup(&e_ctx.SGX_oftables[bridge_id][table_id].cls, flow, wc);
     if (cls_rule) {
-        // Need to retrieve the sgx_cls_rule and return the pointer
-        // to untrusted memory
         struct sgx_cls_rule * sgx_cls_rule = CONTAINER_OF(cls_rule, struct sgx_cls_rule, cls_rule);
-        *ut_cr = sgx_cls_rule->o_cls_rule;
-    } else  {
-        *ut_cr = NULL;
+        return sgx_cls_rule->o_cls_rule;
     }
+    return NULL;
 }
 
 size_t
@@ -452,7 +447,7 @@ ecall_add_flow(uint8_t bridge_id,
          return;
      }
 
-     ecall_oftable_classifier_replace(bridge_id, table_id, cr, victim);
+     *victim = ecall_oftable_classifier_replace(bridge_id, table_id, cr);
      if(*victim) {
          ecall_evg_remove_rule(bridge_id, table_id, *victim);
      }

@@ -49,7 +49,7 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_backup_and_set_evictable:
             ecall_backup_and_set_evictable(
-                
+
                 *(uint8_t *) args[0],
                 args[1],
                 *(bool *) args[2]
@@ -133,7 +133,6 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_oftable_set_name:
             ecall_oftable_set_name(
-
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (char *) args[2]
@@ -177,7 +176,6 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_flush_c:
             *(int *) return_value = ecall_flush_c(
-
                 *(uint8_t *) args[0]
             );
             break;
@@ -203,7 +201,6 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_oftable_cls_find_match_exactly:
             ecall_oftable_cls_find_match_exactly(
-
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (const struct match *) args[2],
@@ -245,7 +242,6 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_collect_rules_loose_r:
             *(int *) return_value = ecall_collect_rules_loose_r(
-
                 *(uint8_t *) args[0],
                 *(uint8_t *) args[1],
                 (struct cls_rule **) args[2],
@@ -424,7 +420,6 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
         }
         case hotcall_ecall_ofproto_get_vlan_c:
             *(int *) return_value = ecall_ofproto_get_vlan_c(
-
                 *(uint8_t *) args[0]
             );
             break;
@@ -466,7 +461,6 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             break;
         case hotcall_ecall_miniflow_expand:
             ecall_miniflow_expand(
-
                 *(uint8_t *) args[0],
                 (struct cls_rule *) args[1],
                 (struct flow *) args[2]
@@ -518,12 +512,12 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
             struct cls_rule ** ut_cr = (struct cls_rule **) args[1];
 
             ecall_oftable_cls_lookup(
-
               bridge_id,
               ut_cr,
               table_id,
               flow,
-              wc);
+              wc
+          );
 
             if (*ut_cr) {
                 //flow_map_cache_insert(flow_cache, flow, wc, *ut_cr, bridge_id, table_id);
@@ -563,9 +557,6 @@ execute_function(uint8_t function_id, void *args[], void *return_value){
                 (size_t *) args[6]
             );
             break;
-
-
-
 
 
         /*case hotcall_ecall_get_cls_rules_and_enable_eviction:
