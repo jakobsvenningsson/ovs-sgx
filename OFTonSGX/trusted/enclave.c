@@ -12,7 +12,6 @@
 #include "oftable.h"
 #include "hotcall.h"
 #include "hotcall-bundler-trusted.h"
-#include "cache-trusted.h"
 #include "functions.h"
 
 
@@ -914,13 +913,7 @@ batch_execute_function(uint8_t function_id, unsigned int n_iters, unsigned int n
 void
 configure_hotcall() {
     struct hotcall_config conf = {
-        .execute_function_legacy = NULL,
-        .execute_function = batch_execute_function,
-        .n_spinlock_jobs = 0,
-        //.n_spinlock_jobs = 1,
-        //.spin_lock_tasks = { &flow_map_cache_validate },
-        //.spin_lock_task_timeouts = { 99999999 },
-        //.spin_lock_task_count = { 0 }
+        .call_table = call_table
     };
     struct hotcall_config *config = malloc(sizeof(struct hotcall_config));
     memcpy(config, &conf, sizeof(struct hotcall_config));

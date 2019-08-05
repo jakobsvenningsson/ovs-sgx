@@ -48,9 +48,7 @@ endif
 # $(UNTRUSTED_DIR)/hotcall-untrusted.c
 App_C_Files := $(UNTRUSTED_DIR)/app.c  \
 				 $(UNTRUSTED_DIR)/sgx-utils.c \
-				 $(UNTRUSTED_DIR)/ocall.c \
-				 $(UNTRUSTED_DIR)/shared-memory-untrusted.c \
-				 $(UNTRUSTED_DIR)/cache-untrusted.c
+				 $(UNTRUSTED_DIR)/ocall.c 
 
 App_Include_Paths := -Iinclude -I$(UNTRUSTED_DIR) \
 					 -I$(SGX_SDK)/include \

@@ -63,7 +63,7 @@
 #include "functions.h"
 #include "hotcall-bundler-untrusted.h"
 #include "postfix_translator.h"
-
+#include "hotcall-hash.h"
 #endif
 
 #include "ovs-benchmark.h"
@@ -1056,7 +1056,7 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
     table->max_flows = s->max_flows;
     if (classifier_count(&table->cls) > table->max_flows
         && table->eviction_fields) {
-#elif BUNDLE123
+#elif BUNDLE_OLD
 
     unsigned int n_cls_rules = 0, is_eviction_enabled = 0, max_flows = 0, random_v = random_uint32();
 
@@ -1070,33 +1070,30 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
 
     struct parameter function_params[] = { VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8) };
 
-
-    printf("before bundle\n");
-
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_set_name), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), PTR(s->name));
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_is_readonly, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_read_only, 'd'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_set_name), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), PTR(s->name));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_is_readonly), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_read_only, 'd'));
     IF(((struct if_config) { .predicate_fmt = "d" }), VAR(is_read_only, 'd'));
     THEN
         RETURN;
     END
 
     BUNDLE_IF_TRUE(s->groups);
-        HCALL(
+        HCALL_BUNDLE(
             CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction),
             VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), PTR(s->groups), VAR(s->n_groups, 'u'), VAR(random_v, 'u'), VAR(no_change)
         );
         IF(((struct if_config) { .predicate_fmt = "!b" }), VAR(no_change));
         THEN
             void *cr_buf[default_buffer_size];
-            HCALL(
-                CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction_r, .has_return = true),
+            HCALL_BUNDLE(
+                CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction_r),
                 VAR(ofproto->bridge_id, ui8), PTR(cr_buf), VAR(default_buffer_size, 'u'), VAR(table_id, ui8), VAR(n_cr_rules, 'u'), VAR(n, 'u')
             );
 
-            HCALL(
-                CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled, .has_return = true),
+            HCALL_BUNDLE(
+                CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled),
                 VAR(ofproto->bridge_id, ui8),
                 VAR(table_id, 'u'),
                 VAR(is_eviction_enabled, 'd')
@@ -1158,7 +1155,7 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
                         VECTOR(cr_buf, 'u', &n, .dereference = true, .member_offset = offsetof(struct rule, hard_timeout) - cr_field_offset)
                     );
                     THEN
-                        HCALL(
+                        HCALL_BUNDLE(
                             CONFIG(.function_id = hotcall_ecall_evg_add_rule),
                             VAR(ofproto->bridge_id, ui8),
                             VAR(table_id, 'u'),
@@ -1174,14 +1171,14 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
 
     BUNDLE_IF_ELSE();
 
-        HCALL(CONFIG(.function_id = hotcall_ecall_oftable_disable_eviction), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8));
+        HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_disable_eviction), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8));
 
     BUNDLE_IF_END();
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_cls_count, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(n_cls_rules, 'd'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(max_flows, 'u'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_eviction_enabled, 'd'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_cls_count), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(n_cls_rules, 'd'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(max_flows, 'u'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_eviction_enabled, 'd'));
 
     BUNDLE_END();
 
@@ -1198,8 +1195,8 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_set_name), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), PTR(s->name));
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_is_readonly, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_read_only, 'd'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_set_name), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), PTR(s->name));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_is_readonly), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_read_only, 'd'));
 
     BUNDLE_END();
 
@@ -1208,15 +1205,27 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
     if (s->groups) {
         oftable_enable_eviction(ofproto->bridge_id, table_id, s->groups, s->n_groups);
     } else {
-        HCALL(CONFIG(.function_id = hotcall_ecall_oftable_disable_eviction), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8));
+        HCALL_SIMPLE(CONFIG(.function_id = hotcall_ecall_oftable_disable_eviction), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8));
     }
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_cls_count, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(n_cls_rules, 'd'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_oftable_mflows, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(max_flows, 'u'));
-    HCALL(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_eviction_enabled, 'd'));
+    #ifdef MEMOIZE
+    uint32_t tmp[] = { ofproto->bridge_id, table_id };
+    uint32_t hash = hcall_hash_words(tmp, 2, 0);
+    struct memoize_invalidate mem_inv = { .n_caches_to_invalidate = 1, .caches = {{ hotcall_ecall_oftable_mflows, .type = HASH, .invalidate_element = { .hash = hash }}}};
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_oftable_mflows_set, .memoize = NULL, .memoize_invalidate = &mem_inv),
+        VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u')
+    );
+
+    #else
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
+    #endif
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_cls_count), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(n_cls_rules, 'd'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(max_flows, 'u'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_eviction_enabled, 'd'));
 
     BUNDLE_END();
 
@@ -1280,7 +1289,6 @@ ofproto_flush__(struct ofproto *ofproto)
     }
     group = ofopgroup_create_unattached(ofproto);
 #ifndef SGX
-
     struct oftable *table;
     OFPROTO_FOR_EACH_TABLE (table, ofproto) {
         struct rule *rule, *next_rule;
@@ -2563,7 +2571,7 @@ ofproto_rule_is_hidden(const struct rule *rule)
 #ifndef SGX
 	return rule->cr.priority > UINT16_MAX;
 #else
-	return false;//SGX_cr_priority(rule->ofproto->bridge_id, &rule->cr)> UINT16_MAX;
+	return SGX_cr_priority(rule->ofproto->bridge_id, &rule->cr)> UINT16_MAX;
 #endif
 }
 
@@ -3151,24 +3159,24 @@ exit:
     return error;
 #elif BUNDLE
 
-    unsigned int n, m;
+    unsigned int n = 32, m;
 
     //BUNDLE_BEGIN();
 
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_collect_rules_loose_c, .has_return = true),
+    /*HCALL_SIMPLE(
+        CONFIG(.function_id = hotcall_ecall_collect_rules_loose_c),
         VAR(ofproto->bridge_id, ui8),
         VAR(ofproto->n_tables, 'd'),
         VAR(table_id, 'u'),
         PTR(match),
         VAR(n, 'u')
-    );
+    );*/
 
     struct cls_rule *buf[n];
     struct cls_rule **cr_buf = buf;
 
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_collect_rules_loose_r, .has_return = true),
+    HCALL_SIMPLE(
+        CONFIG(.function_id = hotcall_ecall_collect_rules_loose_r),
         VAR(ofproto->bridge_id, ui8),
         VAR(ofproto->n_tables, 'd'),
         PTR(buf),
@@ -3183,7 +3191,7 @@ exit:
     struct cls_rule *buf_extended[n];
     if(overflow > 0) {
         HCALL(
-            CONFIG(.function_id = hotcall_ecall_collect_rules_loose_r, .has_return = true),
+            CONFIG(.function_id = hotcall_ecall_collect_rules_loose_r),
             VAR(ofproto->bridge_id, 'u'),
             VAR(ofproto->n_tables, 'd'),
             PTR(buf_extended),
@@ -3197,7 +3205,7 @@ exit:
 
     unsigned int collect_n_rules = 0;
     struct rule *rule;
-    for(int i = 0; i < n; i++) {
+    for(int i = 0; i < m; i++) {
         rule = rule_from_cls_rule(cr_buf[i]);
         if (rule->pending) {
             error = OFPROTO_POSTPONE;
@@ -3237,13 +3245,13 @@ exit:
 
 #else
     //1.It is needed to know the size of the buf to allocate.
-    int buf_size=SGX_collect_rules_loose_c(ofproto->bridge_id, ofproto->n_tables,table_id,match);
-
+    int buf_size= 32;//SGX_collect_rules_loose_c(ofproto->bridge_id, ofproto->n_tables,table_id,match);
+    //printf("%d\n", buf_size);
     if(buf_size){
     	int lp;
     	struct cls_rule *buf[buf_size];
-        SGX_collect_rules_loose_r(ofproto->bridge_id, ofproto->n_tables, buf,buf_size,table_id,match);
-    	for(lp=0;lp<buf_size;lp++){
+        int n = SGX_collect_rules_loose_r(ofproto->bridge_id, ofproto->n_tables, buf,buf_size,table_id,match);
+    	for(lp=0;lp<n;lp++){
     		struct rule *rule=rule_from_cls_rule(buf[lp]);
 
     		if (rule->pending) {
@@ -3400,14 +3408,14 @@ exit:
 
     BUNDLE_BEGIN();
 
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_collect_rules_strict_c, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_collect_rules_strict_c),
         VAR(ofproto->bridge_id, 'u'), VAR(ofproto->n_tables, 'd'),
         VAR(table_id, 'u'), PTR(match), VAR(priority, 'u'), VAR(n, 'u')
     );
 
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_collect_rules_strict_r, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_collect_rules_strict_r),
         VAR(ofproto->bridge_id, 'u'), VAR(ofproto->n_tables, 'd'), PTR(buf),
         VAR(default_buffer_size, 'u'), VAR(table_id, 'u'), PTR(match),
         VAR(priority, 'u'), VAR(m, 'u')
@@ -3419,8 +3427,8 @@ exit:
     unsigned int overflow = n - m;
     struct cls_rule *buf_extended[n];
     if(overflow > 0) {
-        HCALL(
-            CONFIG(.function_id = hotcall_ecall_collect_rules_strict_r, .has_return = true),
+        HCALL_SIMPLE(
+            CONFIG(.function_id = hotcall_ecall_collect_rules_strict_r),
             VAR(ofproto->bridge_id, 'u'), VAR(ofproto->n_tables, 'd'),
             PTR(buf_extended), VAR(n, 'u'), VAR(table_id, 'u'), PTR(match),
             VAR(priority, 'u'), VAR(m, 'u')
@@ -3892,6 +3900,9 @@ static enum ofperr
 add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
          const struct ofputil_flow_mod *fm, const struct ofp_header *request)
 {
+
+    //printf("ADD_FLOW_BEGIN\n");
+
     BEGIN
 
     #ifdef BATCHING_FLUSH
@@ -4145,100 +4156,8 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         #ifdef BENCHMARK_ADD
         SHOWTIME5
         #endif
-#elif BUNDLE
-
-    if (SGX_istable_readonly(ofproto->bridge_id, table_id)){
-        return OFPERR_OFPBRC_EPERM;
-    }
-
-    /* Allocate new rule and initialize classifier rule. */
-
-    rule = ofproto->ofproto_class->rule_alloc();
-    if (!rule) {
-        VLOG_WARN_RL(&rl, "%s: failed to create rule (%s)",
-                     ofproto->name, strerror(error));
-        return ENOMEM;
-    }
-
-    SGX_cls_rule_init(ofproto->bridge_id, &rule->cr, &fm->match, fm->priority);
-
-    /* Serialize against pending deletion. */
-    if (is_flow_deletion_pending(ofproto, &rule->cr, table_id)) {
-        SGX_cls_rule_destroy(ofproto->bridge_id, &rule->cr);
-        ofproto->ofproto_class->rule_dealloc(rule);
-        return OFPROTO_POSTPONE;
-    }
-
-    if (fm->flags & OFPFF_CHECK_OVERLAP
-            && SGX_cr_rule_overlaps(ofproto->bridge_id, table_id,&rule->cr)) {
-        SGX_cls_rule_destroy(ofproto->bridge_id, &rule->cr);
-        ofproto->ofproto_class->rule_dealloc(rule);
-        return OFPERR_OFPFMFC_OVERLAP;
-    }
-
-    rule->ofproto = ofproto;
-    rule->pending = NULL;
-    rule->flow_cookie = fm->new_cookie;
-    rule->created = rule->modified = rule->used = time_msec();
-    rule->idle_timeout = fm->idle_timeout;
-    rule->hard_timeout = fm->hard_timeout;
-
-    rule->table_id = table_id;
-
-    rule->send_flow_removed = (fm->flags & OFPFF_SEND_FLOW_REM) != 0;
-    /* FIXME: Implement OF 1.3 flags OFPFF13_NO_PKT_COUNTS
-       and OFPFF13_NO_BYT_COUNTS */
-
-    rule->ofpacts = xmemdup(fm->ofpacts, fm->ofpacts_len);
-    rule->ofpacts_len = fm->ofpacts_len;
-    //rule->evictable = true;
-    //rule->eviction_group = NULL;
-    list_init(&rule->expirable);
-    rule->monitor_flags = 0;
-    rule->add_seqno = 0;
-    rule->modify_seqno = 0;
-
-    victim = oftable_replace_rule(rule);
-
-    // rule_is_modifiable contains SGX
-    if (victim && !rule_is_modifiable(victim)) {
-        error = OFPERR_OFPBRC_EPERM;
-    } else if (victim && victim->pending) {
-        error = OFPROTO_POSTPONE;
-    } else {
-        struct ofoperation *op;
-        struct rule *evict;
-
-        unsigned int cls_count, mflows;
-        BUNDLE_BEGIN();
-        HCALL(
-            CONFIG(.function_id = hotcall_ecall_oftable_cls_count, .has_return = true),
-            VAR(ofproto->bridge_id, 'u'), VAR(table_id, 'u'), VAR(cls_count, 'u')
-        );
-        HCALL(
-            CONFIG(.function_id = hotcall_ecall_oftable_mflows, .has_return = true),
-            VAR(ofproto->bridge_id, 'u'), VAR(table_id, 'u'), VAR(mflows, 'u')
-        );
-        BUNDLE_END();
-
-        if (cls_count > mflows){
-            struct cls_rule * tmp;
-            SGX_choose_rule_to_evict_p(ofproto->bridge_id, table_id, &tmp, &rule->cr);
-            evict = rule_from_cls_rule(tmp);
-            if (!evict) {
-                error = OFPERR_OFPFMFC_TABLE_FULL;
-                goto exit;
-            } else if (evict->pending) {
-                error = OFPROTO_POSTPONE;
-                goto exit;
-            }
-        } else {
-            evict = NULL;
-        }
 #else
-
     //BEGIN
-
     if (SGX_istable_readonly(ofproto->bridge_id, table_id)){
     	return OFPERR_OFPBRC_EPERM;
     }
@@ -4314,6 +4233,7 @@ add_flow(struct ofproto *ofproto, struct ofconn *ofconn,
         } else {
             evict = NULL;
         }
+
 #endif
         group = ofopgroup_create(ofproto, ofconn, request, fm->buffer_id);
         op = ofoperation_create(group, rule, OFOPERATION_ADD, 0, NULL);
@@ -4354,6 +4274,13 @@ exit:
         ofproto_rule_destroy__(rule);
     }
 
+    //printf("ADD_FLOW_END\n");
+
+    //CLOSE
+    #ifdef BENCHMARK_ADD
+    SHOWTIME5
+    #endif
+
     return error;
 }
 
@@ -4375,48 +4302,6 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
     struct rule *rule;
     enum ofperr error;
 
-    #ifdef BUNDLE
-
-    unsigned int len = list_size(rules);
-    struct rule *rls[len];
-    size_t i = 0;
-    LIST_FOR_EACH (rule, ofproto_node, rules) {
-        rls[i++] = rule;
-    }
-
-    BUNDLE_BEGIN();
-
-    int rule_is_mod[len];
-    MAP(((struct map_config) { .function_id = hotcall_ecall_oftable_get_flags, .n_iters = &len }),
-        VAR(ofproto->bridge_id),
-        VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
-        VECTOR(rule_is_mod, 'd')
-    );
-
-    int rls_prio[len];
-    MAP(((struct map_config) { .function_id = hotcall_ecall_cr_priority, .n_iters = &len }),
-        VAR(ofproto->bridge_id, 'u'),
-        VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr)),
-        VECTOR(rls_prio, 'u')
-    );
-
-    uint32_t rls_hash[len];
-    MAP(
-        ((struct map_config) { .function_id = hotcall_ecall_cls_rule_hash, .n_iters = &len }),
-        VAR(ofproto->bridge_id, 'u'),
-        VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr)),
-        VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
-        VECTOR(rls_hash, 'u')
-    );
-
-    BUNDLE_END();
-
-    #endif
-
-    #ifdef BUNDLE
-    i = 0;
-    #endif
-
     group = ofopgroup_create(ofproto, ofconn, request, fm->buffer_id);
     error = OFPERR_OFPBRC_EPERM;
     LIST_FOR_EACH (rule, ofproto_node, rules) {
@@ -4424,11 +4309,7 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
         bool actions_changed;
         ovs_be64 new_cookie;
 
-        #ifdef BUNDLE
-        if (!(rule_is_mod[i] & OFTABLE_READONLY)) {
-        #else
         if (rule_is_modifiable(rule)) {
-        #endif
             /* At least one rule is modifiable, don't report EPERM error. */
             error = 0;
         } else {
@@ -4441,11 +4322,7 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
                       ? fm->new_cookie
                       : rule->flow_cookie);
 
-        #ifdef BUNDLE
-        op = ofoperation_create(group, rule, OFOPERATION_MODIFY, 0, &rls_hash[i++]);
-        #else
         op = ofoperation_create(group, rule, OFOPERATION_MODIFY, 0, NULL);
-        #endif
         rule->flow_cookie = new_cookie;
         if (actions_changed) {
             op->ofpacts = rule->ofpacts;
@@ -4459,12 +4336,33 @@ modify_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
     }
 
     #ifdef BUNDLE
+    unsigned int len = list_size(rules);
+    struct rule *rls[len];
+    int rls_prio[len];
     bool rls_is_hidden[len];
-    for(int i = 0; i < len; ++i) rls_is_hidden[i] = rls_prio[i] > UINT16_MAX;
-    ofopgroup_submit(group, NULL, NULL, rls_is_hidden);
+    size_t j = 0;
+    LIST_FOR_EACH (rule, ofproto_node, rules) { rls[j++] = rule; }
+
+    if(len > 1) {
+        BUNDLE_BEGIN();
+        MAP(((struct map_config) { .function_id = hotcall_ecall_cr_priority, .n_iters = &len }),
+            VAR(ofproto->bridge_id, 'u'),
+            VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr)),
+            VECTOR(rls_prio, 'u')
+        );
+        BUNDLE_END();
+        for(int i = 0; i < len; ++i) rls_is_hidden[i] = rls_prio[i] > UINT16_MAX;
+        ofopgroup_submit(group, NULL, NULL, rls_is_hidden);
+
+    } else {
+        //HCALL_SIMPLE(CONFIG(.function_id = hotcall_ecall_cr_priority), VAR(ofproto->bridge_id, 'u'), PTR(&rls[0]->cr), VAR(rls_prio, 'u'));
+        //rls_is_hidden[0] = rls_prio[0] > UINT16_MAX;
+        ofopgroup_submit(group, NULL, NULL, NULL);
+    }
     #else
     ofopgroup_submit(group, NULL, NULL, NULL);
     #endif
+
     return error;
 }
 
@@ -4804,8 +4702,6 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
                const struct ofp_header *request, struct list *rules)
 {
 
-    BEGIN
-
 	struct rule *rule, *next;
     struct ofopgroup *group;
     group = ofopgroup_create(ofproto, ofconn, request, UINT32_MAX);
@@ -4814,9 +4710,13 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
 
     int len = list_size(rules), i = 0;
     struct rule *rls[len];
+    void *crs[len];
     unsigned int rls_hashes[len], rls_prio[len];
+    unsigned int table_ids[len], hashes[len];
 
     LIST_FOR_EACH_SAFE (rule, next, ofproto_node, rules) {
+        //table_ids[i] = rule->table_id;
+        //crs[i] = &rule->cr;
         rls[i++] = rule;
     }
 
@@ -4827,6 +4727,7 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_cr_priority, .n_iters = &len }),
         VAR(ofproto->bridge_id, 'u'),
+        //VECTOR(crs, 'p', &len, .dereference = true),
         VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr)),
         VECTOR(rls_prio, 'u')
     );
@@ -4834,14 +4735,18 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
     MAP(
         ((struct map_config) { .function_id = hotcall_ecall_cls_rule_hash, .n_iters = &len }),
         VAR(ofproto->bridge_id, 'u'),
+        //VECTOR(crs, 'p', &len, .dereference = true),
         VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr)),
         VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
+        //VECTOR(table_ids, 'u'),
         VECTOR(rls_hashes, 'u')
     );
 
     FOR_EACH(
         ((struct for_each_config) { .function_id = hotcall_ecall_cls_remove, .n_iters = &len }),
         VAR(ofproto->bridge_id, 'u'),
+        //VECTOR(table_ids, 'u'),
+        //VECTOR(crs, 'p', &len, .dereference = true)
         VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
         VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr))
     );
@@ -4849,6 +4754,8 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
     FOR_EACH(
         ((struct for_each_config) { .function_id = hotcall_ecall_evg_remove_rule, .n_iters = &len }),
         VAR(ofproto->bridge_id, 'u'),
+        //VECTOR(table_ids, 'u'),
+        //VECTOR(crs, 'p', &len, .dereference = true)
         VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
         VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr))
     );
@@ -4859,43 +4766,43 @@ delete_flows__(struct ofproto *ofproto, struct ofconn *ofconn,
         .n_iters = &len
     });
 
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_oftable_is_other_table, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_oftable_is_other_table),
         VAR(ofproto->bridge_id, 'u'),
         VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
         VECTOR(rls_is_other_table, 'd')
     );
 
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_oftable_update_taggable, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_oftable_update_taggable),
         VAR(ofproto->bridge_id, 'u'),
         VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr)),
         VECTOR(rls_table_update_taggable, 'd')
     );
 
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_cr_priority, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_cr_priority),
         VAR(ofproto->bridge_id, 'u'),
         VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr)),
         VECTOR(rls_prio, 'u')
     );
 
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_cls_rule_hash, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_cls_rule_hash),
         VAR(ofproto->bridge_id, 'u'),
         VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr)),
         VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
         VECTOR(rls_hashes, 'u')
     );
 
-    HCALL(
+    HCALL_BUNDLE(
         CONFIG(.function_id = hotcall_ecall_cls_remove),
         VAR(ofproto->bridge_id, 'u'),
         VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
         VECTOR(rls, 'p', &len, .dereference = true, .member_offset = offsetof(struct rule, cr))
     );
 
-    HCALL(
+    HCALL_BUNDLE(
         CONFIG(.function_id = hotcall_ecall_evg_remove_rule),
         VAR(ofproto->bridge_id, 'u'),
         VECTOR(rls, 'u', &len, .dereference = true, .member_offset = offsetof(struct rule, table_id)),
@@ -5596,12 +5503,12 @@ ofproto_compose_flow_refresh_update(const struct rule *rule,
     fu.priority = priority;
 #elif BUNDLE
     BUNDLE_BEGIN();
-    HCALL(
+    HCALL_BUNDLE(
         CONFIG(.function_id = hotcall_ecall_minimatch_expand),
         VAR(rule->ofproto->bridge_id, ui8), PTR(&rule->cr, 'p'), PTR(&match, 'p')
     );
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_cr_priority, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_cr_priority),
         VAR(rule->ofproto->bridge_id,'u'), PTR(&rule->cr, 'p'), VAR(fu.priority, 'u')
     );
     BUNDLE_END();
@@ -6194,14 +6101,14 @@ ofopgroup_complete(struct ofopgroup *group, uint16_t *_vid, uint16_t *_vid_mask,
                     ? rule->tmp_storage_vid_mask
                     : SGX_minimask_get_vid_mask(rule->ofproto->bridge_id, &rule->cr);
                 rule->tmp_storage_vid_mask_exist = 0;
-#elif BUNDLE
+#elif BUNDLE123
                 BUNDLE_BEGIN();
-                HCALL(
-                    CONFIG(.function_id = hotcall_ecall_minimask_get_vid_mask, .has_return = true),
+                HCALL_BUNDLE(
+                    CONFIG(.function_id = hotcall_ecall_minimask_get_vid_mask),
                     VAR(rule->ofproto->bridge_id, 'u'), PTR(&rule->cr), VAR(vid_mask, ui16)
                 );
-                HCALL(
-                    CONFIG(.function_id = hotcall_ecall_miniflow_get_vid, .has_return = true),
+                HCALL_BUNDLE(
+                    CONFIG(.function_id = hotcall_ecall_miniflow_get_vid),
                     VAR(rule->ofproto->bridge_id, 'u'), PTR(&rule->cr), VAR(vid, ui16)
                 );
                 BUNDLE_END();
@@ -6240,7 +6147,7 @@ ofopgroup_complete(struct ofopgroup *group, uint16_t *_vid, uint16_t *_vid_mask,
 
         case OFOPERATION_DELETE:
             ovs_assert(!op->error);
-            #ifdef BUNDLE
+            #ifdef BUNDLE || OPTIMIZED
             if(rule) {
                 delete_rules[n_rules_to_delete++] = rule;
                 free(rule->ofpacts);
@@ -6274,7 +6181,7 @@ ofopgroup_complete(struct ofopgroup *group, uint16_t *_vid, uint16_t *_vid_mask,
         ofoperation_destroy(op);
     }
 
-    #ifdef BUNDLE
+    #ifdef BUNDLE || OPTIMIZED
 
     BUNDLE_BEGIN();
     FOR_EACH(
@@ -6644,7 +6551,7 @@ ofproto_evict(struct ofproto *ofproto)
                 VECTOR(table_n_flows, 'd', &n_eviction_tables), VECTOR(table_max_flows, 'd', &n_eviction_tables)
             );
 
-                HCALL(
+                HCALL_BUNDLE(
                     CONFIG(.function_id = hotcall_ecall_choose_rule_to_evict),
                     VAR(ofproto->bridge_id, ui8),
                     VECTOR(eviction_tables, 'u', &n_eviction_tables),
@@ -6661,30 +6568,30 @@ ofproto_evict(struct ofproto *ofproto)
                     RETURN;
                 END
 
-                HCALL(
-                    CONFIG(.function_id = hotcall_ecall_cls_rule_hash, .has_return = true),
+                HCALL_BUNDLE(
+                    CONFIG(.function_id = hotcall_ecall_cls_rule_hash),
                     VAR(ofproto->bridge_id, ui8),
                     VECTOR(cr_rules_buf, 'p', &total_overflows, .dereference = true, .member_offset = 0, .vector_offset = &n),
                     VECTOR(eviction_tables, 'd', &n_eviction_tables),
                     VECTOR(hashes, 'u', &total_overflows, .dereference = false, .member_offset = 0, .vector_offset = &n)
                 );
 
-                HCALL(
+                HCALL_BUNDLE(
                     CONFIG(.function_id = hotcall_ecall_cls_remove),
                     VAR(ofproto->bridge_id, ui8),
                     VECTOR(eviction_tables, 'd', &n_eviction_tables),
                     VECTOR(cr_rules_buf, 'p', &total_overflows, .dereference = true, .member_offset = 0, .vector_offset = &n)
                 );
 
-                HCALL(
+                HCALL_BUNDLE(
                     CONFIG(.function_id = hotcall_ecall_evg_remove_rule),
                     VAR(ofproto->bridge_id, ui8),
                     VECTOR(eviction_tables, 'd', &n_eviction_tables),
                     VECTOR(cr_rules_buf, 'p', &total_overflows, .dereference = true, .member_offset = 0, .vector_offset = &n)
                 );
 
-                HCALL(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(n, 'd'));
-                HCALL(CONFIG(.function_id = hotcall_ecall_minus_one), VECTOR(table_n_flows, 'd', &n_eviction_tables));
+                HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_plus_one), VAR(n, 'd'));
+                HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_minus_one), VECTOR(table_n_flows, 'd', &n_eviction_tables));
 
             END_WHILE();
 
@@ -6930,12 +6837,12 @@ eviction_group_add_rule(struct rule *rule)
 
     BUNDLE_BEGIN();
 
-    HCALL(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled, .has_return = true), VAR(ofproto->bridge_id, ui8), VAR(rule->table_id, ui8), VAR(is_eviction_enabled, 'd'));
+    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled), VAR(ofproto->bridge_id, ui8), VAR(rule->table_id, ui8), VAR(is_eviction_enabled, 'd'));
     IF(
         ((struct if_config) { .predicate_fmt = "d&(d|d)" }), VAR(is_eviction_enabled, 'd'), VAR(rule->hard_timeout, 'd'), VAR(rule->idle_timeout, 'd')
     );
     THEN
-        HCALL(
+        HCALL_BUNDLE(
             CONFIG(.function_id = hotcall_ecall_evg_add_rule),
             VAR(rule->ofproto->bridge_id, ui8), VAR(rule->table_id, ui8), PTR(&rule->cr), VAR(evg_grp_prio, 'u'), VAR(rule_evg_prio, 'u')
         );
@@ -7086,7 +6993,7 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
 
     bool no_change = false;
 
-    HCALL(
+    HCALL_SIMPLE(
         CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction),
         VAR(bridge_id, 'u'), VAR(table_id, 'u'), PTR(fields), VAR(n_fields, 'u'), VAR(random_v, 'u'), VAR(no_change, 'b')
     );
@@ -7095,12 +7002,12 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
     BUNDLE_BEGIN();
 
     struct cls_rule *cr_buf[default_buffer_size];
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction_r, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_oftable_enable_eviction_r),
         VAR(bridge_id, 'u'), PTR(cr_buf), VAR(default_buffer_size, 'u'), VAR(table_id, 'u'), VAR(n_cr_rules, 'u'), VAR(n, 'u')
     );
-    HCALL(
-        CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled, .has_return = true),
+    HCALL_BUNDLE(
+        CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled),
         VAR(bridge_id, ui8),
         VAR(table_id, 'u'),
         VAR(is_eviction_enabled, 'd')
@@ -7149,7 +7056,7 @@ oftable_enable_eviction(int bridge_id, int table_id,const struct mf_subfield *fi
         );
         THEN
             HCALL(
-                CONFIG(.function_id = hotcall_ecall_rule_eviction_priority, .has_return = true),
+                CONFIG(.function_id = hotcall_ecall_rule_eviction_priority),
                 VECTOR(cr_buf, 'p', &n, .dereference = true, .member_offset = -cr_field_offset),
                 VAR(boot_time_u, 'u'),
                 VAR(rule_eviction_priority, 'u')

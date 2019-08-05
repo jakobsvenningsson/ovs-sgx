@@ -185,13 +185,9 @@ ecall_collect_rules_loose_r(uint8_t bridge_id, int ofproto_n_tables, struct cls_
 
         cls_cursor_init(&cursor, &table->cls, &cr);
         CLS_CURSOR_FOR_EACH(rule, cls_rule, &cursor){
-            if(count_only) {
+            if(count_only || p >= elem) {
                 p++;
                 continue;
-            }
-
-            if (p > elem) {
-                return p;
             }
             buf[p] = rule->o_cls_rule;
             p++;

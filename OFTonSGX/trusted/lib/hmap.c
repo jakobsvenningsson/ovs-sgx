@@ -9,8 +9,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include "util.h"
-#include "cache-trusted.h"
-#include "shared-memory-trusted.h"
 
 
 /* Initializes 'hmap' as an empty hash table. */
@@ -83,14 +81,6 @@ resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory, uint8_t
     hmap_init(&tmp, NULL);
     if (new_mask) {
         if(shared_memory) {
-            size_t requested_size = sizeof *tmp.buckets * (new_mask + 1);
-            struct page *page = shared_memory_get_page(shared_memory, requested_size, page_type);
-            if(!page) {
-                printf("Error, failed to allocate page for hash map. Exiting...\n");
-                return;
-            }
-            tmp.buckets = (struct hmap_node **) page->bytes;
-            //printf("Page is allocated %s of enclave\n", sgx_is_outside_enclave(tmp.buckets, page->size) ? "outside" : "inside");
         } else {
             tmp.buckets = xmalloc(sizeof *tmp.buckets * (new_mask + 1));
         }
@@ -111,18 +101,8 @@ resize(struct hmap *hmap, size_t new_mask, shared_memory *shared_memory, uint8_t
             //COVERAGE_INC(hmap_pathological);
         }
     }
-
-    if(!shared_memory) {
-        hmap_swap(hmap, &tmp);
-        hmap_destroy(&tmp);
-    } else {
-        hmap_swap(hmap, &tmp);
-        //printf("Addr of hmap %p addr of tmp %p\n", hmap->buckets, tmp.buckets);i
-        if (tmp.buckets != &tmp.one) {
-            shared_memory_free_page(shared_memory, tmp.buckets);
-            //shared_memory_mark_page_for_deallocation(shared_memory, tmp.buckets);
-        }
-    }
+    hmap_swap(hmap, &tmp);
+    hmap_destroy(&tmp);
 }
 
 
