@@ -1208,6 +1208,25 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
         HCALL_SIMPLE(CONFIG(.function_id = hotcall_ecall_oftable_disable_eviction), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8));
     }
 
+
+    /*BUNDLE_BEGIN();
+
+    #ifdef MEMOIZE
+    uint32_t tmp[] = { ofproto->bridge_id, table_id };
+    uint32_t hash = hcall_hash_words(tmp, 2, 0);
+    struct memoize_invalidate mem_inv = { .n_caches_to_invalidate = 1, .caches = {{ hotcall_ecall_oftable_mflows, .type = HASH, .invalidate_element = { .hash = hash }}}};
+    HCALL_SIMPLE(
+        CONFIG(.function_id = hotcall_ecall_oftable_mflows_set, .memoize = NULL, .memoize_invalidate = &mem_inv),
+        VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u')
+    );
+
+    #else
+    HCALL_SIMPLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
+    #endif*/
+
+
+    //SGX_table_mflows_set(ofproto->bridge_id, table_id,s->max_flows);
+
     BUNDLE_BEGIN();
 
     #ifdef MEMOIZE
@@ -1222,7 +1241,7 @@ ofproto_configure_table(struct ofproto *ofproto, int table_id,
     #else
     HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
     #endif
-    HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows_set), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(s->max_flows, 'u'));
+
     HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_cls_count), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(n_cls_rules, 'd'));
     HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_oftable_mflows), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(max_flows, 'u'));
     HCALL_BUNDLE(CONFIG(.function_id = hotcall_ecall_is_eviction_fields_enabled), VAR(ofproto->bridge_id, ui8), VAR(table_id, ui8), VAR(is_eviction_enabled, 'd'));
@@ -6408,8 +6427,6 @@ ofproto_evict(struct ofproto *ofproto)
 
     group = ofopgroup_create_unattached(ofproto);
 
-    BEGIN
-
 #ifndef SGX
     struct oftable *table;
     OFPROTO_FOR_EACH_TABLE (table, ofproto) {
@@ -6486,28 +6503,12 @@ ofproto_evict(struct ofproto *ofproto)
      }
 #elif BUNDLE
     unsigned int n_tables = ofproto->n_tables, n_eviction_tables = 0;
-    int table_ids[n_tables],
-        table_eviction_is_enabled[n_tables],
+    int table_eviction_is_enabled[n_tables],
         eviction_tables[n_tables];
 
-    for(int i = 0; i < n_tables; ++i) table_ids[i] = i;
-
-    BUNDLE_BEGIN();
-
-        MAP(
-            ((struct map_config) {
-                .function_id = hotcall_ecall_is_eviction_fields_enabled, .n_iters = &n_tables
-            }),
-            VAR(ofproto->bridge_id, 'u'),
-            VECTOR(table_ids, 'd'),
-            VECTOR(table_eviction_is_enabled, 'd')
-        );
-
-    BUNDLE_END();
-
     for(int i = 0; i < n_tables; ++i) {
-        if(table_eviction_is_enabled[i]) {
-            eviction_tables[n_eviction_tables++] = table_ids[i];
+        if(SGX_eviction_fields_enable(ofproto->bridge_id, i)) {
+            eviction_tables[n_eviction_tables++] = i;
         }
     }
     int table_n_flows[n_eviction_tables], table_max_flows[n_eviction_tables];
@@ -6535,7 +6536,9 @@ ofproto_evict(struct ofproto *ofproto)
     BUNDLE_END();
 
     int total_overflows = 0;
-    for(int i = 0; i < n_eviction_tables; ++i) total_overflows += (table_n_flows[i] - table_max_flows[i] > 0 ? table_n_flows[i] - table_max_flows[i] : 0);
+    for(int i = 0; i < n_eviction_tables; ++i) {
+        total_overflows += (table_n_flows[i] - table_max_flows[i] > 0 ? table_n_flows[i] - table_max_flows[i] : 0);
+    }
     int n = 0, m = 0;
     struct cls_rule *cr_rules_buf[total_overflows];
     uint32_t hashes[total_overflows];
@@ -6603,7 +6606,7 @@ ofproto_evict(struct ofproto *ofproto)
             struct rule *rule;
             rule = rule_from_cls_rule(cr_rules_buf[j]);
             ofoperation_create(group, rule,
-                OFOPERATION_DELETE, OFPRR_EVICTION, &hashes[j]);
+                OFOPERATION_DELETE, OFPRR_EVICTION, NULL);
             if (!list_is_empty(&rule->expirable)) {
                 list_remove(&rule->expirable);
             }
