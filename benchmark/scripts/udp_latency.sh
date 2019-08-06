@@ -30,13 +30,13 @@ function benchmark_udp_latency() {
   for target in ${TARGETS[@]}; do
     echo "FLAGS = $target"
     prepare
-    local TLS_FLAG="DUMMY"
-    if [ $target != "BASELINE" ]; then
-        TLS_FLAG="SGX_TLS"
-        start_ca_authority
-    fi
-    start_sdn_controller
-    compile ${TLS_FLAG} $target
+    #local TLS_FLAG="DUMMY"
+    #if [ $target != "BASELINE" ]; then
+    #    TLS_FLAG="SGX_TLS"
+    #    start_ca_authority
+    #fi
+    #start_sdn_controller
+    compile $target
     startup "/dev/null"
     udp_latency $ITERATIONS $target
     sleep 2

@@ -17,8 +17,8 @@ function setup_testbed() {
 
     ovs-vsctl add-port br0 $NETWORK_INTERFACE -- add-port br0 vport1 -- add-port br0 vport2
 
-    ovs-vsctl set-ssl $HOME/ovs-sgx/ssl/ovs.key $HOME/ovs-sgx/ssl/ovs.crt $HOME/ovs-sgx/ssl/rootCA.crt
-    ovs-vsctl set-controller br0 ssl:127.0.0.1:6633
+    #ovs-vsctl set-ssl $HOME/ovs-sgx/ssl/ovs.key $HOME/ovs-sgx/ssl/ovs.crt $HOME/ovs-sgx/ssl/rootCA.crt
+    #ovs-vsctl set-controller br0 ssl:127.0.0.1:6633
 
     ifconfig $NETWORK_INTERFACE 0
     dhclient br0
@@ -31,6 +31,7 @@ function setup_testbed() {
     sudo -u jakob VBoxManage startvm SERVER --type headless
     echo "Trying to connect to server VM."
     until sudo -u jakob sshpass -p 'pw123' ssh server@$SERVER_IP "exit"; do
+        echo "Unable to connect."
         sleep 3
     done
     echo "Connected."
@@ -80,13 +81,12 @@ function start_ca_authority() {
 }
 
 
-
 function join_by { local IFS="$1"; shift; echo "$*"; }
 
 function get_targets() {
   local TARGETS=()
   if [ "$1" = "ALL_FLOW" ]; then
-    TARGETS=("BASELINE" "SGX" "BATCHING" "OPTIMIZED" "HOTCALL" "HOTCALL+OPTIMIZED")
+    TARGETS=("BASELINE" "SGX" "OPTIMIZED" "HOTCALL" "BATCHING" "MEMOIZE")
   elif [ "$1" = "ALL_TLS" ]; then
     TARGETS=("BASELINE" "SGX" "HOTCALL")
   else
@@ -105,16 +105,16 @@ function get_compile_flags() {
       FLAGS="-D SGX"
       ;;
     OPTIMIZED)
-      FLAGS="-D SGX -D OPTIMIZED"
+      FLAGS="-D SGX -D OPTIMIZED -D HOTCALL"
+      ;;
+    MEMOIZE)
+      FLAGS="-D SGX -D HOTCALL -D MEMOIZE"
       ;;
     BATCHING)
-      FLAGS="-D SGX -D BATCHING -D HOTCALL"
+      FLAGS="-D SGX -D HOTCALL -D MEMOIZE -D BUNDLE -D BUNDLE_FUNCTIONAL"
       ;;
     HOTCALL)
       FLAGS="-D SGX -D HOTCALL"
-      ;;
-    HOTCALL+OPTIMIZED)
-      FLAGS="-D SGX -D HOTCALL -D OPTIMIZED"
       ;;
     *)
       echo "Unknown target."
@@ -140,25 +140,15 @@ function create_csv_file() {
 }
 
 function compile() {
-  echo "First $1"
-  echo "Second $2"
   local TARGET=$2
-  echo "compile ${TARGET} $1"
   local FLAGS=`get_compile_flags ${TARGET}`
   local C_FLAGS="-D ${1} ${FLAGS}"
-  #local C_FLAGS=$@
-  #for flag in $C_FLAGS; do
-  #  FLAGS+="-D $flag "
-  #  if [ $flag = "HOTCALL" ]; then
-  #    FLAGS+="-D SGX"
-  #  fi
-  #done
 
   echo "Compiling OVS with flags $C_FLAGS"
 
   cd $HOME/ovs-sgx
 
-  ./build.sh "$C_FLAGS" > /dev/null 2> $HOME/ovs-sgx/benchmark/logs/benchmark.log
+  ./build.sh "$C_FLAGS" > /dev/null 2> ~/benchmark.log
   if [ $? == 0 ]; then
     echo "Failed to build project, status code $?."
     echo "Check benchmark.log for more information."
@@ -188,8 +178,11 @@ function startup() {
       OUTPUT_PATH=""
   fi
 
+  sudo cset shield --cpu 2,3
+  sudo cset shield --kthread on
+
   echo "Writing output to ${OUTPUT_PATH}${OUTPUT_FILE}"
-  ovs-vswitchd --pidfile --log-file=$HOME/ovs-log --detach 1>$HOME/ovs-sgx/benchmark/logs/benchmark-stdout.log 2>$HOME/ovs-sgx/benchmark/logs/benchmark-stderr.log 5>${OUTPUT_PATH}${OUTPUT_FILE}
+  cset shield -e ovs-vswitchd -- --pidfile --log-file=$HOME/ovs-log --detach 1>~/benchmark-stdout.log 2>~/benchmark-stderr.log 5>>${OUTPUT_PATH}${OUTPUT_FILE}
   echo "Adding bridge br0"
   ovs-vsctl add-br br0
   echo $?
@@ -199,6 +192,7 @@ function cleanup() {
   pkill -9 ovs
   pkill -9 SDN_Controller
   pkill -9 CA_server
+  sudo cset shield --reset
 }
 
 function prepare() {

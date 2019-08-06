@@ -5,8 +5,8 @@ source $HOME/ovs-sgx/benchmark/scripts/common.sh
 function mod_flow_loose() {
   local N_FLOWS=$1
 
-  for i in `seq 1 10`; do 
-    ovs-ofctl add-flow br0 in_port=$i,priority=10,actions=drop
+  for i in `seq 0 24`; do
+    ovs-ofctl add-flow br0 in_port=2,priority=$i,actions=drop
   done
 
   for i in `seq 0 $N_FLOWS`; do
@@ -25,10 +25,10 @@ function benchmark_mod_flow_loose() {
     echo "FLAGS = $target"
     prepare
     compile "BENCHMARK_MOD_FLOW_LOOSE" $target
-    startup "mod_flow_loose_$target"
-    mod_flow_loose $ITERATIONS
-    sleep 2
+    for i in $(seq 0 19); do
+        startup "mod_flow_loose_$target"
+        mod_flow_loose $ITERATIONS
+    done
     cleanup
   done
 }
-
